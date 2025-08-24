@@ -8,56 +8,49 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./zram-configuration.nix
+      ./hyprland-configuration.nix
+      ./users-configuration.nix
+      ./steam-configuration.nix
+      ./sddm-configuration.nix
+      ./audio-configuration.nix
+      ./printing-configuration.nix
+      ./network-configuration.nix
+      ./sshd-configuration.nix
+      ./virt-manager-configuration.nix
+     # ./home-manager-configuration.nix
     ];
 
   # Bootloader.
-  boot.loader.grub.enable = true;
-  boot.loader.grub.devices = [ "/dev/vda" ];
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
   # Use latest kernel.
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
+  boot.tmp = {
+    useTmpfs = true;
+    tmpfsHugeMemoryPages = "within_size";
+  };
+
+  services.qemuGuest.enable = true;
+  services.spice-vdagentd.enable = true;
+
   networking.hostName = "nixos"; # Define your hostname.
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-  # Enable networking
-  networking.networkmanager.enable = true;
 
   # Set your time zone.
   time.timeZone = "Europe/Minsk";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
+  i18n = {
+    defaultLocale = "en_US.UTF-8";
+    extraLocales = [ "ru_RU.UTF-8/UTF-8" ];
+  };
 
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
     variant = "";
-  };
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.mathew = {
-    isNormalUser = true;
-    description = "mathew";
-    extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [
-      steam
-      firefox
-      google-chrome
-      waybar
-      hyprpaper
-      hyprpicker
-      hypridle
-      hyprlock
-      hyprsunset
-      hyprshot
-      wofi
-      mako
-    ];
   };
 
   # Allow unfree packages
@@ -67,64 +60,42 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
     vim
+    tmux
     git
     htop
-    kitty
-    weston
-    polkit
-    xdg-desktop-portal-hyprland
-    hyprpolkitagent
+    openrazer-daemon
+    polychromatic
+    neofetch
+    egl-wayland
+    gpu-screen-recorder-gtk
+    discord
+    spotify
+    hiddify-app
+    google-chrome
+    firefox
+    mako
+    kdePackages.dolphin
   ];
 
-  fonts.packages = with pkgs; [
-    noto-fonts
-    font-awesome
-  ];
+  security.polkit.enable = true;
 
-  services.dbus.enable = true;
-
-  programs.hyprland = {
+  xdg.portal = {
     enable = true;
-    xwayland.enable = true;
+    xdgOpenUsePortal = true;
   };
 
-  systemd.user.services.hyprland = {
-    description = "Hyprland Wayland Compositor";
-    wants = [ "dbus.socket" ];
-    after = [ "dbus.socket" ];
-
-    serviceConfig = {
-      ExecStart = "${pkgs.hyprland}/bin/Hyprland";
-      Type = "notify";
-      Restart = "on-failure";
-      KillMode = "process";
-    };
-
-    wantedBy = [ "default.target" ];
-  };
-
-  services.displayManager.sddm = {
+  virtualisation.docker.rootless = {
     enable = true;
-    wayland.enable = true;
+    setSocketVariable = true;
   };
 
-  zramSwap = {
-    enable = true;
-    priority = 100;
-    memoryPercent = 100;
+  hardware = {
+    xone.enable = true;
+    openrazer.enable = true;
+    opentabletdriver.enable = true;
   };
 
-  services.zram-generator = {
-    enable = true;
-  };
-
-  boot.kernel.sysctl = {
-    "vm.swappiness" = 180;
-    "vm.watermark_boost_factor" = 0;
-    "vm.watermark_scale_factor" = 125;
-    "vm.page-cluster" = 0;
-  };
-
+  programs.gpu-screen-recorder.enable = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -136,12 +107,9 @@
 
   # List services that you want to enable:
 
-  # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
-
   # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
+  networking.firewall.allowedTCPPorts = [ 57621 ];
+  networking.firewall.allowedUDPPorts = [ 5353 ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 
@@ -152,5 +120,4 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.05"; # Did you read the comment?
-
 }
