@@ -1,6 +1,6 @@
 { pkgs, ... }: {
   imports = [
-    ./hardware.nix
+    ./hardware-configuration.nix
     ./zram.nix
     ./hyprland.nix
     ./users.nix
@@ -76,7 +76,6 @@
   networking.firewall = {
     allowedTCPPorts = [ 57621 ];
     allowedUDPPorts = [ 5353 ];
-    trustedInterfaces = [ "tun0" ];
   };
 
   system.stateVersion = "25.05";
