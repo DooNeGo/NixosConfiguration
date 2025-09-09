@@ -1,4 +1,8 @@
-{ pkgs, ... }:  {
+{ pkgs, config, nix-colors, ... }:
+let
+  scheme = config.colorScheme;
+  contrib = nix-colors.lib.contrib { inherit pkgs; };
+in {
   home.pointerCursor = {
     enable = true;
     x11.enable = true;
@@ -18,8 +22,8 @@
     enable = true;
 
     theme = {
-      package = pkgs.paper-gtk-theme;
-      name = "Paper";
+      package = contrib.gtkThemeFromScheme { inherit scheme; };
+      name = scheme.slug;
     };
 
     iconTheme = {
@@ -31,5 +35,11 @@
       name = "Sans";
       size = 11;
     };
+  };
+
+  qt = {
+    enable = true;
+    platformTheme.name = "gtk";
+    style.name = "gtk2";
   };
 }

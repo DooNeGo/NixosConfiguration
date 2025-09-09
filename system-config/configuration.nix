@@ -1,6 +1,4 @@
-{ config, pkgs, ... }:
-
-{
+{ pkgs, ... }: {
   imports = [
     ./hardware.nix
     ./zram.nix
@@ -13,14 +11,14 @@
     ./network.nix
     ./sshd.nix
     #./virt-manager.nix
-    ./docker.nix
+    #./docker.nix
     ./nvidia.nix
     #./home-manager.nix
     #./android-sdk.nix
     ./razer.nix
     ./tmux.nix
     ./xdg.nix
-    ./gtk-theme.nix
+    #./gtk-theme.nix
     ./file-systems.nix
   ];
 
@@ -58,7 +56,6 @@
     git
     htop
     egl-wayland
-    neofetch
   ];
 
   hardware = {
@@ -76,8 +73,11 @@
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  networking.firewall.allowedTCPPorts = [ 57621 ];
-  networking.firewall.allowedUDPPorts = [ 5353 ];
+  networking.firewall = {
+    allowedTCPPorts = [ 57621 ];
+    allowedUDPPorts = [ 5353 ];
+    trustedInterfaces = [ "tun0" ];
+  };
 
   system.stateVersion = "25.05";
 }

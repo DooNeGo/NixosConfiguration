@@ -1,5 +1,6 @@
-{ pkgs, ... }: {
+{ pkgs, nix-colors, ... }: {
   imports = [
+    nix-colors.homeManagerModules.default
     ./hyprland.nix
     ./theme.nix
     ./env.nix
@@ -12,7 +13,13 @@
     ./hyprsunset.nix
     ./wofi.nix
     ./git.nix
+    ./fastfetch.nix
+    ./bash.nix
+    ./random-wallpaper.nix
+    ./hyprpaper.nix
   ];
+
+  colorScheme = nix-colors.colorSchemes.tokyo-city-dark;
 
   home = {
     username = "mathew";
@@ -24,7 +31,6 @@
       notes
       kdiskmark
       osu-lazer
-      hyprpaper
       hyprpicker
       hyprshot
       discord
@@ -35,6 +41,8 @@
       kdePackages.gwenview
       gpu-screen-recorder-gtk
       polychromatic
+      qemu_kvm
+      iotop
     ];
   };
 

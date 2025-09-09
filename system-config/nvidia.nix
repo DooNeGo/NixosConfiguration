@@ -1,6 +1,4 @@
-{ pkgs, config, ... }:
-
-{
+{ pkgs, config, ... }: {
   services.xserver.videoDrivers = [ "nvidia" ];
 
   environment.systemPackages = with pkgs; [

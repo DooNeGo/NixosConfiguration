@@ -12,11 +12,6 @@
 
       monitor = ",2560x1440@180, 0x0, 1, cm, auto, bitdepth, 8";
 
-#      env = [
-#        "HYPRCURSOR_THEME,rose-pine-hyprcursor"
-#        "HYPRCURSOR_SIZE,30"
-#      ];
-
       general = {
         gaps_in = 5;
         gaps_out = 10;
@@ -69,10 +64,6 @@
 
       windowrule = [
         "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
-      ];
-
-      exec-once = [
-        "~/.config/hypr/random-wallpaper.sh"
       ];
 
       bind = [

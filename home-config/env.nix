@@ -13,5 +13,6 @@
     export __GL_GSYNC_ALLOWED=1
     export __GL_VRR_ALLOWED=1
     export NVD_BACKEND=direct
+    export WLR_RENDERER_ALLOW_SOFTWARE=1
   '';
 }
