@@ -1,4 +1,4 @@
-{ pkgs, config, ... }: {
+{ pkgs, config, nixpkgs-unstable, ... }: {
   services.xserver.videoDrivers = [ "nvidia" ];
 
   environment.systemPackages = with pkgs; [
@@ -16,7 +16,7 @@
       modesetting.enable = true;
       powerManagement.enable = true;
       open = true;
-      package = config.boot.kernelPackages.nvidiaPackages.stable;
+      package = pkgs.unstable.linuxPackages_latest.nvidia_x11;
     };
   };
 

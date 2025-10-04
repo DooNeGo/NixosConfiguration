@@ -1,18 +1,10 @@
-{ config, pkgs, ... }: 
-let p = config.colorScheme.palette;
-in {
+{ lib, ... }: {
   programs.kitty = {
     enable = true;
     enableGitIntegration = true;
 
-    font = {
-      package = pkgs.nerd-fonts.jetbrains-mono;
-      name = "JetBrainsMono Nerd Font";
-      size = 13;
-    };
-
-    settings = {
-      background_opacity = 0.65;
+    settings = lib.mkAfter {
+      #background_opacity = 0.65;
       window_padding_width = 5;
       confirm_os_window_close = 0;
 

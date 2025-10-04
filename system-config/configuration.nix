@@ -12,7 +12,7 @@
     ./sshd.nix
     #./virt-manager.nix
     #./docker.nix
-    ./nvidia.nix
+    #./nvidia.nix
     #./home-manager.nix
     #./android-sdk.nix
     ./razer.nix
@@ -20,12 +20,13 @@
     ./xdg.nix
     #./gtk-theme.nix
     ./file-systems.nix
+    ./stylix.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.kernelPackages = pkgs.linuxPackages_6_15;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.tmp = {
     useTmpfs = true;

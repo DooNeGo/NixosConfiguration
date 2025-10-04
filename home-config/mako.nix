@@ -1,6 +1,4 @@
-{ config, ... }:
-let palette = config.colorScheme.palette;
-in {
+{
   services.mako = {
     enable = true;
     settings = {
@@ -8,9 +6,9 @@ in {
       default-timeout = 5000;
       margin = 5;
       padding = "10,5";
-      background-color = "#${palette.base00}";
-      text-color = "#${palette.base05}";
-      border-color = "#${palette.base03}";
+      #background-color = "#${palette.base00}";
+      #text-color = "#${palette.base05}";
+      #border-color = "#${palette.base03}";
     };
   };
 }

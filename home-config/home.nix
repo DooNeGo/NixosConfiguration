@@ -1,8 +1,7 @@
-{ pkgs, nix-colors, ... }: {
+{ pkgs, ... }: {
   imports = [
-    nix-colors.homeManagerModules.default
     ./hyprland.nix
-    ./theme.nix
+    #./theme.nix
     ./env.nix
     ./mako.nix
     ./mangohud.nix
@@ -14,12 +13,11 @@
     ./wofi.nix
     ./git.nix
     ./fastfetch.nix
-    ./bash.nix
-    ./random-wallpaper.nix
+    #./bash.nix
+    #./random-wallpaper.nix
     ./hyprpaper.nix
+    #./stylix.nix
   ];
-
-  colorScheme = nix-colors.colorSchemes.tokyo-city-dark;
 
   home = {
     username = "mathew";
@@ -41,7 +39,6 @@
       kdePackages.gwenview
       gpu-screen-recorder-gtk
       polychromatic
-      qemu_kvm
       iotop
     ];
   };
@@ -56,7 +53,18 @@
   };
 
   programs = {
-    vscode.enable = true;
-    firefox.enable = true;
+    vscode = {
+      enable = true;
+      package = pkgs.vscode-fhs;
+    };
+
+    firefox = {
+      enable = true;
+      profiles = {
+        default = { };
+      };
+    };
   };
+
+  stylix.targets.firefox.profileNames = [ "default" ];
 }
