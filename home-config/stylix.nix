@@ -1,6 +1,6 @@
-{ pkgs, ... }: {
+{ pkgs, stylix, ... }: {
   stylix = {
-    enable = false;
+    enable = true;
     image = builtins.path { path = ../Wallpapers/default.jpg; };
     polarity = "dark";
 

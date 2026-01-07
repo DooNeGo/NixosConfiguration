@@ -1,5 +1,6 @@
-{ pkgs, ... }: {
+{ pkgs, inputs, pkgs-unstable, ... }: {
   imports = [
+   # inputs.stylix.homeModules.stylix
     ./hyprland.nix
     #./theme.nix
     ./env.nix
@@ -16,30 +17,35 @@
     #./bash.nix
     #./random-wallpaper.nix
     ./hyprpaper.nix
-    #./stylix.nix
+    #./zsh.nix
+   # ./stylix.nix
   ];
 
   home = {
     username = "mathew";
     homeDirectory = "/home/mathew";
-    stateVersion = "25.05";
-    packages = with pkgs; [
-      telegram-desktop
-      freerdp
-      notes
-      kdiskmark
-      osu-lazer
-      hyprpicker
-      hyprshot
-      discord
-      spotify
-      google-chrome
-      hiddify-app
-      nemo
-      kdePackages.gwenview
-      gpu-screen-recorder-gtk
-      polychromatic
-      iotop
+    stateVersion = "25.11";
+    packages = [
+      pkgs.telegram-desktop
+      pkgs.freerdp
+      pkgs.notes
+      pkgs.kdiskmark
+      #pkgs.osu-lazer
+      pkgs.hyprpicker
+      pkgs.hyprshot
+      pkgs.discord
+      pkgs.spotify
+      pkgs.google-chrome
+      #pkgs.hiddify-app
+      pkgs.nemo
+      pkgs.kdePackages.gwenview
+      pkgs.gpu-screen-recorder-gtk
+      pkgs.polychromatic
+      pkgs.iotop
+      pkgs.iftop
+      #pkgs.dotnet-sdk_9
+      #pkgs.jdk17
+      #pkgs.jetbrains.rider
     ];
   };
 
@@ -65,6 +71,4 @@
       };
     };
   };
-
-  stylix.targets.firefox.profileNames = [ "default" ];
 }

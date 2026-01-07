@@ -8,11 +8,11 @@
     ./sddm.nix
     ./audio.nix
     ./printing.nix
-    ./network.nix
+    #./network.nix
     ./sshd.nix
     #./virt-manager.nix
     #./docker.nix
-    #./nvidia.nix
+    ./nvidia.nix
     #./home-manager.nix
     #./android-sdk.nix
     ./razer.nix
@@ -21,6 +21,7 @@
     #./gtk-theme.nix
     ./file-systems.nix
     ./stylix.nix
+    ./throne.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -57,6 +58,8 @@
     git
     htop
     egl-wayland
+    cacert
+    bindfs
   ];
 
   hardware = {
