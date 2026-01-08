@@ -15,7 +15,7 @@
     ./git.nix
     ./fastfetch.nix
     #./bash.nix
-    #./random-wallpaper.nix
+    ./random-wallpaper.nix
     ./hyprpaper.nix
     #./zsh.nix
    # ./stylix.nix

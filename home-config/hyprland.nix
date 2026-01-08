@@ -9,6 +9,7 @@
       "$terminal" = "kitty";
       "$menu" = "wofi --show drun";
       "$fileManager" = "nemo";
+      "$mauiDev" = "nix-shell ${builtins.toString ../maui-devshell/shell.nix}";
 
       monitor = ",2560x1440@180, 0x0, 1, cm, auto, bitdepth, 8";
 
@@ -50,7 +51,7 @@
       };
 
       misc = {
-        force_default_wallpaper = 0;
+        force_default_wallpaper = 1;
         disable_hyprland_logo = true;
         vrr = 1;
       };
@@ -83,6 +84,7 @@
         "$mainMod ALT, right, swapwindow, r"
         "$mainMod ALT, up, swapwindow, u"
         "$mainMod ALT, down, swapwindow, d"
+        "$mainMod, W, exec, $mauiDev"
       ]
       ++ (
         # workspaces
