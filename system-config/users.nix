@@ -2,7 +2,7 @@
   users.users.mathew = {
     isNormalUser = true;
     description = "mathew";
-    extraGroups = [ "wheel" "input" "networkmanager" "doonego" ];
+    extraGroups = [ "wheel" "input" ];
   };
 
   users.groups.doonego = {

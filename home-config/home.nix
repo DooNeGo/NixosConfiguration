@@ -30,13 +30,14 @@
       pkgs.freerdp
       pkgs.notes
       pkgs.kdiskmark
+      pkgs.compsize
+      pkgs.pv
       #pkgs.osu-lazer
       pkgs.hyprpicker
       pkgs.hyprshot
       pkgs.discord
       pkgs.spotify
       pkgs.google-chrome
-      #pkgs.hiddify-app
       pkgs.nemo
       pkgs.kdePackages.gwenview
       pkgs.gpu-screen-recorder-gtk

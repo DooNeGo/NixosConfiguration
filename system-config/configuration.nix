@@ -8,7 +8,7 @@
     ./sddm.nix
     ./audio.nix
     ./printing.nix
-    #./network.nix
+   # ./network.nix
     ./sshd.nix
     #./virt-manager.nix
     #./docker.nix
@@ -26,6 +26,8 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.efi.efiSysMountPoint = "/boot/EFI";
+  boot.supportedFilesystems = [ "btrfs" ];
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
@@ -82,5 +84,5 @@
     allowedUDPPorts = [ 5353 ];
   };
 
-  system.stateVersion = "25.05";
+  system.stateVersion = "25.11";
 }
