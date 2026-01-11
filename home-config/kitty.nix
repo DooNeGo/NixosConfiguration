@@ -4,7 +4,7 @@
     enableGitIntegration = true;
 
     settings = lib.mkAfter {
-      #background_opacity = 0.65;
+      background_opacity = 0.65;
       window_padding_width = 5;
       confirm_os_window_close = 0;
 

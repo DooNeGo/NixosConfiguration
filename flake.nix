@@ -15,9 +15,14 @@
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    #nix-vscode-extensions = {
+    #  url = "github:nix-community/nix-vscode-extensions";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #};
   };
 
-  outputs = inputs@{ nixpkgs, home-manager, stylix, ... }:
+  outputs = inputs@{ nixpkgs, home-manager, ... }:
   let
     system = "x86_64-linux";
     #pkgs-unstable = import nixpkgs-unstable {
@@ -35,6 +40,7 @@
         }
         ./system-config/configuration.nix
         inputs.stylix.nixosModules.stylix
+       # inputs.nix-vscode-extensions.hmModules.default
         home-manager.nixosModules.home-manager
         {
           home-manager = {

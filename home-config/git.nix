@@ -1,7 +1,9 @@
 {
   programs.git = {
     enable = true;
-    userEmail = "matveyprostomac@gmail.com";
-    userName = "Mathew Kastrama";
+    settings.user = {
+      email = "matveyprostomac@gmail.com";
+      name = "Mathew Kastrama";
+    };
   };
 }

@@ -7,9 +7,10 @@
     settings = {
       "$mainMod" = "SUPER";
       "$terminal" = "kitty";
-      "$menu" = "wofi --show drun";
+      "$menu" = "hyprlauncher";
       "$fileManager" = "nemo";
-      "$mauiDev" = "nix-shell ${builtins.toString ../maui-devshell/shell.nix}";
+
+      exec-once = "$menu -d";
 
       monitor = ",2560x1440@180, 0x0, 1, cm, auto, bitdepth, 8";
 
@@ -84,7 +85,6 @@
         "$mainMod ALT, right, swapwindow, r"
         "$mainMod ALT, up, swapwindow, u"
         "$mainMod ALT, down, swapwindow, d"
-        "$mainMod, W, exec, $mauiDev"
       ]
       ++ (
         # workspaces

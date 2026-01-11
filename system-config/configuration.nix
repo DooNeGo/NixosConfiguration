@@ -7,21 +7,21 @@
     ./steam.nix
     ./sddm.nix
     ./audio.nix
-    ./printing.nix
-   # ./network.nix
+    #./printing.nix
+    ./network.nix
     ./sshd.nix
     #./virt-manager.nix
-    #./docker.nix
+    ./docker.nix
     ./nvidia.nix
     #./home-manager.nix
-    #./android-sdk.nix
     ./razer.nix
     ./tmux.nix
     ./xdg.nix
-    #./gtk-theme.nix
+    ./gtk-theme.nix
     ./file-systems.nix
     ./stylix.nix
     ./throne.nix
+    ./android.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -59,9 +59,8 @@
     vim
     git
     htop
-    egl-wayland
-    cacert
-    bindfs
+    #egl-wayland
+    #cacert
   ];
 
   hardware = {
@@ -69,7 +68,10 @@
     opentabletdriver.enable = true;
   };
 
-  programs.gpu-screen-recorder.enable = true;
+  programs = {
+    zsh.enable = true;
+    gpu-screen-recorder.enable = true;
+  };
 
   nix.gc = {
     automatic = true;

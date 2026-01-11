@@ -1,8 +1,9 @@
-{
+{ pkgs, ... }: {
   users.users.mathew = {
     isNormalUser = true;
     description = "mathew";
-    extraGroups = [ "wheel" "input" ];
+    extraGroups = [ "wheel" "input" "adbusers" "kvm" "audio" ];
+    shell = pkgs.zsh;
   };
 
   users.groups.doonego = {
