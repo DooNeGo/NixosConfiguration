@@ -1,13 +1,14 @@
 {
   security.rtkit.enable = true;
 
-  services = {
-    pulseaudio.enable = false;
+  services.pipewire = {
+    enable = true;
+    pulse.enable = true;
+    jack.enable = true;
 
-    pipewire = {
+    alsa = {
       enable = true;
-      alsa.enable = true;
-      pulse.enable = true;
+      support32Bit = true;
     };
   };
 }

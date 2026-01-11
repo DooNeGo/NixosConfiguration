@@ -2,7 +2,7 @@
   users.users.mathew = {
     isNormalUser = true;
     description = "mathew";
-    extraGroups = [ "wheel" "input" "adbusers" "kvm" "audio" ];
+    extraGroups = [ "wheel" "input" "adbusers" "kvm" "audio"  ];
     shell = pkgs.zsh;
   };
 

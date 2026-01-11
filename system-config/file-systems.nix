@@ -5,6 +5,12 @@ in {
     "/".options = defaultBtrfsOptions;
     "/nix".options = defaultBtrfsOptions;
     "/boot".options = defaultBtrfsOptions;
-    "/home".options = [ "defaults" "noatime" "data=writeback" "journal_async_commit" "commit=10" ];
-  };    
+    "/home".options = [ "defaults" "noatime" ];
+  };
+
+  services.btrfs.autoScrub = {
+    enable = true;
+    interval = "monthly";
+    fileSystems = [ "/" ];
+  }; 
 }

@@ -1,5 +1,10 @@
-{ pkgs, config, ... }: {
+{ pkgs, ... }: {
   services.xserver.videoDrivers = [ "nvidia" ];
+
+  #boot = {
+  #  initrd.kernelModules = [ "nvidia" ];
+  #  extraModulePackages = [ config.boot.kernelPackages.nvidia_x11 ];
+  #};
 
   environment.systemPackages = with pkgs; [
     nvtopPackages.nvidia

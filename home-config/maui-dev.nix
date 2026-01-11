@@ -21,7 +21,6 @@ let
       libglvnd
 
       openssl
-      #dotnet-sdk_10
     ];
     profile = ''
       export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit $_JAVA_OPTIONS"
@@ -32,12 +31,9 @@ in {
   home = {
     packages = with pkgs; [
       javaPackages.compiler.temurin-bin.jdk-21
-      #dotnet-sdk_10
+      dotnet-sdk_10
       androidComposition.androidsdk
-      #kitty
       riderFHS
-      gnome-keyring
-      #e2fsprogs
     ];
     sessionVariables = {
       JAVA_HOME = "${pkgs.javaPackages.compiler.temurin-bin.jdk-21.home}";

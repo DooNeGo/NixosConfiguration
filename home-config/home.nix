@@ -56,7 +56,7 @@
       systemdService.enable = false;
     };
 
-    gnome-keyring.enable = true;
+    #gnome-keyring.enable = true;
     hyprpolkitagent.enable = true;
   };
 
