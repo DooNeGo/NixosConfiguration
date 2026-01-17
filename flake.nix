@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
-    #nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     stylix = {
       url = "github:nix-community/stylix/release-25.11";
@@ -22,21 +22,21 @@
     #};
   };
 
-  outputs = inputs@{ nixpkgs, home-manager, ... }:
+  outputs = inputs@{ nixpkgs, nixpkgs-unstable, home-manager, ... }:
   let
     system = "x86_64-linux";
-    #pkgs-unstable = import nixpkgs-unstable {
-    #  inherit system;
-    #  config.allowUnfree = true;
-    #};
+    pkgs-unstable = import nixpkgs-unstable {
+      inherit system;
+      config.allowUnfree = true;
+    };
   in {
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
         {
-          #_module.args = {
-          #  inherit pkgs-unstable;
-          #};
+          _module.args = {
+            inherit pkgs-unstable;
+          };
         }
         ./system-config/configuration.nix
         inputs.stylix.nixosModules.stylix
@@ -46,7 +46,7 @@
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
-            extraSpecialArgs = { inherit inputs; };
+            extraSpecialArgs = { inherit inputs pkgs-unstable; };
             users.mathew = ./home-config/home.nix;
           };
         }

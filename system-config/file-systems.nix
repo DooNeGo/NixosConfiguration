@@ -5,6 +5,7 @@ in {
     "/".options = defaultBtrfsOptions;
     "/nix".options = defaultBtrfsOptions;
     "/boot".options = defaultBtrfsOptions;
+    "/boot/EFI".options = [ "defaults" ];
     "/home".options = [ "defaults" "noatime" ];
   };
 

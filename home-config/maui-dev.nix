@@ -1,7 +1,8 @@
-{ pkgs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
-    platformVersions = [ "33" "36" ];
+    platformVersions = [ "33" "35" "36" ];
+    buildToolsVersions = [ "latest" ];
     systemImageTypes = [ "google_apis" ];
     abiVersions = [ "x86_64" ];
     includeEmulator = "if-supported";
@@ -13,18 +14,24 @@ let
 
   riderFHS = pkgs.buildFHSEnv {
     name = "rider-fhs";
-    targetPkgs = pkgs: with pkgs; [
+    targetPkgs = pkgs: with pkgs-unstable; [
       jetbrains.rider
 
       gtk3
       dbus
       libglvnd
 
+      wayland-protocols
+      mesa
+      libdecor
+      libdrm
+      xdg-desktop-portal
+
       openssl
     ];
-    profile = ''
-      export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit $_JAVA_OPTIONS"
-    '';
+    #profile = ''
+    #  export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
+    #'';
     runScript = "rider";
   };
 in { 
@@ -37,9 +44,10 @@ in {
     ];
     sessionVariables = {
       JAVA_HOME = "${pkgs.javaPackages.compiler.temurin-bin.jdk-21.home}";
-      #DOTNET_ROOT = "${pkgs.dotnet-sdk_10}/share/dotnet";
-      #PATH="${pkgs.dotnet-sdk_10}/bin:$PATH";
+      DOTNET_ROOT = "${pkgs.dotnet-sdk_10}/share/dotnet";
+      PATH="${pkgs.dotnet-sdk_10}/bin:$PATH";
       ANDROID_HOME = "${androidComposition.androidsdk}/libexec/android-sdk";
+      ANDROID_AVD_HOME = "$HOME/.config/.android/avd";
     };
   };
 }

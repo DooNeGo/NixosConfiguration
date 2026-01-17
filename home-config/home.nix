@@ -21,6 +21,7 @@
     #./stylix.nix
     ./maui-dev.nix
     #./hyprlauncher.nix
+    ./xdg.nix
   ];
 
   home = {
@@ -66,7 +67,10 @@
       package = pkgs.vscode-fhs;
     };
   
-    hyprshot.enable = true;
+    hyprshot = {
+      enable = true;
+      saveLocation = "$HOME/Pictures/Screenshots";
+    };
 
     firefox = {
       enable = true;

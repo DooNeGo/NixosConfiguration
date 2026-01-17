@@ -1,14 +1,8 @@
 { pkgs, ... }: {
   services.xserver.videoDrivers = [ "nvidia" ];
 
-  #boot = {
-  #  initrd.kernelModules = [ "nvidia" ];
-  #  extraModulePackages = [ config.boot.kernelPackages.nvidia_x11 ];
-  #};
-
   environment.systemPackages = with pkgs; [
     nvtopPackages.nvidia
-    nvidia_oc
   ];
 
   hardware = {
@@ -21,17 +15,19 @@
       modesetting.enable = true;
       powerManagement.enable = true;
       open = true;
-      #package = pkgs.linuxPackages_latest.nvidia_x11;
+      #package = pkgs-unstable.linuxPackages_latest.nvidia_x11;
     };
   };
 
-#   systemd.services.nvidia_oc = {
-#     enabled = true;
-#     description = "NVIDIA Overclocking Service";
-#     after = [ "network.target" ];
-#     wantedBy = [ "multi-user.target" ];
-#     serviceConfig = {
-#       ExecStart = ''nvidia_oc set --index 0 --power-limit  --mem-offset 200'';
-#     };
-#   };
+  systemd.services.nvidia-target-temperature = {
+    enable = true;
+    description = "Setting NVIDIA target temperature";
+    after = [ "network.target" ];
+    serviceConfig = {
+       Type = "oneshot";
+       ExecStart = "${pkgs.linuxKernel.packages.linux_6_18.nvidia_x11.bin}/bin/nvidia-smi -gtt 66";
+       RemainAfterExit = true;
+    };
+    wantedBy = [ "multi-user.target" ];
+  };
 }
