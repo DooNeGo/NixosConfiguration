@@ -25,7 +25,7 @@
     after = [ "network.target" ];
     serviceConfig = {
        Type = "oneshot";
-       ExecStart = "${pkgs.linuxKernel.packages.linux_6_18.nvidia_x11.bin}/bin/nvidia-smi -gtt 66";
+       ExecStart = "${pkgs.linuxKernel.packages.linux_6_18.nvidia_x11.bin}/bin/nvidia-smi -gtt 67";
        RemainAfterExit = true;
     };
     wantedBy = [ "multi-user.target" ];

@@ -37,12 +37,11 @@ let
 in { 
   home = {
     packages = with pkgs; [
+      javaPackages.compiler.temurin-bin.jdk-21
       dotnet-sdk_10
       androidComposition.androidsdk
       riderFHS
-    ] ++ (with pkgs-unstable; [
-      javaPackages.compiler.temurin-bin.jdk-21
-    ]);
+    ];
 
     sessionVariables = {
       JAVA_HOME = "${pkgs.javaPackages.compiler.temurin-bin.jdk-21.home}";

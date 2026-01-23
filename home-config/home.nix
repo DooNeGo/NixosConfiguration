@@ -48,6 +48,7 @@
       polychromatic
       iotop
       iftop
+      mumble
     ];
   };
 

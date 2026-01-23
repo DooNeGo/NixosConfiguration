@@ -26,13 +26,13 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.efi.efiSysMountPoint = "/boot/EFI";
   boot.supportedFilesystems = [ "btrfs" ];
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.tmp = {
     useTmpfs = true;
+    tmpfsSize = "115%";
     tmpfsHugeMemoryPages = "within_size";
   };
 
@@ -81,7 +81,10 @@
     options = "--delete-older-than 5d";
   };
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    auto-optimise-store = true;
+  };
 
   networking.firewall = {
     allowedTCPPorts = [ 57621 ];

@@ -14,30 +14,43 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/6b4375cf-f78a-4b0a-b9f9-4be534275d7b";
+    { device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
       fsType = "btrfs";
       options = [ "subvol=@root" ];
     };
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/6b4375cf-f78a-4b0a-b9f9-4be534275d7b";
+  fileSystems."/home" =
+    { device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
       fsType = "btrfs";
-      options = [ "subvol=@boot" ];
+      options = [ "subvol=@home" ];
     };
 
   fileSystems."/nix" =
-    { device = "/dev/disk/by-uuid/6b4375cf-f78a-4b0a-b9f9-4be534275d7b";
+    { device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
       fsType = "btrfs";
       options = [ "subvol=@nix" ];
     };
 
-  fileSystems."/home" =
-    { device = "/dev/disk/by-uuid/61af6c83-40fe-43f4-abbd-514f63f39f25";
-      fsType = "ext4";
+  fileSystems."/games" =
+    { device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
+      fsType = "btrfs";
+      options = [ "subvol=@games" ];
     };
 
-  fileSystems."/boot/EFI" =
-    { device = "/dev/disk/by-uuid/3FC5-4A0B";
+  fileSystems."/var/log" =
+    { device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
+      fsType = "btrfs";
+      options = [ "subvol=@log" ];
+    };
+
+  fileSystems."/var/lib/nocow" =
+    { device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
+      fsType = "btrfs";
+      options = [ "subvol=@nocow" ];
+    };
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/D366-360A";
       fsType = "vfat";
       options = [ "fmask=0077" "dmask=0077" ];
     };

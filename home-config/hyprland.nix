@@ -12,7 +12,21 @@
 
       exec-once = "$menu -d";
 
-      monitor = ",2560x1440@180, 0x0, 1, cm, auto, bitdepth, 8";
+     # monitor = ",2560x1440@180, 0x0, 1, cm, hdr, bitdepth, 10";
+
+      monitorv2 = {
+        output = "DP-2";
+        mode = "2560x1440@180";
+        position = "0x0";
+        scale = 1;
+        cm = "auto";
+        bitdepth = 8;
+        sdr_min_luminance = 0.005;
+        sdr_max_luminance = 200;
+        min_luminance = 0.005;
+        max_luminance = 1000;
+        max_avg_luminance = 500;
+      };
 
       general = {
         gaps_in = 5;
