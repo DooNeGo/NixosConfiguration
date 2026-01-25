@@ -29,9 +29,9 @@ let
 
       openssl
     ];
-   # profile = ''
-   #   export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
-   # '';
+    profile = ''
+      export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
+    '';
     runScript = "rider";
   };
 in { 
@@ -40,9 +40,8 @@ in {
       dotnet-sdk_10
       androidComposition.androidsdk
       riderFHS
-    ] ++ (with pkgs-unstable; [
       javaPackages.compiler.temurin-bin.jdk-21
-    ]);
+    ];
 
     sessionVariables = {
       JAVA_HOME = "${pkgs.javaPackages.compiler.temurin-bin.jdk-21.home}";

@@ -23,9 +23,9 @@
         bitdepth = 8;
         sdr_min_luminance = 0.005;
         sdr_max_luminance = 200;
-        min_luminance = 0.005;
+        min_luminance = 1;
         max_luminance = 1000;
-        max_avg_luminance = 500;
+        max_avg_luminance = 1000;
       };
 
       general = {
