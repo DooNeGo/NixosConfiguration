@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ pkgs, config, ... }: {
   services.xserver.videoDrivers = [ "nvidia" ];
 
   environment.systemPackages = with pkgs; [
@@ -15,7 +15,7 @@
       modesetting.enable = true;
       powerManagement.enable = true;
       open = true;
-      #package = pkgs-unstable.linuxPackages_latest.nvidia_x11;
+      #package = config.boot.kernelPackages.nvidiaPackages.stable;
     };
   };
 
@@ -24,9 +24,10 @@
     description = "Setting NVIDIA target temperature";
     after = [ "network.target" ];
     serviceConfig = {
-       Type = "oneshot";
-       ExecStart = "${pkgs.linuxKernel.packages.linux_6_18.nvidia_x11.bin}/bin/nvidia-smi -gtt 67";
-       RemainAfterExit = true;
+      Type = "oneshot";
+      ExecStart = "${config.boot.kernelPackages.nvidia_x11.bin}/bin/nvidia-smi -gtt 67";
+      #ExecStart = "${pkgs.linuxKernel.packages.linux_latest.nvidia_x11.bin}/bin/nvidia-smi -gtt 67";
+      RemainAfterExit = true;
     };
     wantedBy = [ "multi-user.target" ];
   };

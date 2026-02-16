@@ -38,6 +38,7 @@ in {
   home = {
     packages = with pkgs; [
       dotnet-sdk_10
+      mono
       androidComposition.androidsdk
       riderFHS
       javaPackages.compiler.temurin-bin.jdk-21

@@ -12,5 +12,6 @@
     NVD_BACKEND = "direct";
     WLR_RENDERER_ALLOW_SOFTWARE = "1";
     NIXOS_OZONE_WL = "1";
+    MANGOHUD = 1;
   };
 }

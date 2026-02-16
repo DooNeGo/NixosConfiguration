@@ -49,6 +49,9 @@
       iotop
       iftop
       mumble
+      teams-for-linux
+      libreoffice
+      ntfs3g
     ];
   };
 

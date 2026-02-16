@@ -28,11 +28,13 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.supportedFilesystems = [ "btrfs" ];
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelModules = [ "ntsync" ];
+
+  boot.kernelPackages = pkgs.linuxPackages_6_18;
 
   boot.tmp = {
     useTmpfs = true;
-    tmpfsSize = "115%";
+    tmpfsSize = "100%";
     tmpfsHugeMemoryPages = "within_size";
   };
 

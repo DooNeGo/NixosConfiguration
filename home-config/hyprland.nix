@@ -1,8 +1,7 @@
 {
   wayland.windowManager.hyprland = {
     enable = true;
-    #package = null;
-    #portalPackage = null;
+    systemd.enable = false;
 
     settings = {
       "$mainMod" = "SUPER";
@@ -12,7 +11,7 @@
 
       exec-once = "$menu -d";
 
-     # monitor = ",2560x1440@180, 0x0, 1, cm, hdr, bitdepth, 10";
+      monitor = ",preffered,auto,auto";
 
       monitorv2 = {
         output = "DP-2";
@@ -35,7 +34,7 @@
         #"col.active_border" = "rgba(33ccffee)";
         #"col.inactive_border" = "rgba(595959aa)";
         resize_on_border = true;
-        allow_tearing = false;
+        allow_tearing = true;
         layout = "dwindle";
       };
 
@@ -69,13 +68,19 @@
         force_default_wallpaper = 1;
         disable_hyprland_logo = true;
         vrr = 1;
+        animate_manual_resizes = true;
       };
+
+      #quirks = {
+      #  prefer_hdr = 1;
+      #};
 
       input = {
         kb_layout = "us,ru";
         kb_options = "grp:win_space_toggle";
         repeat_delay = 250;
         accel_profile = "flat";
+        scroll_factor = 1.4;
       };
 
       windowrule = [
