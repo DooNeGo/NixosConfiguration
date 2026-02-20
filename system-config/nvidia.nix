@@ -26,7 +26,6 @@
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${config.boot.kernelPackages.nvidia_x11.bin}/bin/nvidia-smi -gtt 67";
-      #ExecStart = "${pkgs.linuxKernel.packages.linux_latest.nvidia_x11.bin}/bin/nvidia-smi -gtt 67";
       RemainAfterExit = true;
     };
     wantedBy = [ "multi-user.target" ];

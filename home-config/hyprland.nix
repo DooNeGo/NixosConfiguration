@@ -80,7 +80,7 @@
         kb_options = "grp:win_space_toggle";
         repeat_delay = 250;
         accel_profile = "flat";
-        scroll_factor = 1.4;
+        scroll_factor = 1.7;
       };
 
       windowrule = [
