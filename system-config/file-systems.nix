@@ -6,8 +6,11 @@ in {
     "/nix".options = defaultBtrfsOptions;
     "/home".options = defaultBtrfsOptions;
     "/games".options = defaultBtrfsOptions;
-    "/var/log".options = defaultBtrfsOptions;
-    "/var/lib/nocow".options = [ "defaults" "compress=zstd:-1" "nodatacow" "noatime" ];
+    "/var/log" = {
+      options = defaultBtrfsOptions;
+      neededForBoot = true;
+    };
+    "/var/lib/nocow".options = defaultBtrfsOptions;
   };
 
   services.btrfs.autoScrub = {
@@ -15,6 +18,15 @@ in {
     interval = "monthly";
     fileSystems = [ "/" ];
   };
+
+  services.beesd.filesystems = {
+    root = {
+      spec = "LABEL=NixOS";
+      hashTableSizeMB = 2048;
+      verbosity = "crit";
+      extraOptions = [ "--loadavg-target" "5.0" ];
+  };
+};
 
   systemd.tmpfiles.rules = [
     "d /games 2775 root users -"
