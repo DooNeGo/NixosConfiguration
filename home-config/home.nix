@@ -22,6 +22,7 @@
     ./maui-dev.nix
     #./hyprlauncher.nix
     ./xdg.nix
+    ./obs-studio.nix
   ];
 
   home = {
@@ -52,6 +53,8 @@
       teams-for-linux
       libreoffice
       ntfs3g
+      helvum
+      pwvucontrol
     ];
   };
 
