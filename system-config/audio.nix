@@ -29,7 +29,7 @@
         flags = [ "nofail" ];
         args = let
           sofaPath = ../EAC_48kHz.sofa; 
-          radius = 1.2;
+          radius = 0.76;
 
           mkSofa = name: az: el: {
             type = "sofa";
@@ -55,10 +55,10 @@
             { n = "spSL"; a = 100.0; e = 0.0; }
             { n = "spSR"; a = 260.0; e = 0.0; }
 
-            { n = "spTFL"; a = 45.0; e = 80.0; }
-            { n = "spTFR"; a = 315.0; e = 80.0; }
-            { n = "spTRL"; a = 135.0; e = 80.0; }
-            { n = "spTRR"; a = 225.0; e = 80.0; }
+            { n = "spTFL"; a = 45.0; e = 45.0; }
+            { n = "spTFR"; a = 315.0; e = 45.0; }
+            { n = "spTRL"; a = 135.0; e = 45.0; }
+            { n = "spTRR"; a = 225.0; e = 45.0; }
           ];
   
           mixers = map (name: { type = "builtin"; label = "mixer"; inherit name; }) 
@@ -112,6 +112,33 @@
             "audio.rate"     = 48000;
             "audio.channels" = 2;
             "audio.position" = [ "FL" "FR" ];
+          };
+        };
+      }
+    ];
+  };
+
+  services.pipewire.extraConfig.pipewire."98-spatializer-7-1" = {
+    "context.modules" = [
+      {
+        name = "libpipewire-module-loopback";
+        args = {
+          "node.description" = "7.1 Surround Sound";
+  
+          "capture.props" = {
+            "node.name"      = "effect_input.spatializer71";
+            "media.class"    = "Audio/Sink";
+            "audio.channels" = 8;
+            "audio.position" = [ "FL" "FR" "FC" "LFE" "RL" "RR" "SL" "SR" ];
+          };
+  
+          "playback.props" = {
+            "node.name"      = "effect_output.spatializer71";
+            "node.passive"   = true;
+            "audio.channels" = 8;
+            "audio.position" = [ "FL" "FR" "FC" "LFE" "RL" "RR" "SL" "SR" ];
+            "target.object"  = "effect_input.spatializer";
+            "stream.dont-remix" = false;
           };
         };
       }

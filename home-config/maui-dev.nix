@@ -16,19 +16,14 @@ let
     name = "rider-fhs";
     targetPkgs = pkgs: with pkgs-unstable; [
       jetbrains.rider
-
+    ] ++ (with pkgs; [
       gtk3
+      gtk4
       dbus
       libglvnd
 
-     # wayland-protocols
-     # mesa
-     # libdecor
-     # libdrm
-     # xdg-desktop-portal
-
       openssl
-    ];
+    ]);
     profile = ''
       export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
     '';
