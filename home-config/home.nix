@@ -55,6 +55,8 @@
       ntfs3g
       helvum
       pwvucontrol
+      audacious
+      unzip
     ];
   };
 
