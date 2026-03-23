@@ -33,7 +33,7 @@
       telegram-desktop
       freerdp
       notes
-      kdiskmark
+      #kdiskmark
       compsize
       pv
       #osu-lazer
@@ -57,6 +57,7 @@
       pwvucontrol
       audacious
       unzip
+      zip
     ];
   };
 

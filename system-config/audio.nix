@@ -28,8 +28,9 @@
         name = "libpipewire-module-filter-chain";
         flags = [ "nofail" ];
         args = let
-          #sofaPath = ../H14_48K_24bit_256tap_FIR_SOFA.sofa;
-          sofaPath = ../EAC_48kHz.sofa;
+          sofaPath = ../H14_48K_24bit_256tap_FIR_SOFA.sofa;
+          #sofaPath = ../EAC_48kHz.sofa;
+          #sofaPath = ../D2_48K_24bit_256tap_FIR_SOFA.sofa;
           radius = 0.76;
   
           mkSofa = name: az: el: {
@@ -60,8 +61,8 @@
   
           bedCount    = 7;
           heightCount = 4;
-          #channelGain = 0.17;
-          channelGain = 1;
+          channelGain = 0.17;
+          #channelGain = 1;
   
           mkMixer = name: gain: {
             type = "builtin";
