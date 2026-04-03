@@ -58,6 +58,7 @@
       audacious
       unzip
       zip
+      smartmontools
     ];
   };
 
