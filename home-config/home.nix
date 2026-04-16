@@ -32,7 +32,8 @@
     packages = with pkgs; [
       telegram-desktop
       freerdp
-      notes
+      #notes
+      obsidian
       #kdiskmark
       compsize
       pv
