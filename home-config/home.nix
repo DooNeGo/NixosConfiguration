@@ -1,6 +1,7 @@
 { pkgs, inputs, ... }: {
   imports = [
    # inputs.stylix.homeModules.stylix
+    inputs.nix-flatpak.homeManagerModules.nix-flatpak
     ./hyprland.nix
     ./theme.nix
     ./env.nix
@@ -32,12 +33,10 @@
     packages = with pkgs; [
       telegram-desktop
       freerdp
-      #notes
       obsidian
-      #kdiskmark
       compsize
       pv
-      #osu-lazer
+      osu-lazer-bin
       hyprpicker
       hyprlauncher
       hyprpwcenter
@@ -60,6 +59,8 @@
       unzip
       zip
       smartmontools
+      flatpak
+      qbittorrent
     ];
   };
 
@@ -68,6 +69,11 @@
       enable = true;
       systemdService.enable = false;
     };
+
+    flatpak.packages = [
+      #{ appId = "ru.linux_gaming.PortProton"; origin = "flathub";  }
+      "ru.linux_gaming.PortProton"
+    ];
 
     #gnome-keyring.enable = true;
     hyprpolkitagent.enable = true;
