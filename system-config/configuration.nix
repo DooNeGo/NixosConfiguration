@@ -11,7 +11,8 @@
     ./network.nix
     ./sshd.nix
     #./virt-manager.nix
-    ./docker.nix
+    #./docker.nix
+    ./podman.nix
     ./nvidia.nix
     #./home-manager.nix
     ./razer.nix
