@@ -175,29 +175,6 @@
     ];
   };
 
-  services.pipewire.extraConfig.pipewire."99-virtual-surround-71" = {
-    "context.modules" = [
-      {
-        name = "libpipewire-module-loopback";
-        args = {
-          "node.description" = "Hesuvi 7.1 Surround";
-          "capture.props" = {
-            "node.name" = "virtual-surround-71-sink";
-            "media.class" = "Audio/Sink";
-            "audio.channels" = 8;
-            "audio.position" = [ "FL" "FR" "FC" "LFE" "RL" "RR" "SL" "SR" ];
-          };
-          "playback.props" = {
-            "node.name" = "virtual-surround-71-source";
-            "audio.channels" = 8;
-            "audio.position" = [ "FL" "FR" "FC" "LFE" "RL" "RR" "SL" "SR" ];
-            "target.object" = "effect_input.virtual-surround-7.1-hesuvi-48k";
-          };
-        };
-      }
-    ];
-  };
-
   services.pipewire.extraConfig.pipewire."97-null-sink" = {
     "context.objects" = [
       {

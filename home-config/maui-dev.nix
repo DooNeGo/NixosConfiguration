@@ -54,7 +54,7 @@ let
       #wayland
     ]);
     profile = ''
-      export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
+      export -Dij.load.shell.env=true $_JAVA_OPTIONS"
       export XDG_OPEN_USE_PORTAL=1
     '';
 #    extraBinds = [
