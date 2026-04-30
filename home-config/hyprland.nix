@@ -21,8 +21,8 @@
         cm = "auto";
         bitdepth = 8;
         sdr_min_luminance = 0.005;
-        sdr_max_luminance = 200;
-        min_luminance = 1;
+        sdr_max_luminance = 300;
+        min_luminance = 0.005;
         max_luminance = 1000;
         max_avg_luminance = 1000;
       };
@@ -71,9 +71,9 @@
         animate_manual_resizes = true;
       };
 
-      #quirks = {
-      #  prefer_hdr = 1;
-      #};
+#      quirks = {
+#        prefer_hdr = 1;
+#      };
 
       input = {
         kb_layout = "us,ru";

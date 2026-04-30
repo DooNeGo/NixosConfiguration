@@ -1,4 +1,4 @@
-{
+{ pkgs, ... }: {
   xdg = {
     enable = true;
     userDirs.enable = true;
@@ -6,19 +6,24 @@
 
     configFile."mimeapps.list".force = true;
 
-    portal = {
-      enable = true;
-      xdgOpenUsePortal = true;
-    };
+    portal.enable = true;
 
-    mimeApps.defaultApplications = {
-      "image/png" = [ "org.kde.gwenview.desktop" ];
-      "image/jpg" = [ "org.kde.gwenview.desktop" ];
+    mimeApps.defaultApplications =
+    let
+      browser = "firefox.desktop";
+    in {
+      "image/png" = "org.kde.gwenview.desktop";
+      "image/jpg" = "org.kde.gwenview.desktop";
 
-      "x-scheme-handler/http" = [ "firefox.desktop" ];
-      "x-scheme-handler/https" = [ "firefox.desktop" ];
-      "x-scheme-handler/about" = [ "firefox.desktop" ];
-      "x-scheme-handler/unknown" = [ "firefox.desktop" ];
+      "text/html" = browser;
+      "x-scheme-handler/http" = browser;
+      "x-scheme-handler/https" = browser;
+      "x-scheme-handler/about" = browser;
+      "x-scheme-handler/unknown" = browser;
     };
+  };
+
+  home.sessionVariables = {
+    DEFAULT_BROWSER = "${pkgs.firefox}/bin/firefox";
   };
 }
