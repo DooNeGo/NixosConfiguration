@@ -7,7 +7,7 @@ in {
       #!/usr/bin/env sh
       WALL_DIR="$HOME/Wallpapers"
       RANDOM_WALL=$(find "$WALL_DIR" -type f | shuf -n 1)
-      exec hyprctl hyprpaper reload ,"$RANDOM_WALL"
+      exec hyprctl hyprpaper wallpaper ,"$RANDOM_WALL"
     '';
   };
 

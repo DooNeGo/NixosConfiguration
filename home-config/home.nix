@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }: {
+{ pkgs, config, inputs, ... }: {
   imports = [
    # inputs.stylix.homeModules.stylix
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
@@ -21,7 +21,7 @@
     ./zsh.nix
     #./stylix.nix
     ./maui-dev.nix
-    #./hyprlauncher.nix
+    ./hyprlauncher.nix
     ./xdg.nix
     ./obs-studio.nix
   ];
@@ -29,7 +29,7 @@
   home = {
     username = "mathew";
     homeDirectory = "/home/mathew";
-    stateVersion = "25.11";
+    stateVersion = "26.05";
     packages = with pkgs; [
       telegram-desktop
       freerdp
@@ -38,7 +38,6 @@
       pv
       osu-lazer-bin
       hyprpicker
-      hyprlauncher
       hyprpwcenter
       discord
       spotify
@@ -53,7 +52,7 @@
       teams-for-linux
       libreoffice
       ntfs3g
-      helvum
+      crosspipe
       pwvucontrol
       audacious
       unzip

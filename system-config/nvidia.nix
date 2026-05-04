@@ -15,7 +15,8 @@
       modesetting.enable = true;
       powerManagement.enable = true;
       open = true;
-      #package = config.boot.kernelPackages.nvidiaPackages.stable;
+      #branch = "bleeding_edge";
+      #package = config.boot.kernelPackages.nvidiaPackages.beta;
     };
   };
 

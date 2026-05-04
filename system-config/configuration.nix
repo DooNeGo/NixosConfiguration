@@ -23,6 +23,7 @@
     ./stylix.nix
     ./throne.nix
     ./android.nix
+    ./usbmux.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -35,7 +36,7 @@
 
   boot.tmp = {
     useTmpfs = true;
-    tmpfsSize = "100%";
+    tmpfsSize = "50%";
     tmpfsHugeMemoryPages = "within_size";
   };
 
@@ -95,5 +96,5 @@
     allowedUDPPorts = [ 5353 ];
   };
 
-  system.stateVersion = "25.11";
+  system.stateVersion = "26.05";
 }

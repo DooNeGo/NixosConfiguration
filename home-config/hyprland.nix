@@ -9,8 +9,6 @@
       "$menu" = "hyprlauncher";
       "$fileManager" = "nemo";
 
-      exec-once = "$menu -d";
-
       monitor = ",preffered,auto,auto";
 
       monitorv2 = {
@@ -18,13 +16,14 @@
         mode = "2560x1440@180";
         position = "0x0";
         scale = 1;
-        cm = "auto";
-        bitdepth = 8;
+        cm = "hdr";
+        bitdepth = 10;
+        vrr = 1;
         sdr_min_luminance = 0.005;
         sdr_max_luminance = 300;
-        min_luminance = 0.005;
-        max_luminance = 1000;
-        max_avg_luminance = 1000;
+        min_luminance = 0;
+        max_luminance = 1200;
+        max_avg_luminance = 1200;
       };
 
       general = {
@@ -84,8 +83,7 @@
       };
 
       windowrule = [
-        "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
-        "immediate,title:^(ARC Raiders)$"
+        #"nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
       ];
 
       bind = [
