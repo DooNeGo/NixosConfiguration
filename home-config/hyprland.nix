@@ -16,7 +16,7 @@
         mode = "2560x1440@180";
         position = "0x0";
         scale = 1;
-        cm = "hdr";
+        cm = "srgb";
         bitdepth = 10;
         vrr = 1;
         sdr_min_luminance = 0.005;
@@ -69,10 +69,6 @@
         vrr = 0;
         animate_manual_resizes = true;
       };
-
-#      quirks = {
-#        prefer_hdr = 1;
-#      };
 
       input = {
         kb_layout = "us,ru";
