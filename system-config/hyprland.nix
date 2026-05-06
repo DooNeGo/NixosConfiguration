@@ -6,21 +6,12 @@
 
   security.polkit.enable = true;
 
-  environment.systemPackages = with pkgs; [
-    #hyprland-qt-support
-  ];
-
   programs = {
     hyprland = {
       enable = true;
       withUWSM = true;
     };
   };
-
-  xdg.portal.extraPortals = with pkgs; [
-    xdg-desktop-portal-hyprland
-    xdg-desktop-portal-gtk
-  ];
 
   nix.settings = {
     substituters = ["https://hyprland.cachix.org"];

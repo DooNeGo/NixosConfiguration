@@ -1,12 +1,22 @@
 { pkgs, ... }: {
   xdg = {
     enable = true;
-    userDirs.enable = true;
     mimeApps.enable = true;
 
-    configFile."mimeapps.list".force = true;
+    portal = {
+      enable = true;
+      extraPortals = with pkgs; [ 
+        xdg-desktop-portal-hyprland
+        xdg-desktop-portal-gtk
+      ];
+    };
 
-    portal.enable = true;
+    userDirs = {
+      enable = true;
+      createDirectories = true;
+    };
+
+    configFile."mimeapps.list".force = true;
 
     mimeApps.defaultApplications =
     let
