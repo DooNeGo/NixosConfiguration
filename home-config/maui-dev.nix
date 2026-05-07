@@ -2,7 +2,7 @@
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
     platformVersions = [ "33" "35" "36" ];
-    buildToolsVersions = [ "latest" ];
+    buildToolsVersions = [ "latest" "36.0.0" ];
     systemImageTypes = [ "google_apis" ];
     abiVersions = [ "x86_64" ];
     includeEmulator = "if-supported";
@@ -55,7 +55,6 @@ let
     ]);
     profile = ''
       export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
-      export XDG_OPEN_USE_PORTAL=1
     '';
 #    extraBinds = [
 #      "/run/dbus"
