@@ -76,6 +76,7 @@ in {
   home = {
     packages = with pkgs; [
       dotnet-combined
+      mono
       androidComposition.androidsdk
       riderDesktop
       riderFHS
