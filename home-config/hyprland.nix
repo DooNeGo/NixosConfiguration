@@ -2,6 +2,7 @@
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.enable = false;
+    configType = "hyprlang";
 
     settings = {
       "$mainMod" = "SUPER";
@@ -59,7 +60,7 @@
       };
 
       dwindle = {
-        pseudotile = true;
+        #pseudotile = true;
         preserve_split = true;
       };
 
@@ -90,7 +91,7 @@
         "$mainMod, T, togglefloating,"
         "$mainMod, E, exec, $menu"
         "$mainMod, P, pseudo, # dwindle"
-        "$mainMod, J, togglesplit, # dwindle"
+        #"$mainMod, J, togglesplit, # dwindle"
         "$mainMod, S, togglespecialworkspace, magic"
         "$mainMod SHIFT, S, movetoworkspace, special:magic"
         "$mainMod, F, fullscreen,"

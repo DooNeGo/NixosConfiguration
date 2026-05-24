@@ -1,8 +1,9 @@
 {
- # networking.networkmanager.enable = true;
+  #networking.networkmanager.enable = true;
 
-  boot.kernel.sysctl."net.ipv4.ip_forward" = true;
-
+ boot.kernel.sysctl."net.ipv4.ip_forward" = true;
+ # boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = true;
+  
   networking.dhcpcd = {
     enable = true;
     wait = "background";

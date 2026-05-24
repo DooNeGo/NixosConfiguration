@@ -61,6 +61,7 @@
       smartmontools
       flatpak
       qbittorrent
+      postman
     ];
   };
 

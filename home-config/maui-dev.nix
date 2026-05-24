@@ -12,22 +12,24 @@ let
     extraLicenses = [ "android-sdk-license" ];
   };
 
-  dotnet-combined = (with pkgs.dotnetCorePackages; combinePackages [
-      sdk_10_0
-      sdk_9_0
-    ]).overrideAttrs (finalAttrs: previousAttrs: {
-      # This is needed to install workload in $HOME
-      # https://discourse.nixos.org/t/dotnet-maui-workload/20370/2
+#  dotnet-combined = (with pkgs.dotnetCorePackages; combinePackages [
+#      sdk_10_0
+#      sdk_9_0
+#    ]).overrideAttrs (finalAttrs: previousAttrs: {
+#      # This is needed to install workload in $HOME
+#      # https://discourse.nixos.org/t/dotnet-maui-workload/20370/2
+#
+#      postBuild = (previousAttrs.postBuild or '''') + ''
+#        for i in $out/sdk/*
+#        do
+#          i=$(basename $i)
+#          mkdir -p $out/metadata/workloads/''${i/-*}
+#          touch $out/metadata/workloads/''${i/-*}/userlocal
+#        done
+#      '';
+#    });
 
-      postBuild = (previousAttrs.postBuild or '''') + ''
-        for i in $out/sdk/*
-        do
-          i=$(basename $i)
-          mkdir -p $out/metadata/workloads/''${i/-*}
-          touch $out/metadata/workloads/''${i/-*}/userlocal
-        done
-      '';
-    });
+  dotnet = pkgs.dotnet-sdk_10;
 
   riderFHS = pkgs-unstable.buildFHSEnv {
     name = "rider-fhs";
@@ -75,8 +77,7 @@ let
 in { 
   home = {
     packages = with pkgs; [
-      dotnet-combined
-      mono
+      dotnet
       androidComposition.androidsdk
       riderDesktop
       riderFHS
@@ -85,8 +86,8 @@ in {
 
     sessionVariables = {
       JAVA_HOME = "${pkgs.javaPackages.compiler.temurin-bin.jdk-21.home}";
-      DOTNET_ROOT = "${dotnet-combined}/share/dotnet";
-      PATH="${dotnet-combined}/bin:$PATH";
+      DOTNET_ROOT = "${dotnet}/share/dotnet";
+      PATH="${dotnet}/bin:$PATH";
       ANDROID_HOME = androidHome;
       ANDROID_AVD_HOME = "$HOME/.android/avd";
     };
