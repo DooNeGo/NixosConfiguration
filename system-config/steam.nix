@@ -19,7 +19,7 @@
           PULSE_SINK = "effect_input.spatializer71";
           PROTON_DLSS_UPGRADE = "1";
           PROTON_ENABLE_HDR = "1";
-          PROTON_ENABLE_WAYLAND = "1";
+          #PROTON_ENABLE_WAYLAND = "1";
         };
       };
     };

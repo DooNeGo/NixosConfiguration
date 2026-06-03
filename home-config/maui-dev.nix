@@ -1,4 +1,4 @@
-{ pkgs, pkgs-unstable, config, ... }:
+{ pkgs, pkgs-unstable, pkgs-stable, config, ... }:
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
     platformVersions = [ "33" "35" "36" ];
@@ -31,9 +31,9 @@ let
 
   dotnet = pkgs.dotnet-sdk_10;
 
-  riderFHS = pkgs-unstable.buildFHSEnv {
+  riderFHS = pkgs.buildFHSEnv {
     name = "rider-fhs";
-    targetPkgs = pkgs: with pkgs-unstable; [
+    targetPkgs = pkgs: with pkgs; [
       jetbrains.rider
     ] ++ (with pkgs; [
 #      gtk3
