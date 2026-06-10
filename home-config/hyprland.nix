@@ -21,7 +21,7 @@
         bitdepth = 10;
         vrr = 1;
         sdr_min_luminance = 0.005;
-        sdr_max_luminance = 300;
+        sdr_max_luminance = 400;
         min_luminance = 0;
         max_luminance = 1200;
         max_avg_luminance = 1200;

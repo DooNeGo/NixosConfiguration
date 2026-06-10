@@ -1,8 +1,8 @@
 { pkgs, pkgs-unstable, pkgs-stable, config, ... }:
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
-    platformVersions = [ "33" "35" "36" ];
-    buildToolsVersions = [ "latest" "36.0.0" ];
+    platformVersions = [ "33" "36" ];
+    buildToolsVersions = [ "latest" ];
     systemImageTypes = [ "google_apis" ];
     abiVersions = [ "x86_64" ];
     includeEmulator = "if-supported";
