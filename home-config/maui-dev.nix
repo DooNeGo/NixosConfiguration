@@ -55,9 +55,9 @@ let
       openssl
       #wayland
     ]);
-    profile = ''
-      export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
-    '';
+#    profile = ''
+#      export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
+#    '';
 #    extraBinds = [
 #      "/run/dbus"
 #      "/run/user/${toString config.home.homeDirectory}"
@@ -74,6 +74,7 @@ let
     };
 
   androidHome = "${androidComposition.androidsdk}/libexec/android-sdk";
+  jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-21;
 in { 
   home = {
     packages = with pkgs; [
@@ -81,11 +82,11 @@ in {
       androidComposition.androidsdk
       riderDesktop
       riderFHS
-      javaPackages.compiler.temurin-bin.jdk-21
+      jdk
     ];
 
     sessionVariables = {
-      JAVA_HOME = "${pkgs.javaPackages.compiler.temurin-bin.jdk-21.home}";
+      JAVA_HOME = "${jdk.home}";
       DOTNET_ROOT = "${dotnet}/share/dotnet";
       PATH="${dotnet}/bin:$PATH";
       ANDROID_HOME = androidHome;
@@ -94,5 +95,6 @@ in {
 
     file.".android/avd".source = config.lib.file.mkOutOfStoreSymlink "/var/lib/nocow/android-avds";
     file.".android/sdk".source = config.lib.file.mkOutOfStoreSymlink androidHome;
+    file.".android/jdk".source = config.lib.file.mkOutOfStoreSymlink jdk.home;
   };
 }
