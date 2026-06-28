@@ -7,7 +7,7 @@
     ./steam.nix
     ./sddm.nix
     ./audio.nix
-    #./printing.nix
+    ./printing.nix
     ./network.nix
     ./sshd.nix
     #./virt-manager.nix
