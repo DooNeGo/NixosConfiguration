@@ -75,6 +75,7 @@ let
 
   androidHome = "${androidComposition.androidsdk}/libexec/android-sdk";
   jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-21;
+  #jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-17;
 in { 
   home = {
     packages = with pkgs; [
@@ -93,8 +94,11 @@ in {
       ANDROID_AVD_HOME = "$HOME/.android/avd";
     };
 
-    file.".android/avd".source = config.lib.file.mkOutOfStoreSymlink "/var/lib/nocow/android-avds";
-    file.".android/sdk".source = config.lib.file.mkOutOfStoreSymlink androidHome;
-    file.".android/jdk".source = config.lib.file.mkOutOfStoreSymlink jdk.home;
+    file = {
+      ".android/avd".source = config.lib.file.mkOutOfStoreSymlink "/var/lib/nocow/android-avds";
+      ".android/sdk".source = config.lib.file.mkOutOfStoreSymlink androidHome;
+      ".android/jdk".source = config.lib.file.mkOutOfStoreSymlink jdk.home;
+      #".android/jdk17".source = config.lib.file.mkOutOfStoreSymlink jdk17.home;
+    };
   };
 }
