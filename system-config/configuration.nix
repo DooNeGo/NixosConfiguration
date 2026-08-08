@@ -18,7 +18,7 @@
     ./razer.nix
     ./tmux.nix
     ./xdg.nix
-    ./gtk-theme.nix
+    #./gtk-theme.nix
     ./file-systems.nix
     ./stylix.nix
     ./throne.nix
