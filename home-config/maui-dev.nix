@@ -1,7 +1,7 @@
 { pkgs, pkgs-unstable, pkgs-stable, config, ... }:
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
-    platformVersions = [ "33" "36" "36.1" "37" ];
+    platformVersions = [ "33" "36" "36.1" ];
     buildToolsVersions = [ "latest" ];
     abiVersions = [ "x86_64" ];
     includeEmulator = "if-supported";
@@ -90,7 +90,7 @@ in {
       JAVA_HOME = "${jdk.home}";
       DOTNET_ROOT = "${dotnet}/share/dotnet";
       PATH="${dotnet}/bin:$PATH";
-      ANDROID_HOME = androidHome;
+      ANDROID_HOME = "$HOME/.android/sdk";
       ANDROID_AVD_HOME = "$HOME/.android/avd";
     };
 

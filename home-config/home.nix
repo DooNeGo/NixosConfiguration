@@ -48,7 +48,6 @@
       polychromatic
       iotop
       iftop
-      btop
       mumble
       teams-for-linux
       libreoffice
@@ -96,6 +95,10 @@
       profiles = {
         default = { };
       };
+    };
+
+    btop = {
+      enable = true;
     };
   };
 }

@@ -10,7 +10,15 @@
       "$menu" = "hyprlauncher";
       "$fileManager" = "nemo";
 
-      monitor = ",preffered,auto,auto";
+      #monitor = ",preffered,auto,1";
+      monitor = "HEADLESS-1,1680x1050@60,0x0,1";
+#      monitorv2 = {
+#        output = "HEADLESS-1";
+#        mode = "1920x1080@60";
+#        position = "0x0";
+#        scale = 1;
+#        cm = "srgb";
+#      };
 
       monitorv2 = {
         output = "DP-2";
@@ -81,6 +89,7 @@
 
       windowrule = [
         #"nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
+        "match:class pioneergame.exe, immediate yes"
       ];
 
       bind = [

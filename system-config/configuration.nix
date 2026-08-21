@@ -24,6 +24,7 @@
     ./throne.nix
     ./android.nix
     ./usbmux.nix
+    ./remote-access.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
