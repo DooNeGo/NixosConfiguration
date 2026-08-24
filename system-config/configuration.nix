@@ -65,6 +65,7 @@
     git
     htop
     kdiskmark
+    nixfmt-tree
     #egl-wayland
     #cacert
   ];
