@@ -5,7 +5,7 @@
       flavor = "mocha";
       accent = "mauve";
     })
-  ]; 
+  ];
 
   services.displayManager.sddm = {
     enable = true;

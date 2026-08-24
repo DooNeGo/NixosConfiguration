@@ -2,7 +2,8 @@
 let
   #scheme = config.colorScheme;
   #contrib = nix-colors.lib.contrib { inherit pkgs; };
-in {
+in
+{
   home.pointerCursor = {
     enable = true;
     x11.enable = true;
@@ -21,10 +22,10 @@ in {
   gtk = {
     enable = true;
 
-   # theme = {
-   #   package = contrib.gtkThemeFromScheme { inherit scheme; };
-   #   name = scheme.slug;
-   # };
+    # theme = {
+    #   package = contrib.gtkThemeFromScheme { inherit scheme; };
+    #   name = scheme.slug;
+    # };
 
     iconTheme = {
       package = pkgs.paper-icon-theme;

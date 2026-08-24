@@ -6,7 +6,11 @@
       mainBar = {
         modules-left = [ "hyprland/workspaces" ];
         modules-center = [ "clock" ];
-        modules-right = [ "network" "wireplumber" "tray" ];
+        modules-right = [
+          "network"
+          "wireplumber"
+          "tray"
+        ];
 
         "hyprland/workspaces" = {
           show-special = true;

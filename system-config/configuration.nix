@@ -89,12 +89,18 @@
   };
 
   nix.settings = {
-    experimental-features = [ "nix-command" "flakes" ];
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     auto-optimise-store = true;
   };
 
   networking.firewall = {
-    allowedTCPPorts = [ 57621 8080 ];
+    allowedTCPPorts = [
+      57621
+      8080
+    ];
     allowedUDPPorts = [ 5353 ];
   };
 

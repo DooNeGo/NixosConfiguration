@@ -1,6 +1,12 @@
-{ pkgs, config, inputs, ... }: {
+{
+  pkgs,
+  config,
+  inputs,
+  ...
+}:
+{
   imports = [
-   # inputs.stylix.homeModules.stylix
+    # inputs.stylix.homeModules.stylix
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
     ./hyprland.nix
     ./theme.nix
@@ -84,7 +90,7 @@
       enable = true;
       package = pkgs.vscode-fhs;
     };
-  
+
     hyprshot = {
       enable = true;
       saveLocation = "$HOME/Pictures/Screenshots";

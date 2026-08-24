@@ -1,14 +1,21 @@
-{ pkgs ? import <nixpkgs> {
+{
+  pkgs ? import <nixpkgs> {
     config.allowUnfree = true;
     config.android_sdk.accept_license = true;
-  }
+  },
 }:
 
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
-    platformVersions = [ "33" "36" ];
+    platformVersions = [
+      "33"
+      "36"
+    ];
     systemImageTypes = [ "google_apis" ];
-    abiVersions = [ "arm64-v8a" "x86_64" ];
+    abiVersions = [
+      "arm64-v8a"
+      "x86_64"
+    ];
     includeEmulator = "if-supported";
     includeCmake = false;
     extraLicenses = [ "android-sdk-license" ];

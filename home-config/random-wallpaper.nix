@@ -1,6 +1,8 @@
 { config, ... }:
-let scriptPath = ".local/bin/set-random-wallpaper.sh";
-in {
+let
+  scriptPath = ".local/bin/set-random-wallpaper.sh";
+in
+{
   home.file."${scriptPath}" = {
     executable = true;
     text = ''
@@ -14,15 +16,21 @@ in {
   systemd.user.services.random-wallpaper = {
     Unit = {
       Description = "Set random wallpaper on login";
-     # Requires = [ "hyprpaper.service" "graphical-session.target" ];
-      After = [ "hyprpaper.service" "graphical-session.target" ];
+      # Requires = [ "hyprpaper.service" "graphical-session.target" ];
+      After = [
+        "hyprpaper.service"
+        "graphical-session.target"
+      ];
     };
     Service = {
       ExecStart = "${config.home.homeDirectory}/${scriptPath}";
       Restart = "on-failure";
     };
     Install = {
-      WantedBy = [ "graphical-session.target" "hyprpaper.service" ];
+      WantedBy = [
+        "graphical-session.target"
+        "hyprpaper.service"
+      ];
     };
   };
 }

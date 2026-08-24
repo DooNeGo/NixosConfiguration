@@ -12,13 +12,13 @@
 
       #monitor = ",preffered,auto,1";
       monitor = "HEADLESS-1,1680x1050@60,0x0,1";
-#      monitorv2 = {
-#        output = "HEADLESS-1";
-#        mode = "1920x1080@60";
-#        position = "0x0";
-#        scale = 1;
-#        cm = "srgb";
-#      };
+      #      monitorv2 = {
+      #        output = "HEADLESS-1";
+      #        mode = "1920x1080@60";
+      #        position = "0x0";
+      #        scale = 1;
+      #        cm = "srgb";
+      #      };
 
       monitorv2 = {
         output = "DP-2";
@@ -30,9 +30,9 @@
         vrr = 1;
         sdr_min_luminance = 0.005;
         sdr_max_luminance = 400;
-#        min_luminance = 0;
-#        max_luminance = 1200;
-#        max_avg_luminance = 1200;
+        #        min_luminance = 0;
+        #        max_luminance = 1200;
+        #        max_avg_luminance = 1200;
       };
 
       general = {
@@ -113,14 +113,18 @@
       ++ (
         # workspaces
         # binds $mod + [shift +] {1..9} to [move to] workspace {1..9}
-        builtins.concatLists (builtins.genList (i:
-            let ws = i + 1;
-            in [
+        builtins.concatLists (
+          builtins.genList (
+            i:
+            let
+              ws = i + 1;
+            in
+            [
               "$mainMod, code:1${toString i}, workspace, ${toString ws}"
               "$mainMod SHIFT, code:1${toString i}, movetoworkspace, ${toString ws}"
             ]
-          )
-        9)
+          ) 9
+        )
       );
 
       bindm = [
