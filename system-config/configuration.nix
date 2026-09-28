@@ -41,6 +41,8 @@
     tmpfsHugeMemoryPages = "within_size";
   };
 
+  boot.kernel.sysctl."vm.admin_reserve_kbytes" = 131072;
+
   networking.hostName = "nixos";
 
   time.timeZone = "Europe/Minsk";
@@ -65,7 +67,9 @@
     git
     htop
     kdiskmark
+    nixfmt
     nixfmt-tree
+    sshpass
     #egl-wayland
     #cacert
   ];

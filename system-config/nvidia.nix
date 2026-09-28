@@ -32,7 +32,7 @@
       modesetting.enable = true;
       powerManagement.enable = true;
       open = true;
-      branch = "bleeding_edge";
+      #branch = "bleeding_edge";
     };
   };
 

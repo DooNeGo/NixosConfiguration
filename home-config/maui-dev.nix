@@ -69,9 +69,9 @@ let
         openssl
         #wayland
       ]);
-    #    profile = ''
-    #      export _JAVA_OPTIONS="-Dawt.toolkit.name=WLToolkit -Dij.load.shell.env=true $_JAVA_OPTIONS"
-    #    '';
+    profile = ''
+      export _JAVA_OPTIONS="-Dij.load.shell.env=true $_JAVA_OPTIONS"
+    '';
     #    extraBinds = [
     #      "/run/dbus"
     #      "/run/user/${toString config.home.homeDirectory}"
@@ -102,7 +102,7 @@ in
     ];
 
     sessionVariables = {
-      JAVA_HOME = "${jdk.home}";
+      JAVA_HOME = "$HOME/.android/jdk";
       DOTNET_ROOT = "${dotnet}/share/dotnet";
       PATH = "${dotnet}/bin:$PATH";
       ANDROID_HOME = "$HOME/.android/sdk";

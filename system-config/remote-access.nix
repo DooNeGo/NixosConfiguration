@@ -1,7 +1,11 @@
 { config, pkgs, ... }:
 {
   services = {
-    tailscale.enable = true;
+    tailscale = {
+      enable = true;
+      extraUpFlags = [ "--accept-dns=false" ];
+    };
+
     sunshine = {
       enable = true;
       autoStart = true;

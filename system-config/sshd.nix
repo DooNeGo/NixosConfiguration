@@ -1,8 +1,4 @@
 {
-  services.openssh = {
-    enable = true;
-    settings = {
-      MaxSessions = 1;
-    };
-  };
+  services.openssh.enable = true;
+  systemd.services.sshd.serviceConfig.OOMScoreAdjust = -1000;
 }

@@ -7,16 +7,17 @@
     })
   ];
 
-  services.displayManager.sddm = {
-    enable = true;
-    wayland = {
+  services.displayManager = {
+    autoLogin = {
       enable = true;
+      user = "mathew";
     };
-    settings = {
-      Wayland = {
-        CompositorCommand = "start-hyprland";
-      };
+
+    sddm = {
+      enable = true;
+      wayland.enable = true;
+      settings.Wayland.CompositorCommand = "start-hyprland";
+      theme = "catppuccin-mocha-mauve";
     };
-    theme = "catppuccin-mocha-mauve";
   };
 }
