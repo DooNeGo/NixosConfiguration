@@ -70,6 +70,7 @@
     nixfmt
     nixfmt-tree
     sshpass
+    home-manager
     #egl-wayland
     #cacert
   ];

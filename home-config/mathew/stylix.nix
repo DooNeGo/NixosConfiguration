@@ -1,7 +1,7 @@
 { pkgs, stylix, ... }: {
   stylix = {
     enable = true;
-    image = builtins.path { path = ../Wallpapers/default.jpg; };
+    image = builtins.path { path = ../../Wallpapers/default.jpg; };
     polarity = "dark";
 
     fonts.sizes.terminal = 13;

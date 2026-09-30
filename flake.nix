@@ -54,7 +54,7 @@
         modules = [
           {
             _module.args = {
-              inherit pkgs-unstable;
+              inherit pkgs-unstable pkgs-stable;
             };
           }
           ./system-config/configuration.nix
@@ -66,7 +66,7 @@
               useGlobalPkgs = true;
               useUserPackages = true;
               extraSpecialArgs = { inherit inputs pkgs-unstable pkgs-stable; };
-              users.mathew = ./home-config/home.nix;
+              users.mathew = ./home-config/mathew/home.nix;
             };
           }
         ];

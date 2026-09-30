@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, pkgs-stable, ... }:
 {
   services = {
     tailscale = {
@@ -8,6 +8,7 @@
 
     sunshine = {
       enable = true;
+      package = pkgs-stable.sunshine;
       autoStart = true;
       capSysAdmin = true;
       openFirewall = true;
