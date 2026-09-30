@@ -9,11 +9,10 @@
   imports = [
     ./openclaw.nix
     ./ollama.nix
-    ./sing-box.nix
+    ./speech.nix
   ];
 
-  # Local forward proxy for OpenClaw egress (VLESS tunnel, Google-only).
-  services.sing-box.enable = true;
+  #services.sing-box.enable = true;
 
   home = {
     inherit username;

@@ -55,27 +55,32 @@ in
         timeoutSeconds = 900;
       };
 
-      models.providers.openrouter = { };
-
       agents = {
         defaults = {
           model = {
-            #primary = "vllm/${cfg.llmModel}";
-            primary = "openrouter/stealth/space-bunny-alpha";
-            fallbacks = [ "vllm/${cfg.llmModel}" ];
+            primary = "openrouter/z-ai/glm-5.3-flash";
+            fallbacks = [
+              "openrouter/qwen/qwen3.8-27b:free"
+              "vllm/${cfg.llmModel}"
+            ];
           };
+
+          models = {
+            "vllm/${cfg.llmModel}".params.thinking = "low";
+            "openrouter/qwen/qwen3.8-27b:free".params.thinking = "low";
+            "openrouter/z-ai/glm-5.3-flash".params.thinking = "high";
+            "openrouter/openai/gpt-6.1-sol".params.thinking = "low";
+          };
+
+          utilityModel = "openrouter/qwen/qwen3.8-27b:free";
+
           userTimezone = "Europe/Minsk";
-          thinkingDefault = "high";
           params.preserveThinking = true;
 
           compaction = {
             notifyUser = true;
             midTurnPrecheck.enabled = true;
           };
-
-          #          contextPruning = {
-          #            mode = "cache-ttl";
-          #          };
 
           subagents = {
             delegationMode = "prefer";
@@ -89,6 +94,14 @@ in
             default = true;
             workspace = "~/.openclaw/workspace/coordinator";
             tools.deny = [ "browser" ];
+#            model = {
+#              primary = "openrouter/openai/gpt-6.1-sol";
+#              fallbacks = [
+#                "openrouter/z-ai/glm-5.3-flash"
+#                "openrouter/qwen/qwen3.8-27b:free"
+#                "vllm/${cfg.llmModel}"
+#              ];
+#            };
           };
 
           worker = {
@@ -97,13 +110,39 @@ in
 
           coder = {
             workspace = "~/.openclaw/workspace/coder";
-            thinkingDefault = "high";
             tools.codeMode.enabled = true;
           };
         };
       };
 
       tools.web.search.provider = "searxng";
+
+      tools.media = {
+        models = [
+          {
+            type = "cli";
+            command = "${pkgs.whisper-cpp}/bin/whisper-cli";
+            args = [
+              "-m"
+              "${config.home.homeDirectory}/.local/share/whisper-models/ggml-small.bin"
+              "-l"
+              "ru"
+              "-nt"
+              "-np"
+              "{{AttachmentPath}}"
+            ];
+            capabilities = [ "audio" ];
+            timeoutSeconds = 120;
+            maxBytes = 20971520;
+          }
+        ];
+        audio = {
+          enabled = true;
+          language = "ru";
+          timeoutSeconds = 120;
+          echoTranscript = false;
+        };
+      };
 
       plugins = {
         load.paths = [
@@ -122,9 +161,31 @@ in
           "lossless-claw" = {
             enabled = true;
             hooks.allowConversationAccess = true;
+            llm = {
+              allowModelOverride = true;
+              allowedModels = ["openrouter/qwen/qwen3.8-27b:free"];
+            };
             config = {
-              contextThreshold = 0.3;
-              freshTailMaxTokens = 20000;
+              contextThreshold = 0.4;
+              contextThresholdOverrides = [
+                {
+                  name = "large-context-models";
+                  match.modelContextWindowMin = 900000;
+                  contextThreshold = 0.08;
+                }
+              ];
+              leafChunkTokens = 12000;
+              summaryModel = "openrouter/qwen/qwen3.8-27b:free";
+              expansionModel = "openrouter/qwen/qwen3.8-27b:free";
+              cacheAwareCompaction = {
+                enabled = true;
+                cacheTTLSeconds = 300;
+              };
+              ignoreSessionPatterns = [
+                "agent:*:cron:**"
+                "agent:*:**:active-memory:**"
+                "agent:*:dreaming-narrative-**"
+              ];
             };
           };
         };
