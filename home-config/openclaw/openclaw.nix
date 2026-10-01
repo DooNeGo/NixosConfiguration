@@ -19,12 +19,6 @@ in
   programs.openclaw = {
     enable = true;
 
-    # NOTE: no OPENCLAW_GATEWAY_TOKEN here on purpose. Gateway auth is
-    # delegated to the same-host tailscale-serve loopback proxy
-    # (see gateway.auth below). trusted-proxy mode and a shared token are
-    # mutually exclusive (dist/auth-BJWqNCCq.mjs:52), and the user asked for
-    # tokenless access.
-
     environment.OPENROUTER_API_KEY =
       "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
 
@@ -33,68 +27,32 @@ in
         mode = "local";
         bind = "loopback";
 
-        # NixOS services.tailscale.serve (system-config/remote-access.nix)
-        # runs an externally managed reverse proxy: tailnet HTTPS on
-        # https://nixos.tail416d29.ts.net -> http://127.0.0.1:18789.
-        # That proxy connects from loopback and adds Forwarded / X-Forwarded-*
-        # / Tailscale identity headers. Without a trusted source OpenClaw
-        # rejects such proxy-shaped traffic with proxy_attribution_required
-        # (dist/ingress-attribution-CoTClK-N.mjs:106-113), which is the exact
-        # error seen in the browser. Trust the loopback proxy narrowly.
-        # Docs: docs/gateway/tailscale.md "Externally managed Serve and Funnel",
-        # docs/gateway/trusted-proxy-auth.md.
-        trustedProxies = [ "127.0.0.1" ];
-
+        # Token auth: the gateway token lives in ~/.secrets/openclaw-gateway-token
+        # and is referenced via SecretRef (file provider below), so no plaintext
+        # lands in the generated config. Both the gateway process and the CLI
+        # (which reads ~/.openclaw/openclaw.json) resolve it at runtime.
+        # NOTE: tailscale serve ingress is currently disabled
+        # (system-config/remote-access.nix) - proxy-shaped traffic requires
+        # trusted-proxy auth mode, which is mutually exclusive with a shared
+        # token. Re-enable serve only together with the whois path
+        # (gateway.tailscale.mode = "serve" + tailscale operator).
         auth = {
-          # Tokenless Control UI / WebSocket auth: tailscaled injects the
-          # verified tailnet identity in the tailscale-user-login header on
-          # served requests; OpenClaw reads it as the trusted-proxy identity.
-          # Loopback sources are only accepted with an explicit allowLoopback
-          # opt-in (dist/auth-BJWqNCCq.mjs:64). Docs:
-          # docs/gateway/trusted-proxy-auth.md.
-          mode = "trusted-proxy";
-          trustedProxy = {
-            userHeader = "tailscale-user-login";
-            requiredHeaders = [
-              "x-forwarded-for"
-              "x-forwarded-proto"
-              "x-forwarded-host"
-            ];
-            allowLoopback = true;
-          };
-
-          # Local direct fallback for same-host CLI callers (openclaw devices
-          # approve, openclaw gateway status, ...). trusted-proxy mode forbids a
-          # shared token, but internal same-host callers may use a password
-          # (docs/gateway/trusted-proxy-auth.md "Mixed token configuration";
-          # docs/gateway/config-gateway.md:144). The password is a SecretRef to
-          # a file outside the Nix store, so no plaintext lands in the generated
-          # config; both the gateway process and the CLI (which reads
-          # ~/.openclaw/openclaw.json) resolve it via the file provider below.
-          password = {
+          mode = "token";
+          token = {
             source = "file";
-            provider = "localGatewayPassword";
+            provider = "gateway-token-file";
             id = "value";
-          };
-
-          # Session-only operator scope grant for the verified tailnet identity
-          # that tailscaled injects as tailscale-user-login on served requests.
-          # Lets the browser Devices page approve devices without a manual
-          # host-side approval. Docs: docs/gateway/config-gateway.md:146,
-          # docs/gateway/trusted-proxy-auth.md ("Per-identity scope grants").
-          identityScopes = {
-            "matveyprostomac@gmail.com" = [ "operator.admin" ];
           };
         };
       };
 
-      # File secret provider backing gateway.auth.password above. mode
+      # File secret provider backing gateway.auth.token above. mode
       # "singleValue" makes the whole file the secret (the ref id must be
       # "value"). The file lives at ~/.secrets/... (0600, a real file, not a
       # store symlink) and is read by OpenClaw at runtime.
-      secrets.providers.localGatewayPassword = {
+      secrets.providers.gateway-token-file = {
         source = "file";
-        path = "${config.home.homeDirectory}/.secrets/openclaw-gateway-password";
+        path = "${config.home.homeDirectory}/.secrets/openclaw-gateway-token";
         mode = "singleValue";
       };
 
