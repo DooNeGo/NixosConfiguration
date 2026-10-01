@@ -19,8 +19,11 @@ in
   programs.openclaw = {
     enable = true;
 
-    environment.OPENCLAW_GATEWAY_TOKEN =
-      "${config.home.homeDirectory}/.secrets/openclaw-gateway-token";
+    # NOTE: no OPENCLAW_GATEWAY_TOKEN here on purpose. Gateway auth is
+    # delegated to the same-host tailscale-serve loopback proxy
+    # (see gateway.auth below). trusted-proxy mode and a shared token are
+    # mutually exclusive (dist/auth-BJWqNCCq.mjs:52), and the user asked for
+    # tokenless access.
 
     environment.OPENROUTER_API_KEY =
       "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
@@ -29,6 +32,37 @@ in
       gateway = {
         mode = "local";
         bind = "loopback";
+
+        # NixOS services.tailscale.serve (system-config/remote-access.nix)
+        # runs an externally managed reverse proxy: tailnet HTTPS on
+        # https://nixos.tail416d29.ts.net -> http://127.0.0.1:18789.
+        # That proxy connects from loopback and adds Forwarded / X-Forwarded-*
+        # / Tailscale identity headers. Without a trusted source OpenClaw
+        # rejects such proxy-shaped traffic with proxy_attribution_required
+        # (dist/ingress-attribution-CoTClK-N.mjs:106-113), which is the exact
+        # error seen in the browser. Trust the loopback proxy narrowly.
+        # Docs: docs/gateway/tailscale.md "Externally managed Serve and Funnel",
+        # docs/gateway/trusted-proxy-auth.md.
+        trustedProxies = [ "127.0.0.1" ];
+
+        auth = {
+          # Tokenless Control UI / WebSocket auth: tailscaled injects the
+          # verified tailnet identity in the tailscale-user-login header on
+          # served requests; OpenClaw reads it as the trusted-proxy identity.
+          # Loopback sources are only accepted with an explicit allowLoopback
+          # opt-in (dist/auth-BJWqNCCq.mjs:64). Docs:
+          # docs/gateway/trusted-proxy-auth.md.
+          mode = "trusted-proxy";
+          trustedProxy = {
+            userHeader = "tailscale-user-login";
+            requiredHeaders = [
+              "x-forwarded-for"
+              "x-forwarded-proto"
+              "x-forwarded-host"
+            ];
+            allowLoopback = true;
+          };
+        };
       };
 
       session.dmScope = "per-channel-peer";
