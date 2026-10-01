@@ -101,6 +101,10 @@ in
         entries = {
           coordinator = {
             default = true;
+            identity = {
+              name = "Claw";
+              emoji = "🦞";
+            };
             workspace = "~/.openclaw/workspace/coordinator";
             tools.deny = [ "browser" ];
             model = {
@@ -115,10 +119,18 @@ in
           };
 
           worker = {
+            identity = {
+              name = "Scuttle";
+              emoji = "🦐";
+            };
             workspace = "~/.openclaw/workspace/worker";
           };
 
           coder = {
+            identity = {
+              name = "Pinch";
+              emoji = "🦀";
+            };
             workspace = "~/.openclaw/workspace/coder";
             tools.codeMode.enabled = true;
           };
