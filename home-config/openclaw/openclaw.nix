@@ -62,7 +62,40 @@ in
             ];
             allowLoopback = true;
           };
+
+          # Local direct fallback for same-host CLI callers (openclaw devices
+          # approve, openclaw gateway status, ...). trusted-proxy mode forbids a
+          # shared token, but internal same-host callers may use a password
+          # (docs/gateway/trusted-proxy-auth.md "Mixed token configuration";
+          # docs/gateway/config-gateway.md:144). The password is a SecretRef to
+          # a file outside the Nix store, so no plaintext lands in the generated
+          # config; both the gateway process and the CLI (which reads
+          # ~/.openclaw/openclaw.json) resolve it via the file provider below.
+          password = {
+            source = "file";
+            provider = "localGatewayPassword";
+            id = "value";
+          };
+
+          # Session-only operator scope grant for the verified tailnet identity
+          # that tailscaled injects as tailscale-user-login on served requests.
+          # Lets the browser Devices page approve devices without a manual
+          # host-side approval. Docs: docs/gateway/config-gateway.md:146,
+          # docs/gateway/trusted-proxy-auth.md ("Per-identity scope grants").
+          identityScopes = {
+            "matveyprostomac@gmail.com" = [ "operator.admin" ];
+          };
         };
+      };
+
+      # File secret provider backing gateway.auth.password above. mode
+      # "singleValue" makes the whole file the secret (the ref id must be
+      # "value"). The file lives at ~/.secrets/... (0600, a real file, not a
+      # store symlink) and is read by OpenClaw at runtime.
+      secrets.providers.localGatewayPassword = {
+        source = "file";
+        path = "${config.home.homeDirectory}/.secrets/openclaw-gateway-password";
+        mode = "singleValue";
       };
 
       session.dmScope = "per-channel-peer";
@@ -134,10 +167,7 @@ in
             };
 
             workspace = "~/.openclaw/workspace/coordinator";
-            # deny-based (allow would silently drop new core tools on
-            # upgrades). Voice tools (tts/talk_voice/transcripts) stay:
-            # the user sends voice requests. canvas/dashboard/progress_card
-            # stay: they render in the WebUI the user runs.
+            
             tools.deny = [
               "browser" "node_inference"
               "dir_fetch" "dir_list" "file_fetch" "file_write"
@@ -170,32 +200,20 @@ in
             subagents.allowAgents = [ ];
             tools = {
               allow = [
-                # files
                 "read" "write" "edit" "apply_patch" "ls"
-                # runtime (long/background shell jobs)
                 "exec" "process"
-                # web research (searxng)
                 "web_search" "web_fetch"
-                # reading fetched content
                 "view_image" "pdf"
-                # memory recall
                 "memory_search" "memory_get"
-                # lossless-claw recall after compaction
                 "lcm_grep" "lcm_describe" "lcm_expand" "lcm_expand_query"
-                # web automation (scraping, screenshots, login flows)
                 "browser"
-                # voice in/out (user uses voice requests)
                 "tts" "talk_voice" "transcripts"
               ];
               deny = [
-                # children never delegate further
                 "sessions_spawn" "sessions_send" "subagents"
                 "agents_list" "agents_wait" "sessions_yield"
-                # no direct user contact
                 "message" "ask_user"
-                # media generation
                 "image_generate" "music_generate" "video_generate"
-                # not for an executor role
                 "skill_workshop" "secrets"
                 "create_goal" "update_goal" "get_goal"
               ];
@@ -213,11 +231,8 @@ in
             tools = {
               codeMode.enabled = true;
               allow = [
-                # group:fs - code/config edits
                 "ls" "read" "write" "edit" "apply_patch"
-                # shell: nix builds, git, tests, long jobs
                 "exec" "process"
-                # mandated recall + memory/ file workflow
                 "memory_search" "memory_get"
               ];
               deny = [ "group:messaging" "group:ui" ];
