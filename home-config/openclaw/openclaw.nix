@@ -73,7 +73,7 @@ in
           # ~/.openclaw/openclaw.json) resolve it via the file provider below.
           password = {
             source = "file";
-            provider = "localGatewayPassword";
+            provider = "local-gateway-password";
             id = "value";
           };
 
@@ -92,7 +92,7 @@ in
       # "singleValue" makes the whole file the secret (the ref id must be
       # "value"). The file lives at ~/.secrets/... (0600, a real file, not a
       # store symlink) and is read by OpenClaw at runtime.
-      secrets.providers.localGatewayPassword = {
+      secrets.providers.local-gateway-password = {
         source = "file";
         path = "${config.home.homeDirectory}/.secrets/openclaw-gateway-password";
         mode = "singleValue";
