@@ -11,6 +11,7 @@
     ./ollama.nix
     ./speech.nix
     ./zsh.nix
+    ./maui-dev.nix
   ];
 
   home = {
