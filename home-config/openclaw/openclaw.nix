@@ -106,12 +106,13 @@ in
             workspace = "~/.openclaw/workspace/coordinator";
             # deny-based (allow would silently drop new core tools on
             # upgrades). Voice tools (tts/talk_voice/transcripts) stay:
-            # the user sends voice requests.
+            # the user sends voice requests. canvas/dashboard/progress_card
+            # stay: they render in the WebUI the user runs.
             tools.deny = [
-              "browser" "canvas" "dashboard" "node_inference"
+              "browser" "node_inference"
               "dir_fetch" "dir_list" "file_fetch" "file_write"
               "image_generate" "music_generate" "video_generate"
-              "progress_card" "github_identity_status"
+              "github_identity_status"
             ];
 
             model = {
@@ -151,8 +152,8 @@ in
                 "memory_search" "memory_get"
                 # lossless-claw recall after compaction
                 "lcm_grep" "lcm_describe" "lcm_expand" "lcm_expand_query"
-                # web automation + Web UI surfaces (user runs the Control UI)
-                "browser" "canvas" "dashboard"
+                # web automation (scraping, screenshots, login flows)
+                "browser"
                 # voice in/out (user uses voice requests)
                 "tts" "talk_voice" "transcripts"
               ];
