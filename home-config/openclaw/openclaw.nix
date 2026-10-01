@@ -145,6 +145,7 @@ in
           };
 
           utilityModel = "openrouter/qwen/qwen3.8-27b:free";
+          heartbeat.model = "openrouter/qwen/qwen3.8-27b:free";
 
           userTimezone = "Europe/Minsk";
           params.preserveThinking = true;
