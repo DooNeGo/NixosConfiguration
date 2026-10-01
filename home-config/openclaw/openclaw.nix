@@ -28,11 +28,11 @@ in
     config = {
       gateway = {
         mode = "local";
-        # Listen on the Tailscale interface only (falls back to loopback
-        # when no tailnet IPv4 is available). Non-loopback binds require
-        # auth - OPENCLAW_GATEWAY_TOKEN is set from
-        # ~/.secrets/openclaw-gateway-token via environment above.
-        bind = "tailnet";
+        # WebUI is exposed ONLY via tailscale serve (systemd unit
+        # tailscale-serve-openclaw in system-config/remote-access.nix:
+        # https://nixos.tail416d29.ts.net -> 127.0.0.1:18789).
+        # No direct HTTP on any interface.
+        bind = "loopback";
       };
 
       session.dmScope = "per-channel-peer";
