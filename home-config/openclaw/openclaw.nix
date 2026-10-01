@@ -28,10 +28,6 @@ in
     config = {
       gateway = {
         mode = "local";
-        # WebUI is exposed ONLY via tailscale serve (systemd unit
-        # tailscale-serve-openclaw in system-config/remote-access.nix:
-        # https://nixos.tail416d29.ts.net -> 127.0.0.1:18789).
-        # No direct HTTP on any interface.
         bind = "loopback";
       };
 
