@@ -89,9 +89,19 @@ let
 
   androidHome = "${androidComposition.androidsdk}/libexec/android-sdk";
   jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-21;
+  # Stable location for the Rider distribution so the JetBrains
+  # remote-development scanner can find bin/remote-dev-server.sh.
+  riderHome = "${pkgs.jetbrains.rider}/rider";
   #jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-17;
 in
 {
+  # Re-registers Rider for JetBrains remote development after every
+  # switch (userProvidedDist symlink survives store-hash changes).
+  programs.jetbrains-remote = {
+    enable = true;
+    ides = [ pkgs.jetbrains.rider ];
+  };
+
   home = {
     packages = with pkgs; [
       dotnet
@@ -113,6 +123,7 @@ in
       ".android/avd".source = config.lib.file.mkOutOfStoreSymlink "/var/lib/nocow/android-avds";
       ".android/sdk".source = config.lib.file.mkOutOfStoreSymlink androidHome;
       ".android/jdk".source = config.lib.file.mkOutOfStoreSymlink jdk.home;
+      "rider".source = config.lib.file.mkOutOfStoreSymlink riderHome;
       #".android/jdk17".source = config.lib.file.mkOutOfStoreSymlink jdk17.home;
     };
   };
