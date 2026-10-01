@@ -104,7 +104,15 @@ in
             };
 
             workspace = "~/.openclaw/workspace/coordinator";
-            tools.deny = [ "browser" ];
+            # deny-based (allow would silently drop new core tools on
+            # upgrades). Voice tools (tts/talk_voice/transcripts) stay:
+            # the user sends voice requests.
+            tools.deny = [
+              "browser" "canvas" "dashboard" "node_inference"
+              "dir_fetch" "dir_list" "file_fetch" "file_write"
+              "image_generate" "music_generate" "video_generate"
+              "progress_card" "github_identity_status"
+            ];
 
             model = {
               primary = "openrouter/~z-ai/glm-flash-latest";
@@ -129,6 +137,38 @@ in
 
             workspace = "~/.openclaw/workspace/worker";
             subagents.allowAgents = [ ];
+            tools = {
+              allow = [
+                # files
+                "read" "write" "edit" "apply_patch" "ls"
+                # runtime (long/background shell jobs)
+                "exec" "process"
+                # web research (searxng)
+                "web_search" "web_fetch"
+                # reading fetched content
+                "view_image" "pdf"
+                # memory recall
+                "memory_search" "memory_get"
+                # lossless-claw recall after compaction
+                "lcm_grep" "lcm_describe" "lcm_expand" "lcm_expand_query"
+                # web automation + Web UI surfaces (user runs the Control UI)
+                "browser" "canvas" "dashboard"
+                # voice in/out (user uses voice requests)
+                "tts" "talk_voice" "transcripts"
+              ];
+              deny = [
+                # children never delegate further
+                "sessions_spawn" "sessions_send" "subagents"
+                "agents_list" "agents_wait" "sessions_yield"
+                # no direct user contact
+                "message" "ask_user"
+                # media generation
+                "image_generate" "music_generate" "video_generate"
+                # not for an executor role
+                "skill_workshop" "secrets"
+                "create_goal" "update_goal" "get_goal"
+              ];
+            };
           };
 
           coder = {
@@ -139,7 +179,18 @@ in
 
             workspace = "~/.openclaw/workspace/coder";
             subagents.allowAgents = [ ];
-            tools.codeMode.enabled = true;
+            tools = {
+              codeMode.enabled = true;
+              allow = [
+                # group:fs - code/config edits
+                "ls" "read" "write" "edit" "apply_patch"
+                # shell: nix builds, git, tests, long jobs
+                "exec" "process"
+                # mandated recall + memory/ file workflow
+                "memory_search" "memory_get"
+              ];
+              deny = [ "group:messaging" "group:ui" ];
+            };
           };
         };
       };
