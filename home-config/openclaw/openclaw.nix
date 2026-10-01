@@ -91,30 +91,33 @@ in
             midTurnPrecheck.enabled = true;
           };
 
-          subagents = {
-            delegationMode = "prefer";
-            allowAgents = [ "*" ];
-            maxSpawnDepth = 2;
-          };
+          subagents.maxSpawnDepth = 2;
         };
 
         entries = {
           coordinator = {
             default = true;
+
             identity = {
               name = "Claw";
               emoji = "🦞";
             };
+
             workspace = "~/.openclaw/workspace/coordinator";
             tools.deny = [ "browser" ];
+
             model = {
-              primary =
-                "openrouter/~z-ai/glm-flash-latest";
+              primary = "openrouter/~z-ai/glm-flash-latest";
               fallbacks = [
                 "vllm/${cfg.llmModel}"
                 "openrouter/~deepseek/deepseek-flash-latest"
                 "openrouter/qwen/qwen3.8-27b:free"
               ];
+            };
+
+            subagents = {
+              delegationMode = "prefer";
+              allowAgents = [ "worker" "coder" ];
             };
           };
 
@@ -123,7 +126,9 @@ in
               name = "Scuttle";
               emoji = "🦐";
             };
+
             workspace = "~/.openclaw/workspace/worker";
+            subagents.allowAgents = [ ];
           };
 
           coder = {
@@ -131,7 +136,9 @@ in
               name = "Pinch";
               emoji = "🦀";
             };
+
             workspace = "~/.openclaw/workspace/coder";
+            subagents.allowAgents = [ ];
             tools.codeMode.enabled = true;
           };
         };

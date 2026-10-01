@@ -10,8 +10,8 @@
     ./openclaw.nix
     ./ollama.nix
     ./speech.nix
-    ./zsh.nix
-    ./maui-dev.nix
+    ../shared/zsh.nix
+    ../shared/maui-dev.nix
   ];
 
   home = {

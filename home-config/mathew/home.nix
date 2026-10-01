@@ -24,9 +24,9 @@
     #./bash.nix
     ./random-wallpaper.nix
     ./hyprpaper.nix
-    ./zsh.nix
+    ../shared/zsh.nix
     #./stylix.nix
-    ./maui-dev.nix
+    ../shared/maui-dev.nix
     ./hyprlauncher.nix
     ./xdg.nix
     ./obs-studio.nix
