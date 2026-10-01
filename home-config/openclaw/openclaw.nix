@@ -28,6 +28,11 @@ in
     config = {
       gateway = {
         mode = "local";
+        # Listen on the Tailscale interface only (falls back to loopback
+        # when no tailnet IPv4 is available). Non-loopback binds require
+        # auth - OPENCLAW_GATEWAY_TOKEN is set from
+        # ~/.secrets/openclaw-gateway-token via environment above.
+        bind = "tailnet";
       };
 
       session.dmScope = "per-channel-peer";
@@ -62,10 +67,10 @@ in
           model = {
             primary =
               #"openrouter/~z-ai/glm-flash-latest";
-              "openrouter/~deepseek/deepseek-flash-latest";
+              "vllm/${cfg.llmModel}";
             fallbacks = [
+              "openrouter/~deepseek/deepseek-flash-latest"
               "openrouter/qwen/qwen3.8-27b:free"
-              "vllm/${cfg.llmModel}"
             ];
           };
 
@@ -98,8 +103,15 @@ in
             default = true;
             workspace = "~/.openclaw/workspace/coordinator";
             tools.deny = [ "browser" ];
-            model.primary = "openrouter/~z-ai/glm-flash-latest";
-            models."openrouter/~z-ai/glm-flash-latest".params.thinking = "high";
+            model = {
+              primary =
+                "openrouter/~z-ai/glm-flash-latest";
+              fallbacks = [
+                "vllm/${cfg.llmModel}"
+                "openrouter/~deepseek/deepseek-flash-latest"
+                "openrouter/qwen/qwen3.8-27b:free"
+              ];
+            };
           };
 
           worker = {
@@ -164,7 +176,7 @@ in
               allowedModels = ["openrouter/qwen/qwen3.8-27b:free"];
             };
             config = {
-              contextThreshold = 0.06;
+              contextThreshold = 0.3;
               contextThresholdOverrides = [
                 {
                   name = "large-context-models";
