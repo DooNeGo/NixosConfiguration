@@ -353,6 +353,10 @@ in
 
   home.packages = [ pkgs.ffmpeg ];
 
+# Tradeoff: with the generator below, personas land as read-only store
+# symlinks; agents cannot edit their own AGENTS/SOUL/IDENTITY/USER files.
+# Re-enable this activation script (it rewrites the symlinks into real
+# writable files) only if that editability is wanted again.
 #  home.activation.replacePersonaSymlinks = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
 #    set -euo pipefail
 #    for agent in coordinator coder worker; do
@@ -376,27 +380,8 @@ in
     # Bootstrap persona files for every agent, generated from the repo
     # templates (openclaw-local/workspace). force=true: earlier generations
     # left real files behind, so store symlinks must clobber them on switch.
-    # NOTE: personas are now read-only for the agents (store symlinks);
-    # re-enable home.activation.replacePersonaSymlinks (commented above)
-    # if agents should keep editing their own AGENTS/SOUL/IDENTITY files.
     personaFile = agent: file: lib.nameValuePair
       ".openclaw/workspace/${agent}/${file}"
       { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
   in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
-#  {
-#    ".openclaw/workspace/coordinator/AGENTS.md".source = ./openclaw-local/workspace/coordinator/AGENTS.md;
-#    ".openclaw/workspace/coordinator/SOUL.md".source = ./openclaw-local/workspace/SOUL.md;
-#    ".openclaw/workspace/coordinator/IDENTITY.md".source = ./openclaw-local/workspace/IDENTITY.md;
-#    ".openclaw/workspace/coordinator/USER.md".source = ./openclaw-local/workspace/USER.md;
-#
-#    ".openclaw/workspace/coder/AGENTS.md".source = ./openclaw-local/workspace/coder/AGENTS.md;
-#    ".openclaw/workspace/coder/SOUL.md".source = ./openclaw-local/workspace/SOUL.md;
-#    ".openclaw/workspace/coder/IDENTITY.md".source = ./openclaw-local/workspace/IDENTITY.md;
-#    ".openclaw/workspace/coder/USER.md".source = ./openclaw-local/workspace/USER.md;
-#
-#    ".openclaw/workspace/worker/AGENTS.md".source = ./openclaw-local/workspace/worker/AGENTS.md;
-#    ".openclaw/workspace/worker/SOUL.md".source = ./openclaw-local/workspace/SOUL.md;
-#    ".openclaw/workspace/worker/IDENTITY.md".source = ./openclaw-local/workspace/IDENTITY.md;
-#    ".openclaw/workspace/worker/USER.md".source = ./openclaw-local/workspace/USER.md;
-#  };
 }
