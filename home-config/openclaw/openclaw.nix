@@ -288,19 +288,6 @@ in
     };
   };
 
-  # The gateway token is not stored in openclaw.json: nix-openclaw injects
-  # it into the gateway process by reading the file named by
-  # programs.openclaw.environment.OPENCLAW_GATEWAY_TOKEN at unit start
-  # (generated wrapper bin/openclaw-gateway-default and openclaw-export-env.sh).
-  # Login shells do not receive that variable, so the
-  # openclaw gateway auth-token --show command cannot resolve the token, and
-  # writing gateway.auth into the Nix-managed config is refused
-  # (OPENCLAW_NIX_MODE=1). Mirror the value into interactive shells.
-  programs.zsh.initExtra = ''
-    [ -r "${config.home.homeDirectory}/.secrets/openclaw-gateway-token" ] &&
-      export OPENCLAW_GATEWAY_TOKEN="$(cat "${config.home.homeDirectory}/.secrets/openclaw-gateway-token")"
-  '';
-
   # /tmp is tmpfs: the gateway unit appends stdout to /tmp/openclaw/
   # openclaw-gateway.log and systemd fails to start it without that path
   # (exit 209). nix-openclaw creates the dir only in its activate script,
