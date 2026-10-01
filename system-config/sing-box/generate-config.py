@@ -4,7 +4,9 @@
 The VLESS subscription secret lives OUTSIDE the Nix store, so it can never be
 committed to the repository. This script is the only place that touches it.
 
-Secret source: /home/openclaw/.secrets/sing-box-vless-key
+Secret source: systemd credential "vless-key", bind-mounted read-only to
+  /run/credentials/sing-box/vless-key (backed by /etc/sing-box/vless-key,
+  root-owned 0600, provisioned outside Nix).
   * If it contains a raw `vless://...` link, that link is used directly.
   * Otherwise it is treated as a subscription URL: it is fetched, the response
     is base64-decoded (if needed) and the first `vless://` link is used.
@@ -19,7 +21,7 @@ import os
 import urllib.parse
 import urllib.request
 
-SECRET_FILE = "/home/openclaw/.secrets/sing-box-vless-key"
+SECRET_FILE = "/run/credentials/sing-box/vless-key"
 OUT_FILE = "/run/sing-box/config.json"
 LISTEN_ADDRESS = "127.0.0.1"
 LISTEN_PORT = 2080

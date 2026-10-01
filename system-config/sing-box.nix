@@ -1,9 +1,12 @@
 # sing-box: system-level VLESS/REALITY proxy with domain-based routing.
 #
-# The VLESS credential never enters the Nix store. At service start a PreStart
-# script (./sing-box/generate-config.py) reads the secret from
-# /home/openclaw/.secrets/sing-box-vless-key and writes /run/sing-box/config.json
-# (mode 0600). Only the mixed inbound + routing live here.
+# The VLESS credential never enters the Nix store. The service loads it as a
+# systemd credential from /etc/sing-box/vless-key (root-owned, 0600, created
+# manually once outside Nix): at service start it is bind-mounted read-only to
+# /run/credentials/sing-box/vless-key, and a PreStart script
+# (./sing-box/generate-config.py) reads it from there and writes
+# /run/sing-box/config.json (mode 0600). Only the mixed inbound + routing live
+# here.
 { pkgs, lib, ... }:
 
 let
@@ -56,10 +59,11 @@ in
       Restart = "on-failure";
       RestartSec = 3;
 
-      # Hardening (the service only needs to read the secret + serve loopback).
+      # Hardening (the service only needs the credential + serve loopback).
+      LoadCredential = "vless-key:/etc/sing-box/vless-key";
       NoNewPrivileges = true;
       ProtectSystem = "strict";
-      ProtectHome = "read-only";
+      ProtectHome = true;
       PrivateTmp = true;
       ProtectKernelTunables = true;
       ProtectControlGroups = true;
