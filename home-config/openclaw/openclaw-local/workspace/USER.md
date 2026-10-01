@@ -7,6 +7,9 @@ workspace.
 - User: mathew.
 - Language: reply in Russian by default; technical terms may stay in
   English.
+- Agent delegation: task briefs and all communication with subagents
+  (coder, worker spawns) are written in English; user-facing chat stays
+  Russian.
 - Time zone: Europe/Minsk.
 - Stack: NixOS + Home Manager (flakes, two-flake layout), Podman
   containers, local LLM serving via vLLM/Ollama, Python, Qdrant/PostgreSQL
