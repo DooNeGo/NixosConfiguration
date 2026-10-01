@@ -30,6 +30,8 @@ in
         mode = "local";
       };
 
+      session.dmScope = "per-channel-peer";
+
       channels.telegram = {
         tokenFile = "${config.home.homeDirectory}/.secrets/openclaw-telegram-bot-token";
         richMessages = true;
@@ -58,7 +60,9 @@ in
       agents = {
         defaults = {
           model = {
-            primary = "openrouter/z-ai/glm-5.3-flash";
+            primary =
+              #"openrouter/~z-ai/glm-flash-latest";
+              "openrouter/~deepseek/deepseek-flash-latest";
             fallbacks = [
               "openrouter/qwen/qwen3.8-27b:free"
               "vllm/${cfg.llmModel}"
@@ -68,8 +72,8 @@ in
           models = {
             "vllm/${cfg.llmModel}".params.thinking = "low";
             "openrouter/qwen/qwen3.8-27b:free".params.thinking = "low";
-            "openrouter/z-ai/glm-5.3-flash".params.thinking = "high";
-            "openrouter/openai/gpt-6.1-sol".params.thinking = "low";
+            "openrouter/~z-ai/glm-flash-latest".params.thinking = "high";
+            "openrouter/~deepseek/deepseek-flash-latest".params.thinking = "low";
           };
 
           utilityModel = "openrouter/qwen/qwen3.8-27b:free";
@@ -94,14 +98,8 @@ in
             default = true;
             workspace = "~/.openclaw/workspace/coordinator";
             tools.deny = [ "browser" ];
-#            model = {
-#              primary = "openrouter/openai/gpt-6.1-sol";
-#              fallbacks = [
-#                "openrouter/z-ai/glm-5.3-flash"
-#                "openrouter/qwen/qwen3.8-27b:free"
-#                "vllm/${cfg.llmModel}"
-#              ];
-#            };
+            model.primary = "openrouter/~z-ai/glm-flash-latest";
+            models."openrouter/~z-ai/glm-flash-latest".params.thinking = "high";
           };
 
           worker = {
@@ -166,12 +164,12 @@ in
               allowedModels = ["openrouter/qwen/qwen3.8-27b:free"];
             };
             config = {
-              contextThreshold = 0.4;
+              contextThreshold = 0.06;
               contextThresholdOverrides = [
                 {
                   name = "large-context-models";
                   match.modelContextWindowMin = 900000;
-                  contextThreshold = 0.08;
+                  contextThreshold = 0.06;
                 }
               ];
               leafChunkTokens = 12000;

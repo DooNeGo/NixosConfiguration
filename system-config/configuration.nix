@@ -9,6 +9,7 @@
     ./audio.nix
     ./printing.nix
     ./network.nix
+    ./sing-box.nix
     ./sshd.nix
     #./virt-manager.nix
     #./docker.nix
@@ -105,6 +106,7 @@
     allowedTCPPorts = [
       57621
       8080
+      18789
     ];
     allowedUDPPorts = [ 5353 ];
   };

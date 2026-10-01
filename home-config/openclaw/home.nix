@@ -10,9 +10,8 @@
     ./openclaw.nix
     ./ollama.nix
     ./speech.nix
+    ./zsh.nix
   ];
-
-  #services.sing-box.enable = true;
 
   home = {
     inherit username;

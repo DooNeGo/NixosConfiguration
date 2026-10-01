@@ -11,5 +11,5 @@
   mathew.openHandsPort = 9000;
 
   openclaw.openHandsPort = 9001;
-  openclaw.singboxPort = 7890;
+  openclaw.singboxPort = 2080;
 }

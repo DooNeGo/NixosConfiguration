@@ -38,7 +38,7 @@ Local infrastructure facts.
 - Qdrant vector DB: localhost:6333
 - SearXNG (web search): http://localhost:8181
 - VLM OCR service: localhost:5001
-- Whisper: `whisper-cli`; system models in /var/lib/whisper-models
+- Whisper: `whisper-cli`; system models in ~/.local/share/whisper-models
 - TTS: piper; voices in /var/lib/piper-voices
 
 ### Nix / Home Manager
