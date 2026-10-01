@@ -10,6 +10,8 @@ workspace.
 - Agent delegation: task briefs and all communication with subagents
   (coder, worker spawns) are written in English; user-facing chat stays
   Russian.
+- Deliverables to chat: research/deliverable files sent to the user are in
+  the user's language (Russian); English originals stay in research/.
 - Time zone: Europe/Minsk.
 - Stack: NixOS + Home Manager (flakes, two-flake layout), Podman
   containers, local LLM serving via vLLM/Ollama, Python, Qdrant/PostgreSQL
