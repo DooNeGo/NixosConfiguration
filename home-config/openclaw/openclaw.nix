@@ -129,10 +129,9 @@ in
         defaults = {
           model = {
             primary =
-              #"openrouter/~z-ai/glm-flash-latest";
               "vllm/${cfg.llmModel}";
             fallbacks = [
-              "openrouter/~deepseek/deepseek-flash-latest"
+              "openrouter/~z-ai/glm-flash-latest"
               "openrouter/qwen/qwen3.8-27b:free"
             ];
           };
@@ -141,11 +140,10 @@ in
             "vllm/${cfg.llmModel}".params.thinking = "low";
             "openrouter/qwen/qwen3.8-27b:free".params.thinking = "low";
             "openrouter/~z-ai/glm-flash-latest".params.thinking = "high";
-            "openrouter/~deepseek/deepseek-flash-latest".params.thinking = "low";
           };
 
           utilityModel = "openrouter/qwen/qwen3.8-27b:free";
-          heartbeat.model = "openrouter/qwen/qwen3.8-27b:free";
+          heartbeat.model = "openrouter/xiaomi/mimo-v2.6-flash";
 
           userTimezone = "Europe/Minsk";
           params.preserveThinking = true;
@@ -180,7 +178,6 @@ in
               primary = "openrouter/~z-ai/glm-flash-latest";
               fallbacks = [
                 "vllm/${cfg.llmModel}"
-                "openrouter/~deepseek/deepseek-flash-latest"
                 "openrouter/qwen/qwen3.8-27b:free"
               ];
             };
@@ -356,38 +353,50 @@ in
 
   home.packages = [ pkgs.ffmpeg ];
 
-  home.activation.replacePersonaSymlinks = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    set -euo pipefail
-    for agent in coordinator coder worker; do
-      for f in AGENTS.md SOUL.md IDENTITY.md USER.md TOOLS.md; do
-        target="$HOME/.openclaw/workspace/$agent/$f"
-        if [ -L "$target" ]; then
-          mkdir -p -- "$(dirname "$target")"
-          cp --remove-destination -- "$target" "$target.tmp$$"
-          mv -- "$target.tmp$$" "$target"
-          chmod 644 -- "$target"
-        fi
-      done
-    done
-  '';
+#  home.activation.replacePersonaSymlinks = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+#    set -euo pipefail
+#    for agent in coordinator coder worker; do
+#      for f in AGENTS.md SOUL.md IDENTITY.md USER.md TOOLS.md; do
+#        target="$HOME/.openclaw/workspace/$agent/$f"
+#        if [ -L "$target" ]; then
+#          mkdir -p -- "$(dirname "$target")"
+#          cp --remove-destination -- "$target" "$target.tmp$$"
+#          mv -- "$target.tmp$$" "$target"
+#          chmod 644 -- "$target"
+#        fi
+#      done
+#    done
+#  '';
 
-  home.file = {
-    ".openclaw/workspace/coordinator/AGENTS.md" = { source = ./openclaw-local/workspace/coordinator/AGENTS.md; force = true; };
-    ".openclaw/workspace/coordinator/SOUL.md" = { source = ./openclaw-local/workspace/SOUL.md; force = true; };
-    ".openclaw/workspace/coordinator/IDENTITY.md" = { source = ./openclaw-local/workspace/IDENTITY.md; force = true; };
-    ".openclaw/workspace/coordinator/USER.md" = { source = ./openclaw-local/workspace/USER.md; force = true; };
-    ".openclaw/workspace/coordinator/TOOLS.md" = { source = ./openclaw-local/workspace/TOOLS.md; force = true; };
+  home.file =
+  let
+    agents = [ "coordinator" "coder" "worker" ];
+    bootstrapFiles = [ "AGENTS.md" "SOUL.md" "IDENTITY.md" "USER.md" ];
 
-    ".openclaw/workspace/coder/AGENTS.md" = { source = ./openclaw-local/workspace/coder/AGENTS.md; force = true; };
-    ".openclaw/workspace/coder/SOUL.md" = { source = ./openclaw-local/workspace/SOUL.md; force = true; };
-    ".openclaw/workspace/coder/IDENTITY.md" = { source = ./openclaw-local/workspace/IDENTITY.md; force = true; };
-    ".openclaw/workspace/coder/USER.md" = { source = ./openclaw-local/workspace/USER.md; force = true; };
-    ".openclaw/workspace/coder/TOOLS.md" = { source = ./openclaw-local/workspace/TOOLS.md; force = true; };
-
-    ".openclaw/workspace/worker/AGENTS.md" = { source = ./openclaw-local/workspace/worker/AGENTS.md; force = true; };
-    ".openclaw/workspace/worker/SOUL.md" = { source = ./openclaw-local/workspace/SOUL.md; force = true; };
-    ".openclaw/workspace/worker/IDENTITY.md" = { source = ./openclaw-local/workspace/IDENTITY.md; force = true; };
-    ".openclaw/workspace/worker/USER.md" = { source = ./openclaw-local/workspace/USER.md; force = true; };
-    ".openclaw/workspace/worker/TOOLS.md" = { source = ./openclaw-local/workspace/TOOLS.md; force = true; };
-  };
+    # Bootstrap persona files for every agent, generated from the repo
+    # templates (openclaw-local/workspace). force=true: earlier generations
+    # left real files behind, so store symlinks must clobber them on switch.
+    # NOTE: personas are now read-only for the agents (store symlinks);
+    # re-enable home.activation.replacePersonaSymlinks (commented above)
+    # if agents should keep editing their own AGENTS/SOUL/IDENTITY files.
+    personaFile = agent: file: lib.nameValuePair
+      ".openclaw/workspace/${agent}/${file}"
+      { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
+  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
+#  {
+#    ".openclaw/workspace/coordinator/AGENTS.md".source = ./openclaw-local/workspace/coordinator/AGENTS.md;
+#    ".openclaw/workspace/coordinator/SOUL.md".source = ./openclaw-local/workspace/SOUL.md;
+#    ".openclaw/workspace/coordinator/IDENTITY.md".source = ./openclaw-local/workspace/IDENTITY.md;
+#    ".openclaw/workspace/coordinator/USER.md".source = ./openclaw-local/workspace/USER.md;
+#
+#    ".openclaw/workspace/coder/AGENTS.md".source = ./openclaw-local/workspace/coder/AGENTS.md;
+#    ".openclaw/workspace/coder/SOUL.md".source = ./openclaw-local/workspace/SOUL.md;
+#    ".openclaw/workspace/coder/IDENTITY.md".source = ./openclaw-local/workspace/IDENTITY.md;
+#    ".openclaw/workspace/coder/USER.md".source = ./openclaw-local/workspace/USER.md;
+#
+#    ".openclaw/workspace/worker/AGENTS.md".source = ./openclaw-local/workspace/worker/AGENTS.md;
+#    ".openclaw/workspace/worker/SOUL.md".source = ./openclaw-local/workspace/SOUL.md;
+#    ".openclaw/workspace/worker/IDENTITY.md".source = ./openclaw-local/workspace/IDENTITY.md;
+#    ".openclaw/workspace/worker/USER.md".source = ./openclaw-local/workspace/USER.md;
+#  };
 }
