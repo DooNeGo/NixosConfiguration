@@ -334,14 +334,26 @@ in
 
   home.packages = [ pkgs.ffmpeg ];
 
-  home.file =
-  let
-    agents = [ "coordinator" "coder" "worker" ];
-    bootstrapFiles = [ "AGENTS.md" "SOUL.md" "IDENTITY.md" "USER.md" ];
-    personaFile = agent: file: lib.nameValuePair
-      ".openclaw/workspace/${agent}/${file}"
-      { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
-  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
+  # Bootstrap-файлы персона per-agent: РЕАЛЬНЫЕ файлы, не symlinks.
+  # OpenClaw отказывается инжектить bootstrap через symlink в системный
+  # промпт («symlink path component not allowed» — AGENTS.md/USER.md
+  # выпадали из контекста; диагноз 15:43). Копируем из репо при каждом
+  # switch; правки между switch'ами переживают, switch возвращает канон.
+  home.activation.copyPersonaFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    repo="$HOME/.openclaw/repo-persona"
+    rm -rf "$repo"
+    mkdir -p "$repo"
+    cp -r ${./openclaw-local/workspace} "$repo/workspace"
+    for agent in coordinator coder worker; do
+      for f in AGENTS.md SOUL.md IDENTITY.md USER.md; do
+        target="$HOME/.openclaw/workspace/$agent/$f"
+        rm -f "$target"
+        cp "$repo/workspace/$agent/$f" "$target"
+        chmod u+w "$target"
+      done
+    done
+    rm -rf "$repo"
+  '';
 
   # Скилл code-mode-guest: только coder (per-agent workspace). Реальные
   # файлы вместо symlink: workspace-loader в Nix-режиме отбрасывает
