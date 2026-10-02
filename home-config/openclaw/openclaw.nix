@@ -91,7 +91,6 @@ in
             primary = "openrouter/xiaomi/mimo-v2.6-flash";
             fallbacks = [
               "vllm/${cfg.llmModel}"
-              "openrouter/~z-ai/glm-flash-latest"
               "openrouter/free"
             ];
           };
@@ -115,6 +114,7 @@ in
           subagents = {
             allowAgents = [ ];
             maxSpawnDepth = 2;
+            requireAgentId = true;
           };
         };
 
@@ -189,7 +189,7 @@ in
             };
 
             workspace = "~/.openclaw/workspace/coder";
-            
+
             tools = {
               codeMode.enabled = true;
 
