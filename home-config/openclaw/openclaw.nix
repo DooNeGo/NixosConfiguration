@@ -131,6 +131,8 @@ in
 
         entries = {
           coordinator = {
+            default = true;
+
             identity = {
               name = "Claw";
               emoji = "🦞";
@@ -179,15 +181,6 @@ in
                 "browser"
                 "tts" "talk_voice" "transcripts"
               ];
-
-              deny = [
-                "sessions_spawn" "sessions_send" "subagents"
-                "agents_list" "agents_wait" "sessions_yield"
-                "message" "ask_user"
-                "image_generate" "music_generate" "video_generate"
-                "skill_workshop" "secrets"
-                "create_goal" "update_goal" "get_goal"
-              ];
             };
           };
 
@@ -199,9 +192,6 @@ in
 
             workspace = "~/.openclaw/workspace/coder";
 
-            # Final skill allowlist (does NOT merge with defaults). When a new
-            # skill is installed (bundled update or clawhub) and coder needs
-            # it, add its frontmatter name here.
             skills = [
               "tmux"
               "python-debugpy"
@@ -217,8 +207,6 @@ in
                 "exec" "process"
                 "memory_search" "memory_get"
               ];
-
-              deny = [ "group:messaging" "group:ui" ];
             };
           };
         };
