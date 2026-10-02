@@ -107,15 +107,12 @@ in
 
           models = {
             "vllm/${cfg.llmModel}".params.thinking = "low";
-            "openrouter/~z-ai/glm-flash-latest".params.thinking = "high";
+            "openrouter/~z-ai/glm-flash-latest".params.thinking = "low";
           };
 
           utilityModel = "vllm/${cfg.llmModel}";
           heartbeat.model = "vllm/${cfg.llmModel}";
 
-          # Replaces the retired agents.entries.*.default marker
-          # (OpenClaw 2026.9.5 migration): ambient/system work owner,
-          # upgraded credential inheritance, and legacy session-store owner.
           systemAgent.agentId = "coordinator";
           authInheritance.agentId = "coordinator";
           sessionStore.agentId = "coordinator";
@@ -155,7 +152,6 @@ in
 
             model = {
               primary = "openrouter/~z-ai/glm-flash-latest";
-
               fallbacks = [
                 "vllm/${cfg.llmModel}"
                 "openrouter/free"
@@ -176,18 +172,16 @@ in
 
             workspace = "~/.openclaw/workspace/worker";
 
-            tools = {
-              allow = [
-                "read" "write" "edit" "apply_patch" "ls"
-                "exec" "process"
-                "web_search" "web_fetch"
-                "view_image" "pdf"
-                "memory_search" "memory_get"
-                "lcm_grep" "lcm_describe" "lcm_expand" "lcm_expand_query"
-                "browser"
-                "tts" "talk_voice" "transcripts"
-              ];
-            };
+            tools.allow = [
+              "read" "write" "edit" "apply_patch" "ls"
+              "exec" "process"
+              "web_search" "web_fetch"
+              "view_image" "pdf"
+              "memory_search" "memory_get"
+              "lcm_grep" "lcm_describe" "lcm_expand" "lcm_expand_query"
+              "browser"
+              "tts" "talk_voice" "transcripts"
+            ];
           };
 
           coder = {
@@ -207,11 +201,6 @@ in
             ];
 
             tools = {
-              # Code Mode: "auto" engages only for catalog-preferred models
-              # (docs/tools/code-mode). mimo-v2.6-flash is NOT preferred —
-              # но пользователь 14:12 распорядился форсировать codeMode=true:
-              # live-тест 14:14 пройден 6/6 (baseline без скилла). Если
-              # падения вернутся — вернуться к "auto".
               codeMode.enabled = true;
 
               allow = [
@@ -224,9 +213,6 @@ in
         };
       };
 
-      # Replaces the retired default marker's channel-wide routing:
-      # with 3 agents and no default, inbound telegram needs an explicit
-      # binding (docs/gateway/config-agents/entries-and-multi-agent.md).
       bindings = [
         {
           agentId = "coordinator";
@@ -288,14 +274,14 @@ in
               allowedModels = [ "openrouter/xiaomi/mimo-v2.6-flash" ];
             };
             config = {
-              contextThreshold = 0.06;
-              contextThresholdOverrides = [
-                {
-                  name = "large-context-models";
-                  match.modelContextWindowMin = 900000;
-                  contextThreshold = 0.06;
-                }
-              ];
+              contextThreshold = 0.05;
+#              contextThresholdOverrides = [
+#                {
+#                  name = "large-context-models";
+#                  match.modelContextWindowMin = 900000;
+#                  contextThreshold = 0.06;
+#                }
+#              ];
               leafChunkTokens = 12000;
               summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
               expansionModel = "openrouter/xiaomi/mimo-v2.6-flash";
@@ -348,25 +334,6 @@ in
 
   home.packages = [ pkgs.ffmpeg ];
 
-# Tradeoff: with the generator below, personas land as read-only store
-# symlinks; agents cannot edit their own AGENTS/SOUL/IDENTITY/USER files.
-# Re-enable this activation script (it rewrites the symlinks into real
-# writable files) only if that editability is wanted again.
-#  home.activation.replacePersonaSymlinks = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-#    set -euo pipefail
-#    for agent in coordinator coder worker; do
-#      for f in AGENTS.md SOUL.md IDENTITY.md USER.md TOOLS.md; do
-#        target="$HOME/.openclaw/workspace/$agent/$f"
-#        if [ -L "$target" ]; then
-#          mkdir -p -- "$(dirname "$target")"
-#          cp --remove-destination -- "$target" "$target.tmp$$"
-#          mv -- "$target.tmp$$" "$target"
-#          chmod 644 -- "$target"
-#        fi
-#      done
-#    done
-#  '';
-
   home.file =
   let
     agents = [ "coordinator" "coder" "worker" ];
@@ -374,12 +341,17 @@ in
     personaFile = agent: file: lib.nameValuePair
       ".openclaw/workspace/${agent}/${file}"
       { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
-  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents) // {
-    # Per-agent скилл: только coder видит code-mode-guest
-    # (docs/tools/skills.md: workspace-скиллы — only that agent).
-    ".openclaw/workspace/coder/skills/code-mode-guest" = {
-      source = ./skills/code-mode-guest;
-      force = true;
-    };
-  };
+  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
+
+  # Скилл code-mode-guest: только coder (per-agent workspace). Реальные
+  # файлы вместо symlink: workspace-loader в Nix-режиме отбрасывает
+  # hardlinked SKILL.md (nlink>1 после dedup nix store) — «path must not
+  # be hardlinked», скилл молча выпадает из списка (диагноз worker, 15:39).
+  home.activation.copyCoderSkill = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    target="$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
+    rm -rf "$target"
+    mkdir -p "$(dirname "$target")"
+    cp -r ${./skills/code-mode-guest} "$target"
+    chmod -R u+w "$target"
+  '';
 }
