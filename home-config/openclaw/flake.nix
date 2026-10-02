@@ -23,7 +23,16 @@
           allowUnfree = true;
           android_sdk.accept_license = true;
         };
-        overlays = [ nix-openclaw.overlays.default ];
+        overlays = [
+          nix-openclaw.overlays.default
+          (final: prev: {
+            openclawRuntimePlugins =
+              (prev.openclawRuntimePlugins or { })
+              // {
+                "lossless-claw" = import ./lossless-claw.nix { pkgs = final; };
+              };
+          })
+        ];
       };
 
       mkUser =

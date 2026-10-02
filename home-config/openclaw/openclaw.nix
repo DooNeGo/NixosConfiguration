@@ -9,7 +9,6 @@
 let
   cfg = import ./local/ai/models.nix;
   aiServer = "100.114.127.10";
-  losslessClaw = import ./lossless-claw.nix { inherit pkgs; };
 in
 {
   imports = [
@@ -18,6 +17,11 @@ in
 
   programs.openclaw = {
     enable = true;
+
+    runtimePlugins = [
+      "searxng"
+      "lossless-claw"
+    ];
 
     environment.OPENROUTER_API_KEY =
       "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
@@ -236,11 +240,6 @@ in
       };
 
       plugins = {
-        load.paths = [
-          "${pkgs.openclawRuntimePlugins.searxng}"
-          "${losslessClaw}"
-        ];
-
         slots.contextEngine = "lossless-claw";
 
         entries = {
