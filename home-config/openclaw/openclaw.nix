@@ -27,6 +27,12 @@ in
       "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
 
     config = {
+      # nix-store symlink-скиллы: единственный чистый nix-путь для
+      # per-agent скилла (code-mode-guest в workspace кодера) —
+      # allowSymlinkTargets разрешает symlink-таргеты только для
+      # скилла source "openclaw-workspace".
+      skills.load.allowSymlinkTargets = [ "/nix/store" ];
+
       gateway = {
         mode = "local";
         bind = "loopback";
@@ -368,5 +374,12 @@ in
     personaFile = agent: file: lib.nameValuePair
       ".openclaw/workspace/${agent}/${file}"
       { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
-  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
+  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents) // {
+    # Per-agent скилл: только coder видит code-mode-guest
+    # (docs/tools/skills.md: workspace-скиллы — only that agent).
+    ".openclaw/workspace/coder/skills/code-mode-guest" = {
+      source = ./skills/code-mode-guest;
+      force = true;
+    };
+  };
 }
