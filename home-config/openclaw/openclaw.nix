@@ -334,36 +334,61 @@ in
 
   home.packages = [ pkgs.ffmpeg ];
 
-  # Bootstrap-файлы персона per-agent: РЕАЛЬНЫЕ файлы, не symlinks.
-  # OpenClaw отказывается инжектить bootstrap через symlink в системный
-  # промпт («symlink path component not allowed» — AGENTS.md/USER.md
-  # выпадали из контекста; диагноз 15:43). Копируем из репо при каждом
-  # switch; правки между switch'ами переживают, switch возвращает канон.
-  home.activation.copyPersonaFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    repo="$HOME/.openclaw/repo-persona"
-    rm -rf "$repo"
-    mkdir -p "$repo"
-    cp -r ${./openclaw-local/workspace} "$repo/workspace"
-    for agent in coordinator coder worker; do
-      for f in AGENTS.md SOUL.md IDENTITY.md USER.md; do
-        target="$HOME/.openclaw/workspace/$agent/$f"
-        rm -f "$target"
-        cp "$repo/workspace/$agent/$f" "$target"
-        chmod u+w "$target"
-      done
-    done
-    rm -rf "$repo"
+  # Persona (12 бутстрап-файлов) и скилл кодера: hm ставит symlink'и из
+  # store, activation-скрипт превращает их в реальные файлы. Причина:
+  # OpenClaw отбрасывает symlink/hardlink — context-инжект бутстрапа
+  # («symlink path component not allowed», AGENTS.md выпадал из промпта)
+  # и workspace-skills loader («path must not be hardlinked», nlink>1 в
+  # nix store). Правки агентов между switch'ами переживают; switch
+  # перелинковывает из репо и скрипт возвращает канон.
+  home.file =
+  let
+    agents = [ "coordinator" "coder" "worker" ];
+    bootstrapFiles = [ "AGENTS.md" "SOUL.md" "IDENTITY.md" "USER.md" ];
+    personaFile = agent: file: lib.nameValuePair
+      ".openclaw/workspace/${agent}/${file}"
+      { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
+  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents) // {
+    ".openclaw/workspace/coder/skills/code-mode-guest" = {
+      source = ./skills/code-mode-guest;
+      force = true;
+    };
+  };
+
+  # Существующий реальный каталог скилла мешает hm перелинковать его в
+  # symlink (конфликт на dir) — чистим ДО фазы линковки.
+  home.activation.preCleanSkillDir = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+    t="$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
+    if [ -d "$t" ] && [ ! -L "$t" ]; then rm -rf "$t"; fi
   '';
 
-  # Скилл code-mode-guest: только coder (per-agent workspace). Реальные
-  # файлы вместо symlink: workspace-loader в Nix-режиме отбрасывает
-  # hardlinked SKILL.md (nlink>1 после dedup nix store) — «path must not
-  # be hardlinked», скилл молча выпадает из списка (диагноз worker, 15:39).
-  home.activation.copyCoderSkill = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    target="$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
-    rm -rf "$target"
-    mkdir -p "$(dirname "$target")"
-    cp -r ${./skills/code-mode-guest} "$target"
-    chmod -R u+w "$target"
+  home.activation.materializeRealFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    for t in \
+      "$HOME/.openclaw/workspace/coordinator/AGENTS.md" \
+      "$HOME/.openclaw/workspace/coordinator/SOUL.md" \
+      "$HOME/.openclaw/workspace/coordinator/IDENTITY.md" \
+      "$HOME/.openclaw/workspace/coordinator/USER.md" \
+      "$HOME/.openclaw/workspace/coder/AGENTS.md" \
+      "$HOME/.openclaw/workspace/coder/SOUL.md" \
+      "$HOME/.openclaw/workspace/coder/IDENTITY.md" \
+      "$HOME/.openclaw/workspace/coder/USER.md" \
+      "$HOME/.openclaw/workspace/worker/AGENTS.md" \
+      "$HOME/.openclaw/workspace/worker/SOUL.md" \
+      "$HOME/.openclaw/workspace/worker/IDENTITY.md" \
+      "$HOME/.openclaw/workspace/worker/USER.md" \
+      "$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
+    do
+      [ -L "$t" ] || continue
+      src="$(readlink -f "$t")"
+      if [ -d "$src" ]; then
+        rm -rf "$t"
+        cp -r "$src" "$t"
+        chmod -R u+w "$t"
+      else
+        rm -f "$t"
+        cp "$src" "$t"
+        chmod u+w "$t"
+      fi
+    done
   '';
 }
