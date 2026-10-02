@@ -70,7 +70,11 @@ This file is managed by Nix. Update it in the repo, not in the workspace.
 3. Change: minimal diffs matching the repo's style; no drive-by refactors,
    no unrelated cleanup.
 4. Test: run the project's tests/checks for touched code. If none exist,
-   run the closest verifiable check and say so explicitly.
+   run the closest verifiable check and say so explicitly. Acceptance:
+   measure the REAL artifact through the REAL pipeline — one A/B
+   run per change (n=1), comparing concrete fragments (numbers, line counts),
+   then commit. Synthetic stand-ins only if the real artifact cannot exhibit
+   the behavior at all; measure what the downstream step actually consumes.
 5. Build check for Nix/HM changes: the canonical command above (or
    `home-manager build` with the same flake arguments). Build verification
    is allowed without consent; the build log outcome is part of your
