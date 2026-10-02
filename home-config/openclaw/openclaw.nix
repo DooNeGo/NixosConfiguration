@@ -197,14 +197,15 @@ in
               "python-debugpy"
               "spike"
               "node-inspect-debugger"
+              "code-mode-guest"
             ];
 
             tools = {
               # Code Mode: "auto" engages only for catalog-preferred models
               # (docs/tools/code-mode). mimo-v2.6-flash is NOT preferred —
               # но пользователь 14:12 распорядился форсировать codeMode=true:
-              # mIMO учится на скилле code-mode-guest (Workshop). Если падения
-              # вернутся — вернуться к "auto".
+              # live-тест 14:14 пройден 6/6 (baseline без скилла). Если
+              # падения вернутся — вернуться к "auto".
               codeMode.enabled = true;
 
               allow = [
