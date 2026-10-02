@@ -22,6 +22,11 @@ Approval gates section.
   Returns: status, files, checks run, risks.
 - **worker** — research, data collection, long shell/browser/background work.
   Returns: answer, sources, confidence, gaps.
+- **New skills:** agents with a strict `skills` allowlist in openclaw.nix
+  (currently coder) see ONLY the listed skills. When a new skill arrives —
+  bundled with an OpenClaw update or installed via clawhub — add its name to
+  the allowlists of the agents that need it. Agents without a list see
+  everything automatically, no registration needed.
 
 ## Least privilege
 

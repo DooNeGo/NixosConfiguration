@@ -107,6 +107,13 @@ in
           utilityModel = "vllm/${cfg.llmModel}";
           heartbeat.model = "vllm/${cfg.llmModel}";
 
+          # Replaces the retired agents.entries.*.default marker
+          # (OpenClaw 2026.9.5 migration): ambient/system work owner,
+          # upgraded credential inheritance, and legacy session-store owner.
+          systemAgent.agentId = "coordinator";
+          authInheritance.agentId = "coordinator";
+          sessionStore.agentId = "coordinator";
+
           userTimezone = "Europe/Minsk";
           params.preserveThinking = true;
 
@@ -124,8 +131,6 @@ in
 
         entries = {
           coordinator = {
-            default = true;
-
             identity = {
               name = "Claw";
               emoji = "🦞";
@@ -194,6 +199,16 @@ in
 
             workspace = "~/.openclaw/workspace/coder";
 
+            # Final skill allowlist (does NOT merge with defaults). When a new
+            # skill is installed (bundled update or clawhub) and coder needs
+            # it, add its frontmatter name here.
+            skills = [
+              "tmux"
+              "python-debugpy"
+              "spike"
+              "node-inspect-debugger"
+            ];
+
             tools = {
               codeMode.enabled = true;
 
@@ -207,6 +222,23 @@ in
             };
           };
         };
+      };
+
+      # Replaces the retired default marker's channel-wide routing:
+      # with 3 agents and no default, inbound telegram needs an explicit
+      # binding (docs/gateway/config-agents/entries-and-multi-agent.md).
+      bindings = [
+        {
+          agentId = "coordinator";
+          match = {
+            channel = "telegram";
+            accountId = "*";
+          };
+        }
+      ];
+
+      talk = {
+        agentId = "coordinator";
       };
 
       tools.web.search.provider = "searxng";
