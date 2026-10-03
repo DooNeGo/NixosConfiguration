@@ -36,8 +36,6 @@ in
     ];
 
     config = {
-      skills.load.allowSymlinkTargets = [ "/nix/store" ];
-
       gateway = {
         mode = "local";
         bind = "loopback";
@@ -114,8 +112,6 @@ in
             "vllm/${cfg.llmModel}".params.thinking = "low";
             "openrouter/~z-ai/glm-flash-latest".params.thinking = "low";
           };
-
-         # modelPolicy.allow = [ "openrouter/*" "vllm/*" ];
 
           utilityModel = "vllm/${cfg.llmModel}";
           heartbeat.model = "vllm/${cfg.llmModel}";
@@ -283,7 +279,7 @@ in
               ];
             };
             config = {
-              contextThreshold = 0.4;
+              contextThreshold = 0.08;
               proactiveThresholdCompactionMode = "inline";
               contextThresholdOverrides = [
                 {
@@ -352,12 +348,6 @@ in
       ".openclaw/workspace/${agent}/${file}"
       { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
   in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
-# // {
-#    ".openclaw/workspace/coder/skills/code-mode-guest" = {
-#      source = ./skills/code-mode-guest;
-#      force = true;
-#    };
-#  };
 
   home.activation.preCleanSkillDir = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     t="$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
@@ -378,7 +368,6 @@ in
       "$HOME/.openclaw/workspace/worker/SOUL.md" \
       "$HOME/.openclaw/workspace/worker/IDENTITY.md" \
       "$HOME/.openclaw/workspace/worker/USER.md" \
-      #"$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
     do
       [ -L "$t" ] || continue
       src="$(readlink -f "$t")"
