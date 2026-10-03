@@ -48,7 +48,17 @@ in
         ];
         personaFile =
           agent: file:
-          lib.nameValuePair "${agent}/${file}" (./openclaw-local/workspace + "/${agent}/${file}");
+          let
+            dir = ./openclaw-local/workspace;
+            agentPath = dir + "/${agent}/${file}";
+            # Shared persona files inside each agent dir are relative symlinks
+            # (IDENTITY.md -> ../IDENTITY.md). Nix copies symlinks verbatim to
+            # the store, yielding a dangling store path the activation cp
+            # cannot read — reference the real top-level file instead.
+            source =
+              if builtins.readFileType agentPath == "symlink" then dir + "/${file}" else agentPath;
+          in
+          lib.nameValuePair "${agent}/${file}" source;
       in
       lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) personaFiles) personaAgents);
 
