@@ -294,7 +294,8 @@ in
                 }
               ];
               leafChunkTokens = 12000;
-              summaryModel = "vllm/${cfg.llmModel}";
+              #summaryModel = "vllm/${cfg.llmModel}";
+              summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
               expansionModel = "openrouter/xiaomi/mimo-v2.6-flash";
               cacheAwareCompaction.enabled = true;
               ignoreSessionPatterns = [
