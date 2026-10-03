@@ -372,7 +372,7 @@ in
       "$HOME/.openclaw/workspace/worker/AGENTS.md" \
       "$HOME/.openclaw/workspace/worker/SOUL.md" \
       "$HOME/.openclaw/workspace/worker/IDENTITY.md" \
-      "$HOME/.openclaw/workspace/worker/USER.md" \
+      "$HOME/.openclaw/workspace/worker/USER.md"
     do
       [ -L "$t" ] || continue
       src="$(readlink -f "$t")"
