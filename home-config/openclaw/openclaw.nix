@@ -40,6 +40,25 @@ in
       }
     ];
 
+    # Per-agent persona files. nix-openclaw's activation materializes these
+    # as real files under each key relative to the instance workspace root
+    # ("coordinator/AGENTS.md" -> ~/.openclaw/workspace/coordinator/AGENTS.md).
+    # Replaces the old home.file symlinks + materializeRealFiles activation hook.
+    workspace.files =
+      let
+        personaAgents = [ "coordinator" "coder" "worker" ];
+        personaFiles = [
+          "AGENTS.md"
+          "SOUL.md"
+          "IDENTITY.md"
+          "USER.md"
+        ];
+        personaFile =
+          agent: file:
+          lib.nameValuePair "${agent}/${file}" (./openclaw-local/workspace + "/${agent}/${file}");
+      in
+      lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) personaFiles) personaAgents);
+
     config = {
       gateway = {
         mode = "local";
@@ -346,46 +365,8 @@ in
 
   home.packages = [ pkgs.ffmpeg ];
 
-  home.file =
-  let
-    agents = [ "coordinator" "coder" "worker" ];
-    bootstrapFiles = [ "AGENTS.md" "SOUL.md" "IDENTITY.md" "USER.md" ];
-    personaFile = agent: file: lib.nameValuePair
-      ".openclaw/workspace/${agent}/${file}"
-      { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
-  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
-
   home.activation.preCleanSkillDir = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     t="$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
     if [ -d "$t" ] && [ ! -L "$t" ]; then rm -rf "$t"; fi
-  '';
-
-  home.activation.materializeRealFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    for t in \
-      "$HOME/.openclaw/workspace/coordinator/AGENTS.md" \
-      "$HOME/.openclaw/workspace/coordinator/SOUL.md" \
-      "$HOME/.openclaw/workspace/coordinator/IDENTITY.md" \
-      "$HOME/.openclaw/workspace/coordinator/USER.md" \
-      "$HOME/.openclaw/workspace/coder/AGENTS.md" \
-      "$HOME/.openclaw/workspace/coder/SOUL.md" \
-      "$HOME/.openclaw/workspace/coder/IDENTITY.md" \
-      "$HOME/.openclaw/workspace/coder/USER.md" \
-      "$HOME/.openclaw/workspace/worker/AGENTS.md" \
-      "$HOME/.openclaw/workspace/worker/SOUL.md" \
-      "$HOME/.openclaw/workspace/worker/IDENTITY.md" \
-      "$HOME/.openclaw/workspace/worker/USER.md"
-    do
-      [ -L "$t" ] || continue
-      src="$(readlink -f "$t")"
-      if [ -d "$src" ]; then
-        rm -rf "$t"
-        cp -r "$src" "$t"
-        chmod -R u+w "$t"
-      else
-        rm -f "$t"
-        cp "$src" "$t"
-        chmod u+w "$t"
-      fi
-    done
   '';
 }
