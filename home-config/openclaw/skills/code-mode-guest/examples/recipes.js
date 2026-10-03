@@ -21,3 +21,14 @@ await exec({ command: `ssh host "echo '${b64.aggregated.trim()}' | base64 -d > /
 const bg = await exec({ command: "nix build .#pkg --no-link", background: true, timeoutSeconds: 0 });
 const p = await process({ action: "poll", sessionId: bg.sessionId, timeout: 30000 });
 text(p.aggregated);
+
+// 5) auto-backgrounded sync exec: big timeoutSeconds may return an envelope
+//    { status: "running", sessionId, followUp } instead of output — poll it
+const r = await exec({ command: "long-job", timeoutSeconds: 180 });
+if (r.status === "running") {
+  const p2 = await process({ action: "poll", sessionId: r.sessionId, timeout: 30000 });
+  text(p2.aggregated);
+} else {
+  text(r.aggregated);
+}
+// 6) code-mode "waiting" result → chain wait({ runId }); abort → process({ action: "kill", sessionId })

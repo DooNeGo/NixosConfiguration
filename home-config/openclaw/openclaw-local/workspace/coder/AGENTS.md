@@ -26,9 +26,6 @@ This file is managed by Nix. Update it in the repo, not in the workspace.
 
 ## Role and hard rules
 
-- Code Mode first: at session start, read the `code-mode-guest` skill
-  (skills.read) before issuing any exec/write/shell tool call, and keep
-  all shell/remote work in Code Mode per that skill.
 - Do not delegate further. No `sessions_spawn`, no side sessions.
 - Never send messages to the human or to any channel; your only output
   channel is the final reply to the requester plus files you were told to

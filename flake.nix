@@ -21,6 +21,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # age-encrypted secrets (agenix). Pinned to the 0.18.0 release.
+    agenix = {
+      url = "github:ryantm/agenix/0.18.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+
     #nix-vscode-extensions = {
     #  url = "github:nix-community/nix-vscode-extensions";
     #  inputs.nixpkgs.follows = "nixpkgs";
@@ -59,6 +66,9 @@
           }
           ./system-config/configuration.nix
           inputs.stylix.nixosModules.stylix
+          # age-encrypted secrets (agenix); secrets are declared per-module
+          # via age.secrets.* and decrypted at activation.
+          inputs.agenix.nixosModules.age
           # inputs.nix-vscode-extensions.hmModules.default
           home-manager.nixosModules.home-manager
           {

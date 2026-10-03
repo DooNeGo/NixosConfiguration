@@ -27,10 +27,6 @@ in
       "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
 
     config = {
-      # nix-store symlink-скиллы: единственный чистый nix-путь для
-      # per-agent скилла (code-mode-guest в workspace кодера) —
-      # allowSymlinkTargets разрешает symlink-таргеты только для
-      # скилла source "openclaw-workspace".
       skills.load.allowSymlinkTargets = [ "/nix/store" ];
 
       gateway = {
@@ -109,6 +105,8 @@ in
             "vllm/${cfg.llmModel}".params.thinking = "low";
             "openrouter/~z-ai/glm-flash-latest".params.thinking = "low";
           };
+
+         # modelPolicy.allow = [ "openrouter/*" "vllm/*" ];
 
           utilityModel = "vllm/${cfg.llmModel}";
           heartbeat.model = "vllm/${cfg.llmModel}";
@@ -197,11 +195,10 @@ in
               "python-debugpy"
               "spike"
               "node-inspect-debugger"
-              "code-mode-guest"
             ];
 
             tools = {
-              codeMode.enabled = true;
+              codeMode = "auto";
 
               allow = [
                 "ls" "read" "write" "edit" "apply_patch"
@@ -271,19 +268,23 @@ in
             hooks.allowConversationAccess = true;
             llm = {
               allowModelOverride = true;
-              allowedModels = [ "openrouter/xiaomi/mimo-v2.6-flash" ];
+              allowedModels = [
+                "openrouter/xiaomi/mimo-v2.6-flash"
+                "vllm/${cfg.llmModel}"
+              ];
             };
             config = {
-              contextThreshold = 0.05;
-#              contextThresholdOverrides = [
-#                {
-#                  name = "large-context-models";
-#                  match.modelContextWindowMin = 900000;
-#                  contextThreshold = 0.06;
-#                }
-#              ];
+              contextThreshold = 0.4;
+              proactiveThresholdCompactionMode = "inline";
+              contextThresholdOverrides = [
+                {
+                  name = "large-context-models";
+                  match.modelContextWindowMin = 900000;
+                  contextThreshold = 0.08;
+                }
+              ];
               leafChunkTokens = 12000;
-              summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
+              summaryModel = "vllm/${cfg.llmModel}";
               expansionModel = "openrouter/xiaomi/mimo-v2.6-flash";
               cacheAwareCompaction.enabled = true;
               ignoreSessionPatterns = [
@@ -334,13 +335,6 @@ in
 
   home.packages = [ pkgs.ffmpeg ];
 
-  # Persona (12 бутстрап-файлов) и скилл кодера: hm ставит symlink'и из
-  # store, activation-скрипт превращает их в реальные файлы. Причина:
-  # OpenClaw отбрасывает symlink/hardlink — context-инжект бутстрапа
-  # («symlink path component not allowed», AGENTS.md выпадал из промпта)
-  # и workspace-skills loader («path must not be hardlinked», nlink>1 в
-  # nix store). Правки агентов между switch'ами переживают; switch
-  # перелинковывает из репо и скрипт возвращает канон.
   home.file =
   let
     agents = [ "coordinator" "coder" "worker" ];
@@ -348,15 +342,14 @@ in
     personaFile = agent: file: lib.nameValuePair
       ".openclaw/workspace/${agent}/${file}"
       { source = ./openclaw-local/workspace + "/${agent}/${file}"; force = true; };
-  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents) // {
-    ".openclaw/workspace/coder/skills/code-mode-guest" = {
-      source = ./skills/code-mode-guest;
-      force = true;
-    };
-  };
+  in lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) bootstrapFiles) agents);
+# // {
+#    ".openclaw/workspace/coder/skills/code-mode-guest" = {
+#      source = ./skills/code-mode-guest;
+#      force = true;
+#    };
+#  };
 
-  # Существующий реальный каталог скилла мешает hm перелинковать его в
-  # symlink (конфликт на dir) — чистим ДО фазы линковки.
   home.activation.preCleanSkillDir = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     t="$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
     if [ -d "$t" ] && [ ! -L "$t" ]; then rm -rf "$t"; fi
@@ -376,7 +369,7 @@ in
       "$HOME/.openclaw/workspace/worker/SOUL.md" \
       "$HOME/.openclaw/workspace/worker/IDENTITY.md" \
       "$HOME/.openclaw/workspace/worker/USER.md" \
-      "$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
+      #"$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
     do
       [ -L "$t" ] || continue
       src="$(readlink -f "$t")"
