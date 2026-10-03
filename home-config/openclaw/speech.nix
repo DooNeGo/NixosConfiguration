@@ -1,13 +1,3 @@
-# Speech stack for the openclaw user: whisper.cpp (inbound voice
-# transcription) and piper (local TTS).
-#
-# Home-manager scoped, NOT NixOS: this only reaches the `openclaw` user's home
-# and needs no root. An earlier version lived in system-config/ using
-# environment.systemPackages + systemd.tmpfiles.rules, which required
-# `nixos-rebuild` (root) and put binaries in the system profile.
-#
-# Models are symlinks into the nix store via home.file, so they are pinned by
-# sha256 and garbage-collected with the store instead of being hand-managed.
 { lib, pkgs, ... }:
 
 let
@@ -69,9 +59,6 @@ let
       source = pkgs.fetchurl (m // { name = baseNameOf target; });
     };
 
-  # home.file is an attrset of submodules, so mapAttrs' — not mapAttrsToList.
-  # Flat names: ggml-<size>.bin and ru_RU-<voice>-medium.onnx, matching the
-  # -m path that tools.media.audio passes to whisper-cli in openclaw.nix.
   whisperFiles = lib.mapAttrs' (
     name: m:
     lib.nameValuePair "whisper-${name}" (link ".local/share/whisper-models/ggml-${name}.bin" m)
@@ -83,15 +70,13 @@ let
   ) piperVoices;
 in
 {
-  # Binaries land in the user profile (~/.nix-profile/bin). The gateway config
-  # references the store path directly, because a bare name would rely on the
-  # systemd user unit inheriting a login PATH — it does not.
-  home.packages = with pkgs; [
-    whisper-cpp
-    piper-tts
-    # Russian TTS for the kokoro-voice skill — needs kokoro-ru-say on PATH.
-    pkgs.kokoro-ru
-  ];
+  home = {
+    packages = with pkgs; [
+      whisper-cpp
+      piper-tts
+      kokoro-ru
+    ];
 
-  home.file = whisperFiles // piperFiles;
+    file = whisperFiles // piperFiles;
+  };
 }
