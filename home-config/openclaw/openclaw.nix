@@ -26,6 +26,15 @@ in
     environment.OPENROUTER_API_KEY =
       "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
 
+    skills = [
+      {
+        name = "kokoro-voice";
+        description = "Voice replies via local kokoro-ru TTS (Russian, Telegram).";
+        mode = "symlink";
+        source = toString ./skills/kokoro-voice;
+      }
+    ];
+
     config = {
       skills.load.allowSymlinkTargets = [ "/nix/store" ];
 
