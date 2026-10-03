@@ -23,6 +23,11 @@ in
       "lossless-claw"
     ];
 
+    # summarize: nix-openclaw bundled tool plugin (CLI `summarize` on gateway
+    # PATH + skills/summarize). Not an OpenClaw runtime plugin — the gateway
+    # already ships the skills/summarize SKILL.md but no `summarize` binary.
+    bundledPlugins.summarize.enable = true;
+
     environment.OPENROUTER_API_KEY =
       "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
 
