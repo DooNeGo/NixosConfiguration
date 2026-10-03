@@ -23,13 +23,25 @@ KOKORO="$(command -v kokoro-ru-say || ls -t /nix/store/*-kokoro-ru-1.0.0/bin/kok
 ```
 
 The wrapper self-exports `KOKORO_RU_DATA` — no env setup needed.
+Done when: the resolved path is an existing executable.
 
 ## 2. Choose voice / rate
 
 - `-v sveta|masha|dima` (default `sveta`).
 - `-r RATE` (>1 = faster); `-c` is a checkpoint path, NOT cpu count.
+Done when: a voice (and rate, if overriding) is picked — defaults are fine.
 
-## 3. Generate wav in the session workspace (never /tmp)
+## 3. Generate wav in the session workspace (write outbound media under
+the workspace: /tmp works today but is unmanaged and may be purged)
+
+Preferred when available — the bundled helper does steps 3+4 in one go and
+prints the final .ogg path directly:
+
+```
+scripts/kokoro-voice.sh "<text>"
+```
+(env `KOKORO_VOICE` / `KOKORO_OUT_DIR` override voice / output dir). The
+manual steps below stay as the explicit path.
 
 ```
 OUT="$PWD/voice-$(date +%s)"; mkdir -p "$OUT"
@@ -40,12 +52,15 @@ stdin avoids shell-argument limits on long text. Exit codes: 2 = bad
 args/empty text, 3 = missing data/checkpoint/voice, 4 = no audio produced.
 Keep one call under ~1500 chars (longer: summarize first); ~10x realtime
 plus ~4 s model load.
+Done when: the wav exists and is non-empty.
 
 ## 4. Transcode for Telegram voice note
 
 ```
 ffmpeg -y -i "$OUT/out.wav" -c:a libopus -b:a 48k -ar 48000 -ac 1 "$OUT/out.ogg"
 ```
+
+Done when: ffprobe reports codec=opus in an ogg container.
 
 ## 5. Deliver
 
