@@ -23,9 +23,6 @@ in
       "lossless-claw"
     ];
 
-    # summarize: nix-openclaw bundled tool plugin (CLI `summarize` on gateway
-    # PATH + skills/summarize). Not an OpenClaw runtime plugin — the gateway
-    # already ships the skills/summarize SKILL.md but no `summarize` binary.
     bundledPlugins.summarize.enable = true;
 
     environment.OPENROUTER_API_KEY =
@@ -40,10 +37,6 @@ in
       }
     ];
 
-    # Per-agent persona files. nix-openclaw's activation materializes these
-    # as real files under each key relative to the instance workspace root
-    # ("coordinator/AGENTS.md" -> ~/.openclaw/workspace/coordinator/AGENTS.md).
-    # Replaces the old home.file symlinks + materializeRealFiles activation hook.
     workspace.files =
       let
         personaAgents = [ "coordinator" "coder" "worker" ];
@@ -364,9 +357,4 @@ in
   };
 
   home.packages = [ pkgs.ffmpeg ];
-
-  home.activation.preCleanSkillDir = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
-    t="$HOME/.openclaw/workspace/coder/skills/code-mode-guest"
-    if [ -d "$t" ] && [ ! -L "$t" ]; then rm -rf "$t"; fi
-  '';
 }
