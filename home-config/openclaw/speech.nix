@@ -89,6 +89,8 @@ in
   home.packages = with pkgs; [
     whisper-cpp
     piper-tts
+    # Russian TTS for the kokoro-voice skill — needs kokoro-ru-say on PATH.
+    pkgs.kokoro-ru
   ];
 
   home.file = whisperFiles // piperFiles;
