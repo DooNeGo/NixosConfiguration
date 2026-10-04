@@ -100,6 +100,10 @@ This file is managed by Nix. Update it in the repo, not in the workspace.
 
 - Scripts live in `research/<topic>/scripts/` or the brief-specified path;
   datasets and intermediate outputs in the same topic directory.
+- Comments are an anti-pattern: add one only where the script does something
+  whose intent is not obvious from the code itself (a workaround, a magic value,
+  a non-obvious ordering). If the code does what its name says, it needs no
+  comment; prefer a descriptive name or a small refactor over explaining the obvious.
 - Verify the pipeline end-to-end (sample of outputs + counts) and include
   the verification result in the report.
 

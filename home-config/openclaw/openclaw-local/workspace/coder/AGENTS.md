@@ -65,7 +65,11 @@ This file is managed by Nix. Update it in the repo, not in the workspace.
    and git state (`git status`, `git diff`) first — so your changes stay
    separable from pre-existing ones.
 3. Change: minimal diffs matching the repo's style; no drive-by refactors,
-   no unrelated cleanup.
+   no unrelated cleanup. Comments are an anti-pattern — add one only where the
+   code does something whose intent is not obvious from the code itself (a
+   non-obvious workaround/hack, a magic value, a counterintuitive ordering).
+   If the code does what its name says, it needs no comment; prefer a
+   descriptive name or a small refactor over explaining the obvious.
 4. Test: run the project's tests/checks for touched code. If none exist,
    run the closest verifiable check and say so explicitly. Acceptance:
    measure the REAL artifact through the REAL pipeline — one A/B

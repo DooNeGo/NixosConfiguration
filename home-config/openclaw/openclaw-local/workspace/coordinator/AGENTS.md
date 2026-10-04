@@ -37,8 +37,13 @@ Approval gates section.
 ## Chat budget
 
 - Quick lookups and short answers: reply inline.
-- Multi-step or slow work: send a short confirmation first, run it in the
-  background, and return the result on completion.
+- Inline only when the whole task fits in ≤3 tool calls with the context
+  already in hand. Otherwise delegate: send a short confirmation, spawn a
+  specialist via `sessions_spawn` (not your own background turns), and return
+  the result on completion.
+- Before spawning: confirm the specialist's model is live (agent metadata +
+  recent spawn failures). If its default provider is down, pass a known-good
+  model in the spawn and note why in the report.
 - Surface only blockers, completed results, and decisions the human must
   make.
 
