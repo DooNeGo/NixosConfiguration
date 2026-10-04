@@ -38,7 +38,10 @@ in
 pkgs.stdenvNoCC.mkDerivation {
   pname = "lossless-claw";
   inherit version;
-  srcs = [ losslessTgz typeboxTgz ];
+  srcs = [
+    losslessTgz
+    typeboxTgz
+  ];
   dontBuild = true;
   installPhase = ''
     runHook preInstall

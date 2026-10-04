@@ -18,12 +18,13 @@
 # штатный механизм nixpkgs, не вложенный wrapProgram. Каталог site-packages
 # берётся у интерпретатора (python.sitePackages) — хардкода
 # lib/python3.X/site-packages нет.
-{ lib
-, python3Packages
-, fetchPypi
-, autoPatchelfHook
-, data
-, ruaccent ? python3Packages.callPackage ./ruaccent.nix {
+{
+  lib,
+  python3Packages,
+  fetchPypi,
+  autoPatchelfHook,
+  data,
+  ruaccent ? python3Packages.callPackage ./ruaccent.nix {
     # Все non-defaulted аргументы ruaccent.nix — ЯВНО: callPackage внутри
     # python-сета резолвит его аргумент python3Packages в deliberate-throw
     # (python-aliases.nix:60), а autoPatchelfHook в python-сетe
@@ -31,16 +32,29 @@
     # fetchPypi/autoPatchelfHook/python3Packages здесь по значению
     # совпадают с `pkgs.callPackage ./pkgs/ruaccent.nix { inherit data; }`
     # из flake.nix → один и тот же drv, один кеш.
-    inherit lib data fetchPypi python3Packages autoPatchelfHook;
-  }
+    inherit
+      lib
+      data
+      fetchPypi
+      python3Packages
+      autoPatchelfHook
+      ;
+  },
 }:
 
-assert lib.assertMsg (data ? kokoro-ru-data)
-  "kokoro-ru: аргумент data без kokoro-ru-data — ожидается выход pkgs/data.nix (W2)";
+assert lib.assertMsg (
+  data ? kokoro-ru-data
+) "kokoro-ru: аргумент data без kokoro-ru-data — ожидается выход pkgs/data.nix (W2)";
 
 let
   python = python3Packages.python;
-  inherit (python3Packages) kokoro razdel onnxruntime soundfile cffi;
+  inherit (python3Packages)
+    kokoro
+    razdel
+    onnxruntime
+    soundfile
+    cffi
+    ;
   kokoroRuData = data.kokoro-ru-data;
 in
 python3Packages.buildPythonApplication {
@@ -68,13 +82,21 @@ python3Packages.buildPythonApplication {
   # $out/bin/*: PYTHONPATH из propagated + KOKORO_RU_DATA (GC-root дерева
   # данных). Гонка вложенных wrapProgram (свой postFixup поверх
   # wrapPythonPrograms) не нужна.
-  makeWrapperArgs = [ "--set" "KOKORO_RU_DATA" "${kokoroRuData}" ];
+  makeWrapperArgs = [
+    "--set"
+    "KOKORO_RU_DATA"
+    "${kokoroRuData}"
+  ];
 
   # Импорт-чек одним процессом, порядок важен: сначала kokoro (выставляет
   # EspeakWrapper через misaki), затем ru_g2p (внутри RuG2P.__init__
   # полагается на это), затем ruaccent. ru_g2p импортирует ruaccent/phonemizer
   # только лениво внутри __init__, сам модуль — json/re/pathlib.
-  pythonImportsCheck = [ "kokoro" "ru_g2p" "ruaccent" ];
+  pythonImportsCheck = [
+    "kokoro"
+    "ru_g2p"
+    "ruaccent"
+  ];
 
   installPhase = ''
     runHook preInstall

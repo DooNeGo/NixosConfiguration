@@ -52,21 +52,17 @@ let
 
   # home.file entry. `target` MUST be relative to $HOME (home-manager rejects
   # absolute targets); the store basename follows the in-home filename.
-  link =
-    target: m:
-    {
-      inherit target;
-      source = pkgs.fetchurl (m // { name = baseNameOf target; });
-    };
+  link = target: m: {
+    inherit target;
+    source = pkgs.fetchurl (m // { name = baseNameOf target; });
+  };
 
   whisperFiles = lib.mapAttrs' (
-    name: m:
-    lib.nameValuePair "whisper-${name}" (link ".local/share/whisper-models/ggml-${name}.bin" m)
+    name: m: lib.nameValuePair "whisper-${name}" (link ".local/share/whisper-models/ggml-${name}.bin" m)
   ) whisperModels;
 
   piperFiles = lib.mapAttrs' (
-    name: m:
-    lib.nameValuePair "piper-${name}" (link ".local/share/piper-voices/${name}" m)
+    name: m: lib.nameValuePair "piper-${name}" (link ".local/share/piper-voices/${name}" m)
   ) piperVoices;
 in
 {

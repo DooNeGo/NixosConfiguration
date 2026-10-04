@@ -41,12 +41,13 @@
 #     Okazaki).
 #   meta.license = [ mit bsd3 ] covers wrapper + vendored CRFsuite (+ MIT
 #   liblbfgs); all free — no allowUnfree needed for this package.
-{ lib
-, fetchPypi
-, python3Packages
+{
+  lib,
+  fetchPypi,
+  python3Packages,
   # provides buildPythonPackage and the pinned interpreter (.python, .sitePackages)
-, autoPatchelfHook
-, stdenv
+  autoPatchelfHook,
+  stdenv,
   # manylinux wheel fix: the prebuilt _pycrfsuite.so needs libstdc++ but ships
   # without RPATH (verified 2026-10-03: build failed at pythonImportsCheck with
   # "ImportError: libstdc++.so.6: cannot open shared object file"). autoPatchelf
@@ -110,7 +111,10 @@ python3Packages.buildPythonPackage rec {
     description = "Python binding for CRFsuite (conditional random fields); ruaccent dependency";
     homepage = "https://chokkan.gitlab.io/pycrfsuite/";
     # MIT wrapper + BSD-3 CRFsuite (+ MIT liblbfgs) — full evidence in header.
-    license = [ lib.licenses.mit lib.licenses.bsd3 ];
+    license = [
+      lib.licenses.mit
+      lib.licenses.bsd3
+    ];
     # The wheel is cp314 + manylinux x86_64 only.
     platforms = [ "x86_64-linux" ];
   };

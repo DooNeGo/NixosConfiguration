@@ -7,8 +7,7 @@
   };
 
   outputs =
-    inputs@
-    {
+    inputs@{
       nixpkgs,
       home-manager,
       nix-openclaw,
@@ -29,11 +28,9 @@
           nix-openclaw.overlays.default
           (final: prev: {
             kokoro-ru = kokoro.packages.${system}.kokoro-ru;
-            openclawRuntimePlugins =
-              (prev.openclawRuntimePlugins or { })
-              // {
-                "lossless-claw" = import ./lossless-claw.nix { pkgs = final; };
-              };
+            openclawRuntimePlugins = (prev.openclawRuntimePlugins or { }) // {
+              "lossless-claw" = import ./lossless-claw.nix { pkgs = final; };
+            };
           })
         ];
       };

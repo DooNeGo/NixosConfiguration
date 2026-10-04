@@ -16,7 +16,11 @@
 # Expected sizes (lfs-sizes.json): kr 662 119 684 B, acc 713 396 199 B.
 # Returns { kokoro-ru-data, ruaccent-data }.
 
-{ lib, fetchurl, runCommand }:
+{
+  lib,
+  fetchurl,
+  runCommand,
+}:
 
 let
   # ---- pinned git trees (narHash from prefetch-{kokoro,acc}.json) ----
@@ -65,19 +69,27 @@ let
   # ---- LFS manifests: rel -> sha256 (= LFS oid), verbatim from acc-lfs.nix ----
   accLfs = {
     "dictionary/accents.json.gz" = "aa460ebba90de00fbbf3d41d121961f605b98667e45efb7920f127473b15515e";
-    "dictionary/accents_nn.json.gz" = "8395664000b80c1afe09bfea3650945b0933482b8e3dee5bb9d429eb18c44935";
+    "dictionary/accents_nn.json.gz" =
+      "8395664000b80c1afe09bfea3650945b0933482b8e3dee5bb9d429eb18c44935";
     "dictionary/omographs.json.gz" = "04a9e81c68d65f65ba493fe0110f99e79087548c2beeec3032e2b66e28706f36";
-    "dictionary/yo_homographs.json.gz" = "c4ee777bbbab87f9eac838f370ad92974e079d02b21903e480c54b5f0c8c60d1";
+    "dictionary/yo_homographs.json.gz" =
+      "c4ee777bbbab87f9eac838f370ad92974e079d02b21903e480c54b5f0c8c60d1";
     "dictionary/yo_words.json.gz" = "a19fa89a964a0691d9fe4ee384783e3934904891843d8f59a1c480d67947a82a";
     "koziev/rulemma/rulemma.dat" = "bf2b3ef3ff7a0aa6e4250aa4e9c8ed568e25f825deebdb12dee1b46b785ba9fc";
-    "koziev/rupostagger/database/ruword2tags.db" = "a06848e656bef642aafb4440c03554fa78f2f32dde92ea66f3f86ce9977b167e";
-    "koziev/rupostagger/rupostagger.model" = "21b7b0bfd7427b5fdc1604052176db8aa3b139b3ce03be440cfce48536f8e5ef";
-    "koziev/rupostagger/ruword2tags.dat" = "dde47b5f1d48ff899887ac07812dcabd2966e48e84646f3065bfd06627c2af58";
+    "koziev/rupostagger/database/ruword2tags.db" =
+      "a06848e656bef642aafb4440c03554fa78f2f32dde92ea66f3f86ce9977b167e";
+    "koziev/rupostagger/rupostagger.model" =
+      "21b7b0bfd7427b5fdc1604052176db8aa3b139b3ce03be440cfce48536f8e5ef";
+    "koziev/rupostagger/ruword2tags.dat" =
+      "dde47b5f1d48ff899887ac07812dcabd2966e48e84646f3065bfd06627c2af58";
     "nn/nn_accent/big.onnx" = "47e69d9ae19f2a82e21b1c70f6a4bbfb1abc5759e98b2e67d009c5e9d7af18c9";
     "nn/nn_accent/model.onnx" = "4e393144e45626f6f1062a0784ef06f921b97321a8e7b87ac2a09a892286500a";
-    "nn/nn_omograph/turbo3.1/model.onnx" = "2cb6a174c4cdb45bd3132b4f7c8a3779fc4b6869863180ed7d0e421bcd453dbd";
-    "nn/nn_stress_usage_predictor/model.onnx" = "3d547500637b4ddfec8880ed6d1405fd50ee9d3f0131ef8a2a69dcf961dbefeb";
-    "nn/nn_yo_homograph_resolver/model.onnx" = "42cc85bf0c4b319dfe3d89fa17b162a92fd5e1c651a657cb3d5f44978d4e70ac";
+    "nn/nn_omograph/turbo3.1/model.onnx" =
+      "2cb6a174c4cdb45bd3132b4f7c8a3779fc4b6869863180ed7d0e421bcd453dbd";
+    "nn/nn_stress_usage_predictor/model.onnx" =
+      "3d547500637b4ddfec8880ed6d1405fd50ee9d3f0131ef8a2a69dcf961dbefeb";
+    "nn/nn_yo_homograph_resolver/model.onnx" =
+      "42cc85bf0c4b319dfe3d89fa17b162a92fd5e1c651a657cb3d5f44978d4e70ac";
   };
 
   # One pinned LFS blob; sha256 == LFS oid (content hash).

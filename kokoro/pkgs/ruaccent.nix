@@ -57,16 +57,17 @@
 # mixed provenance). Its licensing stays an open question (plan risk 2) —
 # verify against the HF ruaccent/accentuator model card during W2/W5. Local
 # personal use only either way.
-{ lib
-, data
+{
+  lib,
+  data,
   # data.nix (W2) output set; data.ruaccent-data is linked into the package
-, fetchPypi
-, python3Packages
+  fetchPypi,
+  python3Packages,
   # provides buildPythonPackage, python deps and the pinned interpreter
-, autoPatchelfHook
+  autoPatchelfHook,
   # not resolvable inside the python package set (verified 2026-10-03); passed
   # through to the pycrfsuite default below (pkgs.callPackage resolves it)
-, pycrfsuite ? python3Packages.callPackage ./pycrfsuite.nix {
+  pycrfsuite ? python3Packages.callPackage ./pycrfsuite.nix {
     # Explicit overrides — without them callPackage inside the python set
     # resolves `python3Packages` to the deliberate throw alias
     # (python-aliases.nix:60) and fails on missing autoPatchelfHook (both
@@ -74,7 +75,7 @@
     # python3Packages when building Python packages …"). W4 may override
     # this whole argument with packages.pycrfsuite instead.
     inherit python3Packages autoPatchelfHook;
-  }
+  },
   # default = this flake's own wheel package (see header); override supported
 }:
 

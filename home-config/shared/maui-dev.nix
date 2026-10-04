@@ -25,9 +25,7 @@ let
   riderFHS = pkgs.buildFHSEnv {
     name = "rider-fhs";
     targetPkgs =
-      pkgs:
-      with pkgs;
-      [
+      pkgs: with pkgs; [
         jetbrains.rider
         openssl
       ];

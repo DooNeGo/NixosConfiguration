@@ -10,7 +10,10 @@
         xdg-desktop-portal-gtk
       ];
       config.common.default = "*";
-      config.hyprland.default = ["hyprland" "gtk"];
+      config.hyprland.default = [
+        "hyprland"
+        "gtk"
+      ];
     };
 
     userDirs = {
