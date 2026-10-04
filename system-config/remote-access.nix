@@ -1,14 +1,14 @@
-{ config, pkgs, pkgs-stable, ... }:
+{
+  config,
+  pkgs,
+  pkgs-stable,
+  ...
+}:
 {
   services = {
     tailscale = {
       enable = true;
-      extraUpFlags = [ "--accept-dns=false" ];
-
-      # Expose the OpenClaw gateway WebUI over tailnet HTTPS:
-      # https://nixos.tail416d29.ts.net -> 127.0.0.1:18789
-      # (module wires a root-run `tailscale-serve` oneshot that applies
-      # the config idempotently on every boot; no operator needed)
+      #extraUpFlags = [ "--accept-dns=false" ];
       serve = {
         enable = true;
         services.openclaw-webui = {
