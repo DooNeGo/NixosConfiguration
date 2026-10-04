@@ -25,8 +25,7 @@ in
 
     bundledPlugins.summarize.enable = true;
 
-    environment.OPENROUTER_API_KEY =
-      "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
+    environment.OPENROUTER_API_KEY = "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
 
     skills = [
       {
@@ -39,7 +38,11 @@ in
 
     workspace.files =
       let
-        personaAgents = [ "coordinator" "coder" "worker" ];
+        personaAgents = [
+          "coordinator"
+          "coder"
+          "worker"
+        ];
         personaFiles = [
           "AGENTS.md"
           "SOUL.md"
@@ -51,12 +54,7 @@ in
           let
             dir = ./openclaw-local/workspace;
             agentPath = dir + "/${agent}/${file}";
-            # Shared persona files inside each agent dir are relative symlinks
-            # (IDENTITY.md -> ../IDENTITY.md). Nix copies symlinks verbatim to
-            # the store, yielding a dangling store path the activation cp
-            # cannot read — reference the real top-level file instead.
-            source =
-              if builtins.readFileType agentPath == "symlink" then dir + "/${file}" else agentPath;
+            source = if builtins.readFileType agentPath == "symlink" then dir + "/${file}" else agentPath;
           in
           lib.nameValuePair "${agent}/${file}" source;
       in
@@ -117,6 +115,30 @@ in
             commentary = true;
           };
         };
+
+        # Local-only TTS provider (kokoro-ru, voice sveta). The nix-openclaw
+        # generated schema only exposes `apiKey` under tts.providers.<id>
+        # (upstream Zod catchall is not rendered), so the provider settings
+        # are placed in the channel override — same shape as `tts`, and
+        # OpenClaw deep-merges it over the global tts block for automatic
+        # replies, /tts commands and the tts agent tool. Text is piped to the
+        # command's stdin (args contain no {{Text}}); audio is written to
+        # {{OutputPath}} as wav and converted to opus by OpenClaw's ffmpeg for
+        # voice notes.
+        #        tts = {
+        #          provider = "tts-local-cli";
+        #          providers."tts-local-cli" = {
+        #            command = "${pkgs.kokoro-ru}/bin/kokoro-ru-say";
+        #            args = [
+        #              "-v"
+        #              "sveta"
+        #              "-o"
+        #              "{{OutputPath}}"
+        #            ];
+        #            outputFormat = "wav";
+        #            timeoutMs = 120000;
+        #          };
+        #        };
       };
 
       models.providers.vllm = {
@@ -172,11 +194,17 @@ in
             };
 
             workspace = "~/.openclaw/workspace/coordinator";
-            
+
             tools.deny = [
-              "browser" "node_inference"
-              "dir_fetch" "dir_list" "file_fetch" "file_write"
-              "image_generate" "music_generate" "video_generate"
+              "browser"
+              "node_inference"
+              "dir_fetch"
+              "dir_list"
+              "file_fetch"
+              "file_write"
+              "image_generate"
+              "music_generate"
+              "video_generate"
               "github_identity_status"
             ];
 
@@ -190,7 +218,10 @@ in
 
             subagents = {
               delegationMode = "prefer";
-              allowAgents = [ "worker" "coder" ];
+              allowAgents = [
+                "worker"
+                "coder"
+              ];
             };
           };
 
@@ -203,14 +234,27 @@ in
             workspace = "~/.openclaw/workspace/worker";
 
             tools.allow = [
-              "read" "write" "edit" "apply_patch" "ls"
-              "exec" "process"
-              "web_search" "web_fetch"
-              "view_image" "pdf"
-              "memory_search" "memory_get"
-              "lcm_grep" "lcm_describe" "lcm_expand" "lcm_expand_query"
+              "read"
+              "write"
+              "edit"
+              "apply_patch"
+              "ls"
+              "exec"
+              "process"
+              "web_search"
+              "web_fetch"
+              "view_image"
+              "pdf"
+              "memory_search"
+              "memory_get"
+              "lcm_grep"
+              "lcm_describe"
+              "lcm_expand"
+              "lcm_expand_query"
               "browser"
-              "tts" "talk_voice" "transcripts"
+              "tts"
+              "talk_voice"
+              "transcripts"
             ];
           };
 
@@ -233,9 +277,15 @@ in
               codeMode = "auto";
 
               allow = [
-                "ls" "read" "write" "edit" "apply_patch"
-                "exec" "process"
-                "memory_search" "memory_get"
+                "ls"
+                "read"
+                "write"
+                "edit"
+                "apply_patch"
+                "exec"
+                "process"
+                "memory_search"
+                "memory_get"
               ];
             };
           };
@@ -306,13 +356,13 @@ in
               ];
             };
             config = {
-              contextThreshold = 0.08;
+              contextThreshold = 0.1;
               proactiveThresholdCompactionMode = "inline";
               contextThresholdOverrides = [
                 {
                   name = "large-context-models";
                   match.modelContextWindowMin = 900000;
-                  contextThreshold = 0.08;
+                  contextThreshold = 0.1;
                 }
               ];
               leafChunkTokens = 12000;
@@ -338,14 +388,15 @@ in
         };
       };
 
-#      proxy = {
-#        proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
-#      };
+      #      proxy = {
+      #        proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
+      #      };
 
       tts = {
         auto = "inbound";
         mode = "final";
         provider = "tts-local-cli";
+        timeoutMs = 120000;
       };
     };
   };
