@@ -72,8 +72,7 @@
     nixfmt-tree
     sshpass
     home-manager
-    #egl-wayland
-    #cacert
+    agenix
   ];
 
   hardware = {
