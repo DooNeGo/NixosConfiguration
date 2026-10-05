@@ -1,36 +1,72 @@
 #!/usr/bin/env python3
-"""Generate /run/sing-box/config.json for the system-level sing-box service.
-
-The VLESS subscription secret lives OUTSIDE the Nix store, so it can never be
-committed to the repository. This script is the only place that touches it.
-
-Secret source: systemd credential "vless-key", exposed to executed commands as
-  $CREDENTIALS_DIRECTORY/vless-key. systemd names that directory after the FULL
-  unit name, i.e. /run/credentials/sing-box.service/ (backed by
-  /etc/sing-box/vless-key, root-owned 0600, provisioned outside Nix).
-  NOTE: /run/credentials/sing-box/ (without .service) never exists — systemd
-  does not strip the unit suffix.
-  * If it contains a raw `vless://...` link, that link is used directly.
-  * Otherwise it is treated as a subscription URL: it is fetched, the response
-    is base64-decoded (if needed) and the first `vless://` link is used.
-
-The list of domains routed through the proxy is injected by the Nix module via
-the SING_BOX_PROXY_DOMAINS environment variable (a JSON array).
-"""
-
-import base64
+"""Generate one instance config.json; all inputs arrive via env (offline)."""
 import json
 import os
-import urllib.parse
-import urllib.request
+import re
 
+
+CREDENTIAL = os.environ.get("SING_BOX_CREDENTIAL", "vless-key")
 SECRET_FILE = os.path.join(
     os.environ.get("CREDENTIALS_DIRECTORY", "/run/credentials/sing-box.service"),
-    "vless-key",
+    CREDENTIAL,
 )
-OUT_FILE = "/run/sing-box/config.json"
-LISTEN_ADDRESS = "127.0.0.1"
-LISTEN_PORT = 2080
+OUT_FILE = os.environ.get("SING_BOX_OUT_FILE", "/run/sing-box/config.json")
+LISTEN_ADDRESS = os.environ.get("SING_BOX_LISTEN_ADDRESS", "127.0.0.1")
+LISTEN_PORT = int(os.environ.get("SING_BOX_LISTEN_PORT", "2080"))
+ROUTE_MATCH = os.environ.get("SING_BOX_ROUTE_MATCH", "domain_suffix")
+TRANSPORT_OVERRIDE = os.environ.get("SING_BOX_TRANSPORT_OVERRIDE", "")
+
+
+def _unquote(s):
+    # decode %XX escapes (latin-1, replace), matching urllib.parse.unquote on
+    # the well-formed values these links carry.
+    return re.sub(
+        r"%([0-9A-Fa-f]{2})",
+        lambda m: bytes.fromhex(m.group(1)).decode("latin-1", "replace"),
+        s,
+    )
+
+
+def parse_vless(vless):
+    """Parse vless://UUID@host:port?k=v&... without urllib (offline).
+
+    Returns (uuid, host, port, params). `params` maps each query key to a list
+    of its values (first value used via q()), matching the old
+    urllib.parse.urlparse + parse_qs + q() contract.
+    """
+    rest = vless[len("vless://"):].split("#", 1)[0]
+    at = rest.rfind("@")
+    if at == -1:
+        raise SystemExit("vless link is missing the uuid@host separator")
+    uuid = _unquote(rest[:at])
+    hostport = rest[at + 1:]
+    qm = hostport.find("?")
+    if qm == -1:
+        hostport, query = hostport, ""
+    else:
+        hostport, query = hostport[:qm], hostport[qm + 1:]
+    if hostport.startswith("["):
+        rb = hostport.find("]")
+        host = hostport[1:rb]
+        port = hostport[rb + 1:].lstrip(":") or "443"
+    else:
+        colon = hostport.rfind(":")
+        if colon == -1:
+            host, port = hostport, "443"
+        else:
+            host, port = hostport[:colon], hostport[colon + 1:]
+    params = {}
+    for part in query.split("&"):
+        if not part:
+            continue
+        k, _, v = part.partition("=")
+        params.setdefault(k, []).append(_unquote(v))
+    return uuid, host.lower(), (port or "443"), params
+
+
+def q(params, name, default=None):
+    vals = params.get(name)
+    return vals[0] if vals else default
 
 
 def load_domains():
@@ -48,58 +84,81 @@ def read_secret():
         return fh.read().strip()
 
 
-def extract_vless(raw):
-    if raw.startswith("vless://"):
-        return raw
-    req = urllib.request.Request(raw, headers={"User-Agent": "v2rayNG/1.8.5"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        body = resp.read().decode("utf-8", "replace").strip()
-    try:
-        decoded = base64.b64decode(body + "=" * (-len(body) % 4)).decode(
-            "utf-8", "replace"
+def read_vless():
+    """The runtime key must already be a raw vless:// link (the -fetch oneshot
+    guarantees this -- see resolve-credential.sh). No network, no decoding here."""
+    raw = read_secret()
+    if not raw.startswith("vless://"):
+        raise SystemExit(
+            "credential is not a vless:// link; the -fetch oneshot failed or the "
+            "agenix secret holds an un-fetched https:// URL - run "
+            "systemctl start <name>-fetch first"
         )
-    except Exception:
-        decoded = body
-    for line in decoded.splitlines():
-        line = line.strip()
-        if line.startswith("vless://"):
-            return line
-    raise SystemExit("no vless:// link found in subscription response")
+    return raw
 
 
 def build_outbound(vless):
-    url = urllib.parse.urlparse(vless)
-    query = urllib.parse.parse_qs(url.query)
+    uuid, host, port, params = parse_vless(vless)
 
-    def q(name, default=None):
-        vals = query.get(name)
-        return vals[0] if vals else default
+    # transport + security from the link's own params; an override pin wins.
+    stype = (TRANSPORT_OVERRIDE or q(params, "type", "tcp")).lower()
+    security = q(params, "security", "")
+    if TRANSPORT_OVERRIDE == "ws":
+        stype = "ws"
+    elif TRANSPORT_OVERRIDE == "reality":
+        security = "reality"
+    if not security:
+        # fallback for links without security= (reality iff pbk present):
+        security = "reality" if q(params, "pbk") else "tls"
 
     outbound = {
         "type": "vless",
         "tag": "proxy",
-        "server": url.hostname,
-        "server_port": int(url.port or 443),
-        "uuid": urllib.parse.unquote(url.username or ""),
-        "tls": {
-            "enabled": True,
-            "server_name": q("sni", url.hostname),
-            "utls": {"enabled": True, "fingerprint": q("fp", "chrome")},
-            "reality": {
-                "enabled": True,
-                "public_key": q("pbk", ""),
-                "short_id": q("sid", ""),
-            },
-        },
+        "server": host,
+        "server_port": int(port),
+        "uuid": uuid,
     }
-    flow = q("flow")
-    if flow:
+
+    # TLS layer -- only when the link uses tls/reality (never for security=none).
+    if security in ("tls", "reality"):
+        tls = {
+            "enabled": True,
+            "server_name": q(params, "sni", host),
+            "utls": {"enabled": True, "fingerprint": q(params, "fp", "chrome")},
+        }
+        if security == "reality":
+            # reality REQUIRES utls (checks c/e) -- utls is always emitted above.
+            tls["reality"] = {
+                "enabled": True,
+                "public_key": q(params, "pbk", ""),
+                "short_id": q(params, "sid", ""),
+            }
+        outbound["tls"] = tls
+
+    # flow is TCP-only (XTLS Vision: TCP+TLS/REALITY); ws/http/httpupgrade reject it.
+    flow = q(params, "flow")
+    if flow and stype == "tcp":
         outbound["flow"] = flow
+
+    # transport -- ws (the common non-tcp case). V2Ray schema: type is const
+    # "ws" (NOT "websocket"), path=upgrade path, Host goes in headers.
+    if stype in ("ws", "http", "httpupgrade"):
+        transport = {"type": "ws"}
+        path = q(params, "path")
+        if path:
+            transport["path"] = path
+        hosth = q(params, "host")
+        if hosth:
+            transport["headers"] = {"Host": hosth}
+        ed = q(params, "ed") or q(params, "earlyData")
+        if ed and ed.isdigit():
+            transport["max_early_data"] = int(ed)
+        outbound["transport"] = transport
     return outbound
 
 
 def build_config(domains):
-    vless = extract_vless(read_secret())
+    vless = read_vless()
     return {
         "log": {"level": "warn", "timestamp": True},
         "inbounds": [
@@ -117,7 +176,7 @@ def build_config(domains):
         "route": {
             "rules": [
                 {"action": "sniff"},
-                {"domain_suffix": domains, "action": "route", "outbound": "proxy"},
+                {ROUTE_MATCH: domains, "action": "route", "outbound": "proxy"},
             ],
             "final": "direct",
             "auto_detect_interface": True,
