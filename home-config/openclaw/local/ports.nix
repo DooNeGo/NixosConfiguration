@@ -12,4 +12,5 @@
 
   openclaw.openHandsPort = 9001;
   openclaw.singboxPort = 2080;
+  openclaw.singboxGitPort = 2081;
 }
