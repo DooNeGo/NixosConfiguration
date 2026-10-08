@@ -256,7 +256,6 @@ in
             skills = [
               "tmux" "python-debugpy" "spike" "summarize"
               "self-improving-agent" "diagram-maker" "visualize"
-              "node-inspect-debugger"
             ];
           };
 
@@ -303,8 +302,9 @@ in
       tools.web.search.provider = "searxng";
 
       # Skills disabled 2026-10-08: research/2026-10-08-skills-review/REPORT.md
-      # + research/2026-10-08-per-agent-skills-scope/REPORT.md (Pareto,
-      # 41-name denylist minus node-inspect-debugger pending advisor decision).
+      # + research/2026-10-08-per-agent-skills-scope/REPORT.md (Pareto;
+      # full 41-name denylist — operator verdict 2026-10-08: node-inspect-debugger
+      # «точно убрать», out of the coder allowlist too).
       # Soft disable; drop a name to restore.
       skills.entries = lib.listToAttrs (
         map (n: lib.nameValuePair n { enabled = false; }) [
@@ -312,7 +312,7 @@ in
           "blogwatcher" "blucli" "camsnap" "canvas" "cloud-image-bake"
           "coding-agent" "control-ui" "eightctl" "gemini" "gh-issues"
           "gifgrep" "github" "goplaces" "himalaya" "meme-maker" "mcporter"
-          "model-usage" "nano-pdf" "notion" "obsidian"
+          "model-usage" "nano-pdf" "node-inspect-debugger" "notion" "obsidian"
           "openai-whisper" "openai-whisper-api" "openhue" "oracle" "ordercli"
           "peekaboo" "sag" "sherpa-onnx-tts" "songsee" "sonoscli"
           "spotify-player" "taskflow" "taskflow-inbox-triage" "things-mac"
