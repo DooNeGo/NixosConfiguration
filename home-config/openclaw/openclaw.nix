@@ -288,6 +288,8 @@ in
       skills.entries = lib.listToAttrs (
         map (n: lib.nameValuePair n { enabled = false; }) [
           "1password"
+          "gemini"
+          "sherpa-onnx-tts"
         ]
       );
 
@@ -432,13 +434,6 @@ in
       # ~/.nix-profile/bin/chromium (ungoogled-chromium); point it explicitly
       browser = {
         executablePath = "/home/openclaw/.nix-profile/bin/chromium";
-      };
-
-      tts = {
-        auto = "inbound";
-        mode = "final";
-        provider = "tts-local-cli";
-        timeoutMs = 120000;
       };
     };
   };
