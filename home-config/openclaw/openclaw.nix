@@ -401,37 +401,43 @@ in
             };
           };
 
-          # Disabled 2026-10-08 per research/2026-10-08-plugin-config-review
-          # (REPORT.md Q4): unused bundled provider/media plugins — no config,
-          # no key material, no references in live settings. canvas stays
-          # enabled (paired macOS node); anthropic/google/linux-node stay
-          # enabled pending verification (Q4 VERIFY list).
-          alibaba.enabled = false;
-          azure-speech.enabled = false;
-          clawrouter.enabled = false;
-          copilot-proxy.enabled = false;
-          cua-computer.enabled = false;
-          deepgram.enabled = false;
-          elevenlabs.enabled = false;
-          fal.enabled = false;
-          geolocation.enabled = false;
-          github-copilot.enabled = false;
-          huggingface.enabled = false;
-          litellm.enabled = false;
-          lmstudio.enabled = false;
-          microsoft.enabled = false;
-          microsoft-foundry.enabled = false;
-          minimax.enabled = false;
-          nvidia.enabled = false;
-          openai.enabled = false;
-          opencode-go.enabled = false;
-          runway.enabled = false;
-          senseaudio.enabled = false;
-          sglang.enabled = false;
-          together.enabled = false;
-          vllm.enabled = false;
-          xai.enabled = false;
-        };
+        }
+
+        # Disabled 2026-10-08 per research/2026-10-08-plugin-config-review
+        # (REPORT.md Q4): unused bundled provider/media plugins — no config,
+        # no key material, no references in live settings. canvas stays
+        # enabled (paired macOS node); anthropic/google/linux-node stay
+        # enabled pending verification (Q4 VERIFY list). Same generation
+        # pattern as the skills.entries disable list above.
+        // lib.listToAttrs (
+          map (n: lib.nameValuePair n { enabled = false; }) [
+            "alibaba"
+            "azure-speech"
+            "clawrouter"
+            "copilot-proxy"
+            "cua-computer"
+            "deepgram"
+            "elevenlabs"
+            "fal"
+            "geolocation"
+            "github-copilot"
+            "huggingface"
+            "litellm"
+            "lmstudio"
+            "microsoft"
+            "microsoft-foundry"
+            "minimax"
+            "nvidia"
+            "openai"
+            "opencode-go"
+            "runway"
+            "senseaudio"
+            "sglang"
+            "together"
+            "vllm"
+            "xai"
+          ]
+        );
       };
 
       memory.search = {
