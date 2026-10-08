@@ -237,7 +237,7 @@ in
             skills = [
               "browser-automation" "summarize" "tmux" "python-debugpy"
               "spike" "healthcheck" "self-improving-agent" "visualize"
-              "diagram-maker"
+              "diagram-maker" "weather"
             ];
           };
 
