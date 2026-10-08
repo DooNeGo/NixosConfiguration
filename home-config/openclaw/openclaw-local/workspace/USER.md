@@ -26,3 +26,6 @@ directives (hard 4K budget; history goes to memory diaries).
   `/home/shared/NixosConfiguration` repository as diffs, followed by a
   rebuild.
   <!-- observed: 2026-10-08 | status: active; supersedes ~/configuration -->
+- Delegation: all substantive tasks are delegated to subagents;
+  coordinator stays free for intake, orchestration and verification.
+  <!-- observed: 2026-10-08 | status: active -->
