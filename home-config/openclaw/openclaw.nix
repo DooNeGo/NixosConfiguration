@@ -127,30 +127,6 @@ in
             commentary = true;
           };
         };
-
-        # Local-only TTS provider (kokoro-ru, voice sveta). The nix-openclaw
-        # generated schema only exposes `apiKey` under tts.providers.<id>
-        # (upstream Zod catchall is not rendered), so the provider settings
-        # are placed in the channel override — same shape as `tts`, and
-        # OpenClaw deep-merges it over the global tts block for automatic
-        # replies, /tts commands and the tts agent tool. Text is piped to the
-        # command's stdin (args contain no {{Text}}); audio is written to
-        # {{OutputPath}} as wav and converted to opus by OpenClaw's ffmpeg for
-        # voice notes.
-        tts = {
-          provider = "tts-local-cli";
-          providers."tts-local-cli" = {
-            command = "${pkgs.kokoro-ru}/bin/kokoro-ru-say";
-            args = [
-              "-v"
-              "sveta"
-              "-o"
-              "{{OutputPath}}"
-            ];
-            outputFormat = "wav";
-            timeoutMs = 120000;
-          };
-        };
       };
 
 #      models.providers.vllm = {
