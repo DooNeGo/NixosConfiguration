@@ -4,15 +4,12 @@ let
 in
 {
   "secrets/searx-secret-key.age".publicKeys = [
-    user
     host
   ];
   "secrets/vless-credits-git.age".publicKeys = [
-    user
     host
   ];
   "secrets/vless-main.age".publicKeys = [
-    user
     host
   ];
 }
