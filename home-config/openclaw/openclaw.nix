@@ -137,20 +137,20 @@ in
         # command's stdin (args contain no {{Text}}); audio is written to
         # {{OutputPath}} as wav and converted to opus by OpenClaw's ffmpeg for
         # voice notes.
-        #        tts = {
-        #          provider = "tts-local-cli";
-        #          providers."tts-local-cli" = {
-        #            command = "${pkgs.kokoro-ru}/bin/kokoro-ru-say";
-        #            args = [
-        #              "-v"
-        #              "sveta"
-        #              "-o"
-        #              "{{OutputPath}}"
-        #            ];
-        #            outputFormat = "wav";
-        #            timeoutMs = 120000;
-        #          };
-        #        };
+        tts = {
+          provider = "tts-local-cli";
+          providers."tts-local-cli" = {
+            command = "${pkgs.kokoro-ru}/bin/kokoro-ru-say";
+            args = [
+              "-v"
+              "sveta"
+              "-o"
+              "{{OutputPath}}"
+            ];
+            outputFormat = "wav";
+            timeoutMs = 120000;
+          };
+        };
       };
 
 #      models.providers.vllm = {
@@ -347,6 +347,12 @@ in
         slots.contextEngine = "lossless-claw";
 
         entries = {
+          # channel plugin carries this live Telegram session but the plugin
+          # registry reports it disabled — persist the enable (Q4 FIX 1)
+          telegram = {
+            enabled = true;
+          };
+
           searxng = {
             enabled = true;
             config.webSearch.baseUrl = "http://localhost:6080";
@@ -362,6 +368,14 @@ in
                 #"vllm/${cfg.llmModel}"
               ];
             };
+            # migrated 2026-10-08 from legacy config.expansionModel
+            # (doctor preview: subagent.allowModelOverride + allowedModels)
+            subagent = {
+              allowModelOverride = true;
+              allowedModels = [
+                "openrouter/xiaomi/mimo-v2.6-flash"
+              ];
+            };
             config = {
               #contextThreshold = 0.25;
               maxAssemblyTokenBudget = 100000;
@@ -369,7 +383,6 @@ in
               summaryMaxCallsPerWindow = 48;
               #summaryModel = "vllm/${cfg.llmModel}";
               summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
-              expansionModel = "openrouter/xiaomi/mimo-v2.6-flash";
               cacheAwareCompaction.enabled = true;
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
@@ -387,6 +400,37 @@ in
               logging = true;
             };
           };
+
+          # Disabled 2026-10-08 per research/2026-10-08-plugin-config-review
+          # (REPORT.md Q4): unused bundled provider/media plugins — no config,
+          # no key material, no references in live settings. canvas stays
+          # enabled (paired macOS node); anthropic/google/linux-node stay
+          # enabled pending verification (Q4 VERIFY list).
+          alibaba.enabled = false;
+          azure-speech.enabled = false;
+          clawrouter.enabled = false;
+          copilot-proxy.enabled = false;
+          cua-computer.enabled = false;
+          deepgram.enabled = false;
+          elevenlabs.enabled = false;
+          fal.enabled = false;
+          geolocation.enabled = false;
+          github-copilot.enabled = false;
+          huggingface.enabled = false;
+          litellm.enabled = false;
+          lmstudio.enabled = false;
+          microsoft.enabled = false;
+          microsoft-foundry.enabled = false;
+          minimax.enabled = false;
+          nvidia.enabled = false;
+          openai.enabled = false;
+          opencode-go.enabled = false;
+          runway.enabled = false;
+          senseaudio.enabled = false;
+          sglang.enabled = false;
+          together.enabled = false;
+          vllm.enabled = false;
+          xai.enabled = false;
         };
       };
 
