@@ -9,16 +9,21 @@
       "adbusers"
       "kvm"
       "audio"
+      "wireshark"
     ];
     shell = pkgs.zsh;
   };
 
   users.users.openclaw = {
     isNormalUser = true;
-    #linger = true;
+    linger = true;
     description = "Openclaw user";
     hashedPassword = "$y$j9T$qEa6nXlqe74ZWOuYHsLN..$cym2MjTNePrMhkWvm9bI.7zsJeLj8XpqfZjuaVfD9Q/";
-    extraGroups = [ ];
+    extraGroups = [
+      "wireshark"
+      "adbusers"
+      "kvm"
+    ];
     shell = pkgs.zsh;
   };
 }

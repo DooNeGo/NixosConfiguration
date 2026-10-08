@@ -64,9 +64,9 @@ hl.config({
         touchpad = {
             natural_scroll = true,
             scroll_factor = 0.5,
-            tap_to_click = true,    -- тап = клик
-            tap_and_drag = true,    -- тап + движение = drag-операция
-            drag_lock    = 1,       -- 1: drag lock с таймаутом
+            tap_to_click = true,
+            tap_and_drag = true,
+            drag_lock    = 1,
             clickfinger_behavior = true,
             middle_button_emulation = true,
             disable_while_typing = true,
@@ -138,8 +138,9 @@ hl.bind(mod .. " + ALT + up", hl.dsp.window.swap({ direction = "up" }))
 hl.bind(mod .. " + ALT + down", hl.dsp.window.swap({ direction = "down" }))
 
 for i = 1, 9 do
-    hl.bind(mod .. " + code:1" .. i, hl.dsp.focus({ workspace = i }))
-    hl.bind(mod .. " + SHIFT + code:1" .. i, hl.dsp.window.move({ workspace = i }))
+    -- Hyprland workspaces are 1-based; digit key codes are XKB 10..18.
+    hl.bind(mod .. " + code:" .. (i + 9), hl.dsp.focus({ workspace = i }))
+    hl.bind(mod .. " + SHIFT + code:" .. (i + 9), hl.dsp.window.move({ workspace = i }))
 end
 
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })

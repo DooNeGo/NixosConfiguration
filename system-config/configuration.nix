@@ -15,7 +15,6 @@
     #./docker.nix
     ./podman.nix
     ./nvidia.nix
-    #./home-manager.nix
     ./razer.nix
     ./tmux.nix
     ./xdg.nix
@@ -26,6 +25,7 @@
     ./android.nix
     ./usbmux.nix
     ./remote-access.nix
+    ./searx.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -83,6 +83,7 @@
   programs = {
     zsh.enable = true;
     gpu-screen-recorder.enable = true;
+    wireshark.enable = true;
   };
 
   services.gnome.gnome-keyring.enable = true;
@@ -99,6 +100,11 @@
       "flakes"
     ];
     auto-optimise-store = true;
+  };
+
+  systemd.services.nix-daemon.environment = {
+    HTTP_PROXY = "http://127.0.0.1:2080";
+    HTTPS_PROXY = "http://127.0.0.1:2080";
   };
 
   networking.firewall = {

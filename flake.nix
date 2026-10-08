@@ -65,16 +65,20 @@
           }
           ./system-config/configuration.nix
           ({ pkgs, ... }: {
-          nixpkgs.overlays = [
-            (final: prev: {
-              stable = import nixpkgs-stable {
-                system = pkgs.stdenv.hostPlatform.system;
-                config.allowUnfree = true;
-              };
-              agenix = agenix.packages."${system}".default;
-            })
-          ];
-        })
+            nixpkgs.overlays = [
+              (final: prev: {
+                stable = import nixpkgs-stable {
+                  system = pkgs.stdenv.hostPlatform.system;
+                  config.allowUnfree = true;
+                };
+                unstable = import nixpkgs-unstable {
+                  system = pkgs.stdenv.hostPlatform.system;
+                  config.allowUnfree = true;
+                };
+                agenix = agenix.packages."${system}".default;
+              })
+            ];
+          })
           inputs.stylix.nixosModules.stylix
           agenix.nixosModules.age
           home-manager.nixosModules.home-manager
@@ -82,7 +86,7 @@
             home-manager = {
               useGlobalPkgs = true;
               useUserPackages = true;
-              extraSpecialArgs = { inherit inputs pkgs-unstable pkgs-stable; };
+              extraSpecialArgs = { inherit inputs; };
               users.mathew = ./home-config/mathew/home.nix;
             };
           }

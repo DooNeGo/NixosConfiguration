@@ -7,8 +7,8 @@ let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
     platformVersions = [
       "33"
-      "36"
       "36.1"
+      "37.0"
     ];
     buildToolsVersions = [ "latest" ];
     abiVersions = [ "x86_64" ];
@@ -67,6 +67,7 @@ in
       DOTNET_ROOT = "${dotnet}/share/dotnet";
       PATH = "${dotnet}/bin:$PATH";
       ANDROID_HOME = "$HOME/.android/sdk";
+      ANDROID_SDK_ROOT = "$HOME/.android/sdk";
       ANDROID_AVD_HOME = "$HOME/.android/avd";
     };
 

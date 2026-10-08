@@ -364,6 +364,7 @@
 
   services.murmur = {
     enable = true;
+    package = pkgs.stable.murmur;
     bandwidth = 540000;
     bonjour = true;
     password = "562389";

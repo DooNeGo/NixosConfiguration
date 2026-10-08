@@ -27,6 +27,7 @@
     ../shared/zsh.nix
     #./stylix.nix
     ../shared/maui-dev.nix
+    ../shared/ssh.nix
     ./hyprlauncher.nix
     ./xdg.nix
     ./obs-studio.nix

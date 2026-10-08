@@ -5,10 +5,8 @@
   inputs,
   ...
 }:
-
 let
   cfg = import ./local/ai/models.nix;
-  aiServer = "100.114.127.10";
 in
 {
   imports = [
@@ -21,6 +19,7 @@ in
     runtimePlugins = [
       "searxng"
       "lossless-claw"
+      "tokenjuice"
     ];
 
     bundledPlugins.summarize.enable = true;
@@ -34,6 +33,18 @@ in
         mode = "symlink";
         source = toString ./skills/kokoro-voice;
       }
+      {
+        name = "skill-vetter";
+        description = "Security-first skill vetting for AI agents. Use before installing any skill from ClawdHub, GitHub, or other sources. Checks for red flags, permission scope, and suspicious patterns.";
+        mode = "symlink";
+        source = toString ./skills/skill-vetter;
+      }
+      {
+        name = "self-improving-agent";
+        description = "Captures and maintains learnings, errors, and corrections. Use when a command fails, the user corrects an assumption, a capability is missing, knowledge is outdated, or a better approach is found.";
+        mode = "symlink";
+        source = toString ./skills/self-improving-agent;
+      }
     ];
 
     workspace.files =
@@ -42,6 +53,7 @@ in
           "coordinator"
           "coder"
           "worker"
+          "advisor"
         ];
         personaFiles = [
           "AGENTS.md"
@@ -141,29 +153,49 @@ in
         #        };
       };
 
-      models.providers.vllm = {
-        baseUrl = "http://${aiServer}:${toString cfg.llmPort}/v1";
-        apiKey = "EMPTY";
-        timeoutSeconds = 900;
-      };
+#      models.providers.vllm = {
+#        baseUrl = "http://${aiServer}:${toString cfg.llmPort}/v1";
+#        apiKey = "EMPTY";
+#        timeoutSeconds = 900;
+#      };
+
+      messages.responseUsage = "full";
 
       agents = {
         defaults = {
           model = {
             primary = "openrouter/xiaomi/mimo-v2.6-flash";
             fallbacks = [
-              "vllm/${cfg.llmModel}"
+              #"vllm/${cfg.llmModel}"
+              "openrouter/~z-ai/glm-flash-latest"
               "openrouter/free"
             ];
           };
 
+          modelPolicy.allow = [
+            "openrouter/xiaomi/mimo-v2.6-flash"
+            "openrouter/xiaomi/mimo-v2.6-pro"
+            "openrouter/anthropic/claude-sonnet-5-5"
+            "openrouter/~z-ai/glm-flash-latest"
+            "openrouter/~z-ai/glm-latest"
+            "openrouter/free"
+          ];
+
           models = {
-            "vllm/${cfg.llmModel}".params.thinking = "low";
-            "openrouter/~z-ai/glm-flash-latest".params.thinking = "low";
+            #"vllm/${cfg.llmModel}".params.thinking = "low";
+            "openrouter/~z-ai/glm-flash-latest".params.thinking = "high";
+            "openrouter/~z-ai/glm-latest".params.thinking = "high";
           };
 
-          utilityModel = "vllm/${cfg.llmModel}";
-          heartbeat.model = "vllm/${cfg.llmModel}";
+          #utilityModel = "vllm/${cfg.llmModel}";
+          utilityModel = "openrouter/xiaomi/mimo-v2.6-flash";
+          #heartbeat.model = "vllm/${cfg.llmModel}";
+          heartbeat = {
+            model = "openrouter/xiaomi/mimo-v2.6-flash";
+            isolatedSession = true;
+            lightContext = true;
+            every = "0m";
+          };
 
           systemAgent.agentId = "coordinator";
           authInheritance.agentId = "coordinator";
@@ -174,12 +206,12 @@ in
 
           compaction = {
             notifyUser = true;
-            midTurnPrecheck.enabled = true;
+           # midTurnPrecheck.enabled = true;
           };
 
           subagents = {
             allowAgents = [ ];
-            maxSpawnDepth = 2;
+            maxSpawnDepth = 1;
             requireAgentId = true;
           };
         };
@@ -193,25 +225,17 @@ in
               emoji = "🦞";
             };
 
+            memory.search.rememberAcrossConversations = true;
+            heartbeat.every = "1h";
+
             workspace = "~/.openclaw/workspace/coordinator";
 
-            tools.deny = [
-              "browser"
-              "node_inference"
-              "dir_fetch"
-              "dir_list"
-              "file_fetch"
-              "file_write"
-              "image_generate"
-              "music_generate"
-              "video_generate"
-              "github_identity_status"
-            ];
-
             model = {
-              primary = "openrouter/~z-ai/glm-flash-latest";
+              primary = "openrouter/~z-ai/glm-latest";
+
               fallbacks = [
-                "vllm/${cfg.llmModel}"
+                "openrouter/~z-ai/glm-flash-latest"
+            #    "vllm/${cfg.llmModel}"
                 "openrouter/free"
               ];
             };
@@ -221,6 +245,7 @@ in
               allowAgents = [
                 "worker"
                 "coder"
+                "advisor"
               ];
             };
           };
@@ -232,30 +257,6 @@ in
             };
 
             workspace = "~/.openclaw/workspace/worker";
-
-            tools.allow = [
-              "read"
-              "write"
-              "edit"
-              "apply_patch"
-              "ls"
-              "exec"
-              "process"
-              "web_search"
-              "web_fetch"
-              "view_image"
-              "pdf"
-              "memory_search"
-              "memory_get"
-              "lcm_grep"
-              "lcm_describe"
-              "lcm_expand"
-              "lcm_expand_query"
-              "browser"
-              "tts"
-              "talk_voice"
-              "transcripts"
-            ];
           };
 
           coder = {
@@ -266,28 +267,28 @@ in
 
             workspace = "~/.openclaw/workspace/coder";
 
-            skills = [
-              "tmux"
-              "python-debugpy"
-              "spike"
-              "node-inspect-debugger"
-            ];
-
             tools = {
               codeMode = "auto";
-
-              allow = [
-                "ls"
-                "read"
-                "write"
-                "edit"
-                "apply_patch"
-                "exec"
-                "process"
-                "memory_search"
-                "memory_get"
-              ];
             };
+          };
+
+          advisor = {
+            identity = {
+              name = "Sage";
+              emoji = "🧠";
+            };
+
+            workspace = "~/.openclaw/workspace/advisor";
+
+            model = {
+              primary = "openrouter/anthropic/claude-sonnet-5-5";
+              fallbacks = [ "openrouter/xiaomi/mimo-v2.6-pro" ];
+            };
+
+            modelPolicy.allow = [
+              "openrouter/anthropic/claude-sonnet-5-5"
+              "openrouter/xiaomi/mimo-v2.6-pro"
+            ];
           };
         };
       };
@@ -307,6 +308,12 @@ in
       };
 
       tools.web.search.provider = "searxng";
+
+      skills.entries = lib.listToAttrs (
+        map (n: lib.nameValuePair n { enabled = false; }) [
+          "1password"
+        ]
+      );
 
       tools.media = {
         models = [
@@ -342,7 +349,7 @@ in
         entries = {
           searxng = {
             enabled = true;
-            config.webSearch.baseUrl = "http://${aiServer}:${toString cfg.searxngPort}";
+            config.webSearch.baseUrl = "http://localhost:6080";
           };
 
           "lossless-claw" = {
@@ -352,20 +359,14 @@ in
               allowModelOverride = true;
               allowedModels = [
                 "openrouter/xiaomi/mimo-v2.6-flash"
-                "vllm/${cfg.llmModel}"
+                #"vllm/${cfg.llmModel}"
               ];
             };
             config = {
-              contextThreshold = 0.1;
-              proactiveThresholdCompactionMode = "inline";
-              contextThresholdOverrides = [
-                {
-                  name = "large-context-models";
-                  match.modelContextWindowMin = 900000;
-                  contextThreshold = 0.1;
-                }
-              ];
-              leafChunkTokens = 12000;
+              #contextThreshold = 0.25;
+              maxAssemblyTokenBudget = 100000;
+              freshTailMaxTokens = 24000;
+              summaryMaxCallsPerWindow = 48;
               #summaryModel = "vllm/${cfg.llmModel}";
               summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
               expansionModel = "openrouter/xiaomi/mimo-v2.6-flash";
@@ -375,6 +376,15 @@ in
                 "agent:*:**:active-memory:**"
                 "agent:*:dreaming-narrative-**"
               ];
+            };
+          };
+
+          "active-memory" = {
+            enabled = true;
+            config = {
+              mode = "escalate";
+              agents = [ "coordinator" ];
+              logging = true;
             };
           };
         };
@@ -388,9 +398,15 @@ in
         };
       };
 
-      #      proxy = {
-      #        proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
-      #      };
+      proxy = {
+        proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
+      };
+
+      # gateway service runs with a stripped PATH and cannot discover
+      # ~/.nix-profile/bin/chromium (ungoogled-chromium); point it explicitly
+      browser = {
+        executablePath = "/home/openclaw/.nix-profile/bin/chromium";
+      };
 
       tts = {
         auto = "inbound";
@@ -417,5 +433,5 @@ in
     Service.TimeoutStopSec = "330";
   };
 
-  home.packages = [ pkgs.ffmpeg ];
+  home.packages = with pkgs; [ ffmpeg ];
 }

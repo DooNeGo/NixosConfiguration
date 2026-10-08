@@ -8,7 +8,6 @@
   services = {
     tailscale = {
       enable = true;
-      #extraUpFlags = [ "--accept-dns=false" ];
       serve = {
         enable = true;
         services.openclaw-webui = {
