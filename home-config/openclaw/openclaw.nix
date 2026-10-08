@@ -233,6 +233,12 @@ in
             };
 
             workspace = "~/.openclaw/workspace/worker";
+
+            skills = [
+              "browser-automation" "summarize" "tmux" "python-debugpy"
+              "spike" "healthcheck" "self-improving-agent" "visualize"
+              "diagram-maker"
+            ];
           };
 
           coder = {
@@ -246,6 +252,12 @@ in
             tools = {
               codeMode = "auto";
             };
+
+            skills = [
+              "tmux" "python-debugpy" "spike" "summarize"
+              "self-improving-agent" "diagram-maker" "visualize"
+              "node-inspect-debugger"
+            ];
           };
 
           advisor = {
@@ -255,6 +267,11 @@ in
             };
 
             workspace = "~/.openclaw/workspace/advisor";
+
+            skills = [
+              "summarize" "skill-vetter" "browser-automation" "spike"
+              "diagram-maker" "visualize" "self-improving-agent"
+            ];
 
             model = {
               primary = "openrouter/anthropic/claude-sonnet-5-5";
@@ -285,11 +302,21 @@ in
 
       tools.web.search.provider = "searxng";
 
+      # Skills disabled 2026-10-08: research/2026-10-08-skills-review/REPORT.md
+      # + research/2026-10-08-per-agent-skills-scope/REPORT.md (Pareto,
+      # 41-name denylist minus node-inspect-debugger pending advisor decision).
+      # Soft disable; drop a name to restore.
       skills.entries = lib.listToAttrs (
         map (n: lib.nameValuePair n { enabled = false; }) [
-          "1password"
-          "gemini"
-          "sherpa-onnx-tts"
+          "1password" "apple-notes" "apple-reminders" "bear-notes"
+          "blogwatcher" "blucli" "camsnap" "canvas" "cloud-image-bake"
+          "coding-agent" "control-ui" "eightctl" "gemini" "gh-issues"
+          "gifgrep" "github" "goplaces" "himalaya" "meme-maker" "mcporter"
+          "model-usage" "nano-pdf" "notion" "obsidian"
+          "openai-whisper" "openai-whisper-api" "openhue" "oracle" "ordercli"
+          "peekaboo" "sag" "sherpa-onnx-tts" "songsee" "sonoscli"
+          "spotify-player" "taskflow" "taskflow-inbox-triage" "things-mac"
+          "trello" "xurl"
         ]
       );
 
