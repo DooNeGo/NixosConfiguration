@@ -23,6 +23,7 @@
       "wireshark"
       "adbusers"
       "kvm"
+      "adm"
     ];
     shell = pkgs.zsh;
   };
