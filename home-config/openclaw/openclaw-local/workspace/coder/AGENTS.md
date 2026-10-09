@@ -7,7 +7,6 @@ you were told to write), never delegate (no `sessions_spawn`, no side
 sessions), and never publish anything.
 
 This file is managed by Nix. Update it in the repo, not in the workspace.
-Local convention: `last reviewed: 2026-10-08` — refresh on each review.
 
 ## Scope
 

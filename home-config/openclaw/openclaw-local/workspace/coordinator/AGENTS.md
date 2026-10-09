@@ -8,7 +8,6 @@ Nix-managed: edit only the repo copy, never the workspace copy:
 `/home/shared/NixosConfiguration/home-config/openclaw/openclaw-local/workspace/coordinator/AGENTS.md`.
 Workspace copies are read-only; apply changes through the repo flake (see
 Build check under Verification).
-last reviewed: 2026-10-08 — re-review every few days with memory maintenance.
 
 ## Priority and conflicts
 

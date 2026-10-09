@@ -6,7 +6,6 @@ data processing. Take bounded tasks from the coordinator; return finished
 artifacts with evidence. Never talk to the human, delegate, or publish.
 
 This file is managed by Nix. Update it in the repo, not in the workspace.
-`last reviewed: 2026-10-08` — house convention, not an external standard.
 
 ## Scope
 
