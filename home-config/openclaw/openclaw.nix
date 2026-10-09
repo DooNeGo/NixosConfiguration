@@ -299,13 +299,11 @@ in
         agentId = "coordinator";
       };
 
-      tools.web.search.provider = "searxng";
+      tools.web = {
+        search.provider = "searxng";
+        fetch.useTrustedEnvProxy = true;
+      };
 
-      # Skills disabled 2026-10-08: research/2026-10-08-skills-review/REPORT.md
-      # + research/2026-10-08-per-agent-skills-scope/REPORT.md (Pareto;
-      # full 41-name denylist — operator verdict 2026-10-08: node-inspect-debugger
-      # «точно убрать», out of the coder allowlist too).
-      # Soft disable; drop a name to restore.
       skills.entries = lib.listToAttrs (
         map (n: lib.nameValuePair n { enabled = false; }) [
           "1password" "apple-notes" "apple-reminders" "bear-notes"
@@ -352,8 +350,6 @@ in
         slots.contextEngine = "lossless-claw";
 
         entries = {
-          # channel plugin carries this live Telegram session but the plugin
-          # registry reports it disabled — persist the enable (Q4 FIX 1)
           telegram = {
             enabled = true;
           };
@@ -373,8 +369,6 @@ in
                 #"vllm/${cfg.llmModel}"
               ];
             };
-            # migrated 2026-10-08 from legacy config.expansionModel
-            # (doctor preview: subagent.allowModelOverride + allowedModels)
             subagent = {
               allowModelOverride = true;
               allowedModels = [
@@ -408,12 +402,6 @@ in
 
         }
 
-        # Disabled 2026-10-08 per research/2026-10-08-plugin-config-review
-        # (REPORT.md Q4): unused bundled provider/media plugins — no config,
-        # no key material, no references in live settings. canvas stays
-        # enabled (paired macOS node); anthropic/google/linux-node stay
-        # enabled pending verification (Q4 VERIFY list). Same generation
-        # pattern as the skills.entries disable list above.
         // lib.listToAttrs (
           map (n: lib.nameValuePair n { enabled = false; }) [
             "alibaba"
@@ -457,8 +445,6 @@ in
         proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
       };
 
-      # gateway service runs with a stripped PATH and cannot discover
-      # ~/.nix-profile/bin/chromium (ungoogled-chromium); point it explicitly
       browser = {
         executablePath = "/home/openclaw/.nix-profile/bin/chromium";
       };
