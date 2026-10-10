@@ -1,5 +1,5 @@
 {
-  description = "kokoro-ru standalone flake: Russian Kokoro TTS packages + pinned data trees (W2 skeleton; integration is wired by W4)";
+  description = "kokoro-ru standalone flake: Russian Kokoro TTS packages + pinned data trees";
 
   inputs = {
     # Pin: nixpkgs revision verified during plan research (kokoro, razdel,
@@ -24,12 +24,6 @@
         kokoro-ru-data = data.kokoro-ru-data;
         ruaccent-data = data.ruaccent-data;
 
-        # Contract for W1/W3 package files: they may take
-        #   data = { kokoro-ru-data; ruaccent-data; }
-        # via the `data` argument passed below.
-        # Until ./pkgs/{pycrfsuite,ruaccent,kokoro-ru}.nix land (W1/W3),
-        # `nix flake check` reports these three as missing files — expected
-        # during W2; the two data outputs above evaluate on their own.
         pycrfsuite = pkgs.callPackage ./pkgs/pycrfsuite.nix { };
         ruaccent = pkgs.callPackage ./pkgs/ruaccent.nix { inherit data; };
         kokoro-ru = pkgs.callPackage ./pkgs/kokoro-ru.nix { inherit data; };
