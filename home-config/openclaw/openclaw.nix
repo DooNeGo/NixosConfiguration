@@ -144,7 +144,7 @@ in
         zai.baseUrl = "https://api.z.ai/api/coding/paas/v4";
       };
 
-      messages.responseUsage = "full";
+      #messages.responseUsage = "full";
 
       agents = {
         defaults = {
@@ -261,7 +261,7 @@ in
               "visualize"
             ];
 
-            models."zai/glm-5.3".params.thinking = "low";
+            models."zai/glm-5.3".params.thinking = "high";
 
             model = {
               primary = "zai/glm-5.3";
@@ -430,9 +430,8 @@ in
             llm = {
               allowModelOverride = true;
               allowedModels = [
-                #"openrouter/xiaomi/mimo-v2.6-flash"
                 "vllm/${cfg.llmModel}"
-                "zai/glm-5.3"
+                "zai/glm-5.3-flash"
               ];
             };
             #subagent = {
@@ -442,12 +441,10 @@ in
               #];
             #};
             config = {
-              #contextThreshold = 0.25;
               maxAssemblyTokenBudget = 100000;
               freshTailMaxTokens = 24000;
               summaryMaxCallsPerWindow = 48;
               summaryModel = "zai/glm-5.3-flash";
-              #summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
               cacheAwareCompaction.enabled = true;
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
@@ -463,8 +460,8 @@ in
               provider = "ollama";
               model = cfg.embeddingModel;
               baseUrl = "http://localhost:11434";
+              dimensions = 1024;
             };
-            #autoRecall = true;
           };
 
           "active-memory" = {
