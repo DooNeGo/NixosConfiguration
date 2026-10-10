@@ -273,7 +273,7 @@ in
             ];
 
             model = {
-              primary = "zai/glm-5.3";
+              primary = "zai/glm-5.3-flash";
               fallbacks = [
                 "anthropic/claude-haiku-5-5"
                 "openrouter/free"
