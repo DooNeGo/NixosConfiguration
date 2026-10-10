@@ -24,11 +24,16 @@ in
       "zai"
     ];
 
-    bundledPlugins.summarize.enable = true;
+    bundledPlugins = {
+      summarize.enable = false;
+      goplaces.enable = false;
+    };
 
     environment = {
       OPENROUTER_API_KEY = "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
       ZAI_API_KEY = "${config.home.homeDirectory}/.secrets/zai-api-key";
+      # Plugin source builds use os.tmpdir(); /tmp is a 16G tmpfs.
+      TMPDIR = "/var/tmp/openclaw";
     };
 
     skills = [
@@ -137,7 +142,6 @@ in
       models.providers = {
         vllm = {
           baseUrl = "http://100.114.127.10:${toString cfg.llmPort}/v1";
-          apiKey = "EMPTY";
           timeoutSeconds = 900;
         };
 
@@ -151,22 +155,35 @@ in
           model = {
             primary = "zai/glm-5.3-flash";
             fallbacks = [
+              "anthropic/claude-haiku-5-5"
               "openrouter/free"
             ];
           };
 
-          modelPolicy.allow = [
-            "openrouter/free"
-            "zai/glm-5.3-flash"
-            "zai/glm-5.3"
-          ];
-
-          models = {
-            "zai/glm-5.3-flash".params.thinking = "low";
-            "zai/glm-5.3".params.thinking = "low";
-          };
+          models =
+            let
+              claudes = [
+                "claude-haiku-5-5"
+                "claude-sonnet-5-5"
+                "claude-opus-5-5"
+              ];
+            in
+            {
+              "zai/glm-5.3-flash".params.thinking = "low";
+              "zai/glm-5.3".params.thinking = "low";
+            }
+            // lib.listToAttrs (
+              map (
+                claude:
+                lib.nameValuePair "anthropic/${claude}" {
+                  agentRuntime.id = "claude-cli";
+                  #params.thinking = "medium";
+                }
+              ) claudes
+            );
 
           utilityModel = "zai/glm-5.3-flash";
+
           heartbeat = {
             model = "zai/glm-5.3-flash";
             isolatedSession = true;
@@ -179,7 +196,6 @@ in
           sessionStore.agentId = "coordinator";
 
           userTimezone = "Europe/Minsk";
-          params.preserveThinking = true;
 
           compaction = {
             notifyUser = true;
@@ -202,8 +218,7 @@ in
               emoji = "🦞";
             };
 
-            memory.search.rememberAcrossConversations = true;
-            heartbeat.every = "1h";
+            heartbeat.every = "2h";
 
             workspace = "~/.openclaw/workspace/coordinator";
 
@@ -215,6 +230,25 @@ in
                 "advisor"
               ];
             };
+
+            models."zai/glm-5.3".params.thinking = "high";
+
+            model = {
+              primary = "anthropic/claude-sonnet-5-5";
+              fallbacks = [
+                "zai/glm-5.3"
+                "openrouter/free"
+              ];
+            };
+
+            modelPolicy.allow = [
+              "anthropic/claude-opus-5-5"
+              "anthropic/claude-sonnet-5-5"
+              "anthropic/claude-haiku-5-5"
+              "zai/glm-5.3-flash"
+              "zai/glm-5.3"
+              "openrouter/free"
+            ];
           };
 
           worker = {
@@ -236,6 +270,22 @@ in
               "visualize"
               "diagram-maker"
               "weather"
+            ];
+
+            model = {
+              primary = "zai/glm-5.3";
+              fallbacks = [
+                "anthropic/claude-haiku-5-5"
+                "openrouter/free"
+              ];
+            };
+
+            modelPolicy.allow = [
+              "anthropic/claude-sonnet-5-5"
+              "anthropic/claude-haiku-5-5"
+              "zai/glm-5.3-flash"
+              "zai/glm-5.3"
+              "openrouter/free"
             ];
           };
 
@@ -261,14 +311,21 @@ in
               "visualize"
             ];
 
-            models."zai/glm-5.3".params.thinking = "high";
-
             model = {
               primary = "zai/glm-5.3";
               fallbacks = [
+                "anthropic/claude-haiku-5-5"
                 "openrouter/free"
               ];
             };
+
+            modelPolicy.allow = [
+              "anthropic/claude-sonnet-5-5"
+              "anthropic/claude-haiku-5-5"
+              "zai/glm-5.3-flash"
+              "zai/glm-5.3"
+              "openrouter/free"
+            ];
           };
 
           advisor = {
@@ -289,16 +346,19 @@ in
               "self-improving-agent"
             ];
 
-            models."zai/glm-5.3".params.thinking = "high";
+            models."zai/glm-5.3".params.thinking = "max";
 
             model = {
-              primary = "zai/glm-5.3";
+              primary = "anthropic/claude-opus-5-5";
               fallbacks = [
+                "zai/glm-5.3"
                 "openrouter/free"
               ];
             };
 
             modelPolicy.allow = [
+              "anthropic/claude-opus-5-5"
+              "anthropic/claude-sonnet-5-5"
               "zai/glm-5.3"
               "openrouter/free"
             ];
@@ -326,7 +386,7 @@ in
       };
 
       skills = {
-        workshop.autonomous.mode = "auto";        
+        workshop.autonomous.mode = "auto";
 
         entries = lib.listToAttrs (
           map (n: lib.nameValuePair n { enabled = false; }) [
@@ -407,6 +467,7 @@ in
         allow = [
           "memory-lancedb"
           "active-memory"
+          "anthropic"
         ];
 
         slots = {
@@ -435,10 +496,10 @@ in
               ];
             };
             #subagent = {
-              #allowModelOverride = true;
-              #allowedModels = [
-                #"openrouter/xiaomi/mimo-v2.6-flash"
-              #];
+            #allowModelOverride = true;
+            #allowedModels = [
+            #"openrouter/xiaomi/mimo-v2.6-flash"
+            #];
             #};
             config = {
               maxAssemblyTokenBudget = 100000;
@@ -506,6 +567,7 @@ in
       };
 
       memory.search = {
+        rememberAcrossConversations = false;
         provider = "openai-compatible";
         model = cfg.embeddingModel;
         remote = {
@@ -529,6 +591,7 @@ in
   # so tmpfiles recreates it on every user-session start.
   systemd.user.tmpfiles.rules = [
     "d /tmp/openclaw 0700 - - -"
+    "d /var/tmp/openclaw 0700 - - -"
   ];
 
   # nix-openclaw gateway unit fixes:

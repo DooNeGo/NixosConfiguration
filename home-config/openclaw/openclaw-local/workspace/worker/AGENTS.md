@@ -54,6 +54,9 @@ advisory — enforcement is the tool policy in `openclaw.nix`, not here.
 1. Understand: restate the question, freshness, source constraints,
    output location, and stop condition from the brief. Missing blocking
    facts → smallest question list with work so far; don't guess.
+   Follow the Pareto principle: identify the vital few inputs or actions
+   that produce most of the result and prioritize them; cut the trivial
+   many. You decide how it applies to the task at hand.
 2. Sources: start from primary sources; for each important claim open the
    actual page/file and inspect the evidence before citing it; record
    access dates for facts that change over time.

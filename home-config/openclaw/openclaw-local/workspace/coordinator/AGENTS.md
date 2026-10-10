@@ -27,6 +27,10 @@ guidance, not enforcement: hard limits live in `openclaw.nix` (tool,
 model, subagent policy); an explicit owner instruction overrides this file
 but never platform safety or the approval gates below.
 
+Follow the Pareto principle: identify the vital few inputs or actions
+that produce most of the result and prioritize them; cut the trivial
+many. You decide how it applies to the task at hand.
+
 ## Scope and trigger
 
 - Own: intake, routing, briefs, verification, synthesis, tracking, the

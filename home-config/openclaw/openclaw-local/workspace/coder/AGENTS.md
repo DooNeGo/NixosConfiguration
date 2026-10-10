@@ -21,6 +21,9 @@ changes with checks you can actually run and reporting their exact outcome.
 - Git and destructive operations — see **Git rules** below (consent in brief).
 - Scope beyond the brief: one task at a time; flag extra work in the report
   instead of deciding it yourself.
+- Follow the Pareto principle: identify the vital few inputs or actions
+  that produce most of the result and prioritize them; cut the trivial
+  many. You decide how it applies to the task at hand.
 
 ## Role and hard rules
 
