@@ -19,12 +19,17 @@ in
     runtimePlugins = [
       "searxng"
       "lossless-claw"
+      "memory-lancedb"
       "tokenjuice"
+      "zai"
     ];
 
     bundledPlugins.summarize.enable = true;
 
-    environment.OPENROUTER_API_KEY = "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
+    environment = {
+      OPENROUTER_API_KEY = "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
+      ZAI_API_KEY = "${config.home.homeDirectory}/.secrets/zai-api-key";
+    };
 
     skills = [
       {
@@ -129,45 +134,41 @@ in
         };
       };
 
-#      models.providers.vllm = {
-#        baseUrl = "http://${aiServer}:${toString cfg.llmPort}/v1";
-#        apiKey = "EMPTY";
-#        timeoutSeconds = 900;
-#      };
+      models.providers = {
+        vllm = {
+          baseUrl = "http://100.114.127.10:${toString cfg.llmPort}/v1";
+          apiKey = "EMPTY";
+          timeoutSeconds = 900;
+        };
+
+        zai.baseUrl = "https://api.z.ai/api/coding/paas/v4";
+      };
 
       messages.responseUsage = "full";
 
       agents = {
         defaults = {
           model = {
-            primary = "openrouter/xiaomi/mimo-v2.6-flash";
+            primary = "zai/glm-5.3-flash";
             fallbacks = [
-              #"vllm/${cfg.llmModel}"
-              "openrouter/~z-ai/glm-flash-latest"
               "openrouter/free"
             ];
           };
 
           modelPolicy.allow = [
-            "openrouter/xiaomi/mimo-v2.6-flash"
-            "openrouter/xiaomi/mimo-v2.6-pro"
-            "openrouter/anthropic/claude-sonnet-5-5"
-            "openrouter/~z-ai/glm-flash-latest"
-            "openrouter/~z-ai/glm-latest"
             "openrouter/free"
+            "zai/glm-5.3-flash"
+            "zai/glm-5.3"
           ];
 
           models = {
-            #"vllm/${cfg.llmModel}".params.thinking = "low";
-            "openrouter/~z-ai/glm-flash-latest".params.thinking = "high";
-            "openrouter/~z-ai/glm-latest".params.thinking = "high";
+            "zai/glm-5.3-flash".params.thinking = "low";
+            "zai/glm-5.3".params.thinking = "low";
           };
 
-          #utilityModel = "vllm/${cfg.llmModel}";
-          utilityModel = "openrouter/xiaomi/mimo-v2.6-flash";
-          #heartbeat.model = "vllm/${cfg.llmModel}";
+          utilityModel = "zai/glm-5.3-flash";
           heartbeat = {
-            model = "openrouter/xiaomi/mimo-v2.6-flash";
+            model = "zai/glm-5.3-flash";
             isolatedSession = true;
             lightContext = true;
             every = "0m";
@@ -182,7 +183,7 @@ in
 
           compaction = {
             notifyUser = true;
-           # midTurnPrecheck.enabled = true;
+            midTurnPrecheck.enabled = true;
           };
 
           subagents = {
@@ -206,16 +207,6 @@ in
 
             workspace = "~/.openclaw/workspace/coordinator";
 
-            model = {
-              primary = "openrouter/~z-ai/glm-latest";
-
-              fallbacks = [
-                "openrouter/~z-ai/glm-flash-latest"
-            #    "vllm/${cfg.llmModel}"
-                "openrouter/free"
-              ];
-            };
-
             subagents = {
               delegationMode = "prefer";
               allowAgents = [
@@ -235,9 +226,16 @@ in
             workspace = "~/.openclaw/workspace/worker";
 
             skills = [
-              "browser-automation" "summarize" "tmux" "python-debugpy"
-              "spike" "healthcheck" "self-improving-agent" "visualize"
-              "diagram-maker" "weather"
+              "browser-automation"
+              "summarize"
+              "tmux"
+              "python-debugpy"
+              "spike"
+              "healthcheck"
+              "self-improving-agent"
+              "visualize"
+              "diagram-maker"
+              "weather"
             ];
           };
 
@@ -254,9 +252,23 @@ in
             };
 
             skills = [
-              "tmux" "python-debugpy" "spike" "summarize"
-              "self-improving-agent" "diagram-maker" "visualize"
+              "tmux"
+              "python-debugpy"
+              "spike"
+              "summarize"
+              "self-improving-agent"
+              "diagram-maker"
+              "visualize"
             ];
+
+            models."zai/glm-5.3".params.thinking = "low";
+
+            model = {
+              primary = "zai/glm-5.3";
+              fallbacks = [
+                "openrouter/free"
+              ];
+            };
           };
 
           advisor = {
@@ -268,18 +280,27 @@ in
             workspace = "~/.openclaw/workspace/advisor";
 
             skills = [
-              "summarize" "skill-vetter" "browser-automation" "spike"
-              "diagram-maker" "visualize" "self-improving-agent"
+              "summarize"
+              "skill-vetter"
+              "browser-automation"
+              "spike"
+              "diagram-maker"
+              "visualize"
+              "self-improving-agent"
             ];
 
+            models."zai/glm-5.3".params.thinking = "high";
+
             model = {
-              primary = "openrouter/anthropic/claude-sonnet-5-5";
-              fallbacks = [ "openrouter/xiaomi/mimo-v2.6-pro" ];
+              primary = "zai/glm-5.3";
+              fallbacks = [
+                "openrouter/free"
+              ];
             };
 
             modelPolicy.allow = [
-              "openrouter/anthropic/claude-sonnet-5-5"
-              "openrouter/xiaomi/mimo-v2.6-pro"
+              "zai/glm-5.3"
+              "openrouter/free"
             ];
           };
         };
@@ -304,19 +325,55 @@ in
         fetch.useTrustedEnvProxy = true;
       };
 
-      skills.entries = lib.listToAttrs (
-        map (n: lib.nameValuePair n { enabled = false; }) [
-          "1password" "apple-notes" "apple-reminders" "bear-notes"
-          "blogwatcher" "blucli" "camsnap" "canvas" "cloud-image-bake"
-          "coding-agent" "control-ui" "eightctl" "gemini" "gh-issues"
-          "gifgrep" "github" "goplaces" "himalaya" "meme-maker" "mcporter"
-          "model-usage" "nano-pdf" "node-inspect-debugger" "notion" "obsidian"
-          "openai-whisper" "openai-whisper-api" "openhue" "oracle" "ordercli"
-          "peekaboo" "sag" "sherpa-onnx-tts" "songsee" "sonoscli"
-          "spotify-player" "taskflow" "taskflow-inbox-triage" "things-mac"
-          "trello" "xurl"
-        ]
-      );
+      skills = {
+        workshop.autonomous.mode = "auto";        
+
+        entries = lib.listToAttrs (
+          map (n: lib.nameValuePair n { enabled = false; }) [
+            "1password"
+            "apple-notes"
+            "apple-reminders"
+            "bear-notes"
+            "blogwatcher"
+            "blucli"
+            "camsnap"
+            "canvas"
+            "cloud-image-bake"
+            "coding-agent"
+            "control-ui"
+            "eightctl"
+            "gemini"
+            "gh-issues"
+            "gifgrep"
+            "github"
+            "goplaces"
+            "himalaya"
+            "meme-maker"
+            "mcporter"
+            "model-usage"
+            "nano-pdf"
+            "node-inspect-debugger"
+            "notion"
+            "obsidian"
+            "openai-whisper"
+            "openai-whisper-api"
+            "openhue"
+            "oracle"
+            "ordercli"
+            "peekaboo"
+            "sag"
+            "sherpa-onnx-tts"
+            "songsee"
+            "sonoscli"
+            "spotify-player"
+            "taskflow"
+            "taskflow-inbox-triage"
+            "things-mac"
+            "trello"
+            "xurl"
+          ]
+        );
+      };
 
       tools.media = {
         models = [
@@ -347,7 +404,15 @@ in
       };
 
       plugins = {
-        slots.contextEngine = "lossless-claw";
+        allow = [
+          "memory-lancedb"
+          "active-memory"
+        ];
+
+        slots = {
+          contextEngine = "lossless-claw";
+          memory = "memory-lancedb";
+        };
 
         entries = {
           telegram = {
@@ -365,23 +430,24 @@ in
             llm = {
               allowModelOverride = true;
               allowedModels = [
-                "openrouter/xiaomi/mimo-v2.6-flash"
-                #"vllm/${cfg.llmModel}"
+                #"openrouter/xiaomi/mimo-v2.6-flash"
+                "vllm/${cfg.llmModel}"
+                "zai/glm-5.3"
               ];
             };
-            subagent = {
-              allowModelOverride = true;
-              allowedModels = [
-                "openrouter/xiaomi/mimo-v2.6-flash"
-              ];
-            };
+            #subagent = {
+              #allowModelOverride = true;
+              #allowedModels = [
+                #"openrouter/xiaomi/mimo-v2.6-flash"
+              #];
+            #};
             config = {
               #contextThreshold = 0.25;
               maxAssemblyTokenBudget = 100000;
               freshTailMaxTokens = 24000;
               summaryMaxCallsPerWindow = 48;
-              #summaryModel = "vllm/${cfg.llmModel}";
-              summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
+              summaryModel = "zai/glm-5.3-flash";
+              #summaryModel = "openrouter/xiaomi/mimo-v2.6-flash";
               cacheAwareCompaction.enabled = true;
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
@@ -389,6 +455,16 @@ in
                 "agent:*:dreaming-narrative-**"
               ];
             };
+          };
+
+          "memory-lancedb" = {
+            enabled = true;
+            config.embedding = {
+              provider = "ollama";
+              model = cfg.embeddingModel;
+              baseUrl = "http://localhost:11434";
+            };
+            #autoRecall = true;
           };
 
           "active-memory" = {
@@ -427,7 +503,6 @@ in
             "senseaudio"
             "sglang"
             "together"
-            "vllm"
             "xai"
           ]
         );
