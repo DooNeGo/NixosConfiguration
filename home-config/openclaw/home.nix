@@ -27,5 +27,6 @@
   programs = {
     home-manager.enable = true;
     antigravity-cli.enable = true;
+    claude-code.enable = true;
   };
 }

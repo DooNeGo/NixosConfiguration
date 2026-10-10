@@ -18,6 +18,8 @@ let
         "github.com"
         "googleapis.com"
         "anthropic.com"
+        "claude.ai"
+        "claude.com"
       ];
       routeMatch = "domain_suffix";
       fetchIntervalSec = 21600;
