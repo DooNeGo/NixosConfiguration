@@ -4,6 +4,7 @@
   qdrantPort = 6333;
   postgresPort = 5432;
   searxngPort = 8181;
+  searxngInternalPort = 6081; # searx upstream; nginx front for clients is 6080
   openWebUiPort = 3000;
   ocrPort = 5001;
   chatBotPort = 5000;

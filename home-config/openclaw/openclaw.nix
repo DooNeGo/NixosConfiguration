@@ -177,7 +177,7 @@ in
                 claude:
                 lib.nameValuePair "anthropic/${claude}" {
                   agentRuntime.id = "claude-cli";
-                  #params.thinking = "medium";
+                  params.thinking = "medium";
                 }
               ) claudes
             );
@@ -218,7 +218,7 @@ in
               emoji = "🦞";
             };
 
-            heartbeat.every = "2h";
+            #heartbeat.every = "2h";
 
             workspace = "~/.openclaw/workspace/coordinator";
 
@@ -273,9 +273,9 @@ in
             ];
 
             model = {
-              primary = "zai/glm-5.3-flash";
-              fallbacks = [
-                "anthropic/claude-haiku-5-5"
+              primary = "anthropic/claude-haiku-5-5";
+              fallbacks = [               
+                "zai/glm-5.3-flash"
                 "openrouter/free"
               ];
             };
@@ -312,9 +312,9 @@ in
             ];
 
             model = {
-              primary = "zai/glm-5.3";
+              primary = "anthropic/claude-haiku-5-5";
               fallbacks = [
-                "anthropic/claude-haiku-5-5"
+                "zai/glm-5.3"
                 "openrouter/free"
               ];
             };
@@ -505,6 +505,8 @@ in
               maxAssemblyTokenBudget = 100000;
               freshTailMaxTokens = 24000;
               summaryMaxCallsPerWindow = 48;
+              # claude-cli host lacks assemble/compact; capture-only lowers requirement to bootstrap/after-turn/maintain
+              hostFallbackMode = "capture-only";
               summaryModel = "zai/glm-5.3-flash";
               cacheAwareCompaction.enabled = true;
               ignoreSessionPatterns = [
@@ -517,6 +519,7 @@ in
 
           "memory-lancedb" = {
             enabled = true;
+            hooks.allowConversationAccess = true;
             config.embedding = {
               provider = "ollama";
               model = cfg.embeddingModel;
@@ -529,6 +532,7 @@ in
             enabled = true;
             config = {
               mode = "escalate";
+              model = "zai/glm-5.3-flash";
               agents = [ "coordinator" ];
               logging = true;
             };

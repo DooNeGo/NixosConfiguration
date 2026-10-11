@@ -10,9 +10,7 @@
 
   services.searx = {
     enable = true;
-    # sliding-window counters of the limiter live in a local valkey; the
-    # module wires settings.valkey.url to this instance's unix socket
-    redisCreateLocally = true;
+    #redisCreateLocally = true;
 
     settings = {
       search.formats = [
@@ -27,11 +25,10 @@
 
       server = {
         bind_address = "localhost";
-        port = 6080;
+        port = 6081;
         image_proxy = true;
         secret_key = "ggggggggggggggggggggg";
-        # bot detection + per-IP rate limiting (docs.searxng.org/admin/searx.limiter.html)
-        limiter = true;
+        limiter = false;
         outgoing = {
           proxies."all://" = [ "http://127.0.0.1:2080" ];
         };
@@ -42,21 +39,37 @@
       };
     };
 
-    # rendered to /run/searx/limiter.toml by searx-init; keeping it non-empty
-    # also silences the boot warning about the missing limiter.toml. The rate
-    # windows themselves (BURST/LONG/API) are hardcoded in searx's
-    # botdetection/ip_limit.py and cannot be configured here.
     limiterSettings = {
       botdetection = {
-        # upstream default, stated deliberately: link_token would flag the
-        # JSON API client (never fetches /client<token>.css) as suspicious and
-        # redirect it to / after SUSPICIOUS_IP_MAX requests
         ip_limit.link_token = false;
+        ip_lists.pass_ip = [
+          "127.0.0.0/8"
+          "::1/128"
+        ];
+      };
+    };
+  };
 
-        # deliberately NOT 127.0.0.0/8: bind_address=localhost routes every
-        # client through loopback, a pass entry here would disable the limiter
-        # for the whole deployment
-        ip_lists.pass_ip = [ ];
+  services.nginx = {
+    enable = true;
+
+    commonHttpConfig = ''
+      limit_req_zone $binary_remote_addr zone=searx_spacing:1m rate=1r/s;
+      limit_req_zone $binary_remote_addr zone=searx_volume:1m rate=10r/m;
+    '';
+
+    virtualHosts."localhost" = {
+      listen = [ { addr = "127.0.0.1"; port = 6080; } ];
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:6081";
+        extraConfig = ''
+          limit_req zone=searx_spacing burst=2;
+          limit_req zone=searx_volume burst=10 nodelay;
+          limit_req_status 429;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        '';
       };
     };
   };

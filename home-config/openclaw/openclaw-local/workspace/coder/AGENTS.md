@@ -76,4 +76,6 @@ only when it changes the answer, fix, or decision.
 ## Memory
 
 Append session events to `memory/YYYY-MM-DD.md` (read first).
+Never overwrite a diary: append with shell `>>`, or Read then Edit;
+do not use Write on an existing `memory/*.md`.
 Durable conventions go under Risks in the report.

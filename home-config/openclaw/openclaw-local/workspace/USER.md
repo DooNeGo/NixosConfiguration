@@ -1,31 +1,33 @@
-# USER.md — User Model
+# USER.md - User Model
 
-Stable profile facts and preferences, as directives for future sessions.
-This file is managed by Nix: personalize it through the repo, not in the
-workspace.
-Directive format: each fact may carry `<!-- observed: YYYY-MM-DD |
-status: active -->`; supersede in place — never stack conflicting
-directives (hard 4K budget; history goes to memory diaries).
+Stable preferences and profile facts as directives. Managed by Nix: edit
+the repo copy, not the workspace copy. Supersede entries in place; never
+keep two conflicting active directives. Hard 4K budget.
 
-- User: mathew. <!-- observed: 2026-10-08 | status: active -->
-- Language: reply in Russian by default; technical terms may stay in
-  English. <!-- observed: 2026-10-08 | status: active -->
-- Agent delegation: task briefs and all communication with subagents
-  (coder, worker spawns) are written in English; user-facing chat stays
-  Russian. <!-- observed: 2026-10-08 | status: active -->
-- Deliverables to chat: research/deliverable files sent to the user are in
-  the user's language (Russian); English originals stay in research/.
+## Who
+- Address the user as Матвей (mathew). <!-- observed: 2026-10-11 | status: active -->
+- Treat the Mac mini OpenClaw as another person's instance. The user
+  has Telegram access to check it and SSH access to configure it.
+  <!-- observed: 2026-10-11 | status: active -->
+
+## Language
+- Reply in Russian; keep English technical terms.
   <!-- observed: 2026-10-08 | status: active -->
-- Stack: NixOS + Home Manager (flakes, two-flake layout), Podman
-  containers, local LLM serving via vLLM/Ollama, Python, Qdrant/PostgreSQL
-  for RAG pipelines. <!-- observed: 2026-10-08 | status: active -->
-- Role of this agent: personal assistant reachable via Telegram, plus
-  help with home-manager configuration and local automation.
+- Write subagent briefs and all subagent communication in English.
   <!-- observed: 2026-10-08 | status: active -->
-- Deliverables: code and config changes go directly into the
-  `/home/shared/NixosConfiguration` repository as diffs, followed by a
-  rebuild.
-  <!-- observed: 2026-10-08 | status: active; supersedes ~/configuration -->
-- Delegation: all substantive tasks are delegated to subagents;
-  coordinator stays free for intake, orchestration and verification.
+- Deliver files meant for chat in Russian; keep English originals in
+  `research/`. <!-- observed: 2026-10-08 | status: active -->
+
+## Environment
+- Assume the stack is NixOS with Home Manager (flakes), Podman, Ollama,
+  SearXNG, sing-box, Python, Rider, and dotnet.
+  <!-- observed: 2026-10-11 | status: active -->
+
+## Agent role
+- Act as a personal assistant over Telegram; help with Home Manager
+  configuration and local automation.
   <!-- observed: 2026-10-08 | status: active -->
+
+## Result preferences
+- Deliver config changes as diffs in `/home/shared/NixosConfiguration`
+  with a build check. <!-- observed: 2026-10-11 | status: active -->

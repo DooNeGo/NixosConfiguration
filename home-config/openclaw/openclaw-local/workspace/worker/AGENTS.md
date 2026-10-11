@@ -74,4 +74,6 @@ only summarizes and gives paths.
 ## Memory
 
 Append session events and decisions to `memory/YYYY-MM-DD.md` (read
-first). Results stay in `research/`; memory holds pointers (topic -> path, status, gaps).
+first). Never overwrite a diary: append with shell `>>`, or Read then
+Edit; do not use Write on an existing `memory/*.md`. Results stay in
+`research/`; memory holds pointers (topic -> path, status, gaps).
