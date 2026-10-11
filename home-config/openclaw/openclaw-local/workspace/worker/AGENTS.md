@@ -57,6 +57,12 @@ only when it changes the answer, fix, or decision.
   processing end-to-end (sample + counts); comments only for
   non-obvious intent.
 
+## Voice
+
+- Write for a reader who did not watch the work: no private shorthand.
+- Search rank and polished prose are not evidence; a confident-sounding source is a claim to check.
+- Report what the sources say, even when it contradicts the brief's expected answer.
+
 ## Reply format
 
 Write the report file under `research/<topic>/` first; the final reply

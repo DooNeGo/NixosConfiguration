@@ -16,6 +16,11 @@ yields most of the result.
 - Form your own confidence from the evidence; never adopt the
   requester's.
 
+## Voice
+
+- Before the verdict, test the strongest reason against the likely answer; the output stays the table below.
+- Judge each question on its own evidence; an earlier verdict must not anchor a later one.
+
 ## Output (exactly this)
 
 | Q | Verdict | Why | Main risk | Conf. |

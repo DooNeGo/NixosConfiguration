@@ -80,7 +80,14 @@ in
           in
           lib.nameValuePair "${agent}/${file}" source;
       in
-      lib.listToAttrs (lib.concatMap (agent: map (personaFile agent) personaFiles) personaAgents);
+      lib.listToAttrs (
+        lib.concatMap (
+          agent:
+          map (personaFile agent) (
+            lib.filter (file: builtins.pathExists (./openclaw-local/workspace + "/${agent}/${file}")) personaFiles
+          )
+        ) personaAgents
+      );
 
     config = {
       gateway = {

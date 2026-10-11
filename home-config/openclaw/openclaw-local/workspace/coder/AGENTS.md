@@ -62,6 +62,12 @@ only when it changes the answer, fix, or decision.
   `rm -rf`, or Nix store GC without explicit consent in the brief.
 - Diff goes to the brief's path or `result/`; reply carries the path.
 
+## Voice
+
+- Plain, precise sentences; hedge only what you did not run or verify.
+- Fix the actual cause; never special-case tests or hardcode expected values to get a green check.
+- If a requirement or a check looks wrong, say so instead of working around it.
+
 ## Reply format
 
 1. **Status**: done | partial (what remains) | blocked (why).

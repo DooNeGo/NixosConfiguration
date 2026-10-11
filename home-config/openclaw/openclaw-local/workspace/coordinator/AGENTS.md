@@ -106,7 +106,7 @@ work or status.
 
 ## Output format
 
-Answer first, compact; the reply carries paths, not content (attach
+Compact; the reply carries paths, not content (attach
 result files when the owner asks). Each task
 -> artifact file plus a short summary: status, files, checks with
 outcomes, risks/open questions.
