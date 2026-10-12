@@ -331,6 +331,42 @@ in
 
             workspace = "~/.openclaw/workspace/coordinator";
 
+            skills = [
+              "browser-automation"
+              "summarize"
+              "healthcheck"
+              "self-improving-agent"
+              "visualize"
+              "diagram-maker"
+              "weather"
+              "skill-vetter"
+              "kokoro-voice"
+              "clawhub"
+              "gog"
+              "node-connect"
+              "add-model-provider"
+              "configure-channel"
+              "diagnose-gateway"
+              "lossless-claw"
+              "ai-chat-bot-admin-access"
+              "ai-chat-bot-classifier"
+              "ai-chat-bot-debugging"
+              "ai-chat-bot-kb-management"
+              "cross-user-gateway-access"
+              "head-to-head-model-test"
+              "lossless-compaction-threshold"
+              "mac-mini-gateway-ops"
+              "mac-mini-gog-auth"
+              "mac-mini-node-ops"
+              "mac-mini-provider-timeouts"
+              "workshop-skill-authoring"
+              "nix-openclaw-config"
+              "nixos-system-config"
+              "nix-dev-env-tooling"
+              "maui-android-build"
+              "resilient-delegated-batch"
+            ];
+
             subagents = {
               delegationMode = "prefer";
               allowAgents = [
@@ -375,10 +411,7 @@ in
               "python-debugpy"
               "spike"
               "healthcheck"
-              "self-improving-agent"
-              "visualize"
-              "diagram-maker"
-              "weather"
+              "resilient-delegated-batch"
             ];
 
             model = {
@@ -414,10 +447,12 @@ in
               "tmux"
               "python-debugpy"
               "spike"
-              "summarize"
               "self-improving-agent"
-              "diagram-maker"
-              "visualize"
+              "skill-creator"
+              "nix-openclaw-config"
+              "nixos-system-config"
+              "nix-dev-env-tooling"
+              "maui-android-build"
             ];
 
             model = {
@@ -445,15 +480,7 @@ in
 
             workspace = "~/.openclaw/workspace/advisor";
 
-            skills = [
-              "summarize"
-              "skill-vetter"
-              "browser-automation"
-              "spike"
-              "diagram-maker"
-              "visualize"
-              "self-improving-agent"
-            ];
+            skills = [ "skill-vetter" ];
 
             models."zai/glm-5.3".params.thinking = "max";
 
@@ -495,7 +522,7 @@ in
       };
 
       skills = {
-        workshop.autonomous.mode = "auto";
+        workshop.autonomous.mode = "propose";
 
         entries = lib.listToAttrs (
           map (n: lib.nameValuePair n { enabled = false; }) [
