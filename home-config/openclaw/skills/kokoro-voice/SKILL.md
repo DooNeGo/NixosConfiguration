@@ -1,6 +1,6 @@
 ---
 name: "kokoro-voice"
-description: "Voice replies via local kokoro-ru TTS (Russian, Telegram)."
+description: "Russian voice note or spoken reply request: runs kokoro TTS, delivers a Telegram opus .ogg voice note."
 metadata:
   openclaw:
     emoji: "🗣"
@@ -8,69 +8,38 @@ metadata:
 
 # kokoro-voice
 
-Use when the user needs a spoken (voice-note) Russian reply. Kokoro is the
-only TTS engine (piper fallback removed by decision). The built-in `tts`
-tool has no runnable provider in this setup — run the CLI yourself and
-deliver via the message tool.
+Use for a spoken Russian reply sent as a Telegram voice note. Kokoro is the only
+TTS engine; there is no fallback engine. The built-in `tts` tool has no runnable
+provider in this setup: run the helper, then deliver with the message tool.
 
-## 1. Resolve binary
+## 1. Generate the ogg
 
-`kokoro-ru-say` is normally on PATH (pkgs.kokoro-ru in home.packages). If
-not found, fall back to the store glob:
-
-```
-KOKORO="$(command -v kokoro-ru-say || ls -t /nix/store/*-kokoro-ru-1.0.0/bin/kokoro-ru-say | head -1)"
-```
-
-The wrapper self-exports `KOKORO_RU_DATA` — no env setup needed.
-Done when: the resolved path is an existing executable.
-
-## 2. Choose voice / rate
-
-- `-v sveta|masha|dima` (default `sveta`).
-- `-r RATE` (>1 = faster); `-c` is a checkpoint path, NOT cpu count.
-Done when: a voice (and rate, if overriding) is picked — defaults are fine.
-
-## 3. Generate wav in the session workspace (write outbound media under
-the workspace: /tmp works today but is unmanaged and may be purged)
-
-Preferred when available — the bundled helper does steps 3+4 in one go and
-prints the final .ogg path directly:
+Run from the session workspace. Output lands in `$PWD` unless `KOKORO_OUT_DIR`
+is set; `/tmp` is unmanaged and may be purged.
 
 ```
 scripts/kokoro-voice.sh "<text>"
 ```
-(env `KOKORO_VOICE` / `KOKORO_OUT_DIR` override voice / output dir). The
-manual steps below stay as the explicit path.
 
-```
-OUT="$PWD/voice-$(date +%s)"; mkdir -p "$OUT"
-printf '%s' "$TEXT" | "$KOKORO" -v sveta -o "$OUT/out.wav"
-```
+The script resolves the `kokoro-ru-say` binary, synthesizes wav, transcodes to
+opus ogg, and prints the `.ogg` path on stdout.
 
-stdin avoids shell-argument limits on long text. Exit codes: 2 = bad
-args/empty text, 3 = missing data/checkpoint/voice, 4 = no audio produced.
-Keep one call under ~1500 chars (longer: summarize first); ~10x realtime
-plus ~4 s model load.
-Done when: the wav exists and is non-empty.
+- Env: `KOKORO_VOICE` (default `sveta`; also `masha`, `dima`), `KOKORO_OUT_DIR`.
+- Long text: pipe it on stdin (`printf '%s' "$TEXT" | scripts/kokoro-voice.sh`) to avoid argument limits.
+- Keep one call under ~1500 chars; summarize longer text first. Expect ~10x realtime plus ~4 s model load.
+- Exit codes: 2 = bad args or empty text; 3 = missing data, checkpoint, or voice; 4 = ffmpeg failure or no audio.
 
-## 4. Transcode for Telegram voice note
+Done when: exit 0 and the printed path exists and is non-empty.
 
-```
-ffmpeg -y -i "$OUT/out.wav" -c:a libopus -b:a 48k -ar 48000 -ac 1 "$OUT/out.ogg"
-```
+## 2. Verify
 
-Done when: ffprobe reports codec=opus in an ogg container.
+`ffprobe` reports codec=opus in an ogg container. Note the duration.
 
-## 5. Deliver
+## 3. Deliver
 
-Primary — message tool:
+Primary, message tool:
 `{action:"send", channel:"telegram", target:<chat>, media:"<abs path to out.ogg>", asVoice:true}`
 
-Fallback (final reply only): a bare line `MEDIA:<abs path>` plus
-`[[audio_as_voice]]`, outside Markdown fences.
+Fallback, final reply only: a bare line `MEDIA:<abs path>` plus `[[audio_as_voice]]`, outside Markdown fences.
 
-## 6. Verify
-
-Non-empty `.ogg` (ffprobe duration); report path + duration. On failure,
-report the exit code and stderr — no fallback engine.
+On failure, report the exit code and stderr. Do not switch to another engine.

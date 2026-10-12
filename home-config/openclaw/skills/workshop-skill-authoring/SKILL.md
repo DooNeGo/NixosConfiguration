@@ -14,8 +14,8 @@ an authorized maintenance run.
 - `description` is capped at **160 bytes** — a longer one fails the create with
   "description is too large" and nothing is staged. Count before submitting.
 - **`action=patch` on a skill that was not used in this run is rejected**
-  ("skill was not used in this run and cannot be repaired autonomously" —
-  verified 2026-10-06, four rejections). The working route for an unused
+  ("skill was not used in this run and cannot be repaired autonomously").
+  The working route for an unused
   skill: `read` it, then `action=update` with the complete final body
   (proposal_content), then `apply` the returned proposal id. A targeted
   `patch` works only on a skill already exercised in the run.

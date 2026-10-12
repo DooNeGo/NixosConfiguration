@@ -6,7 +6,7 @@ description: Reach an OpenClaw Gateway from a second OS user — ACP/IDE bridge,
 # Reach the gateway from a second OS user
 
 Trigger: the Gateway runs as one OS account (e.g. `openclaw`) and someone wants
-to drive it from another account on the same machine (e.g. `mathew`) — an ACP
+to drive it from another account on the same machine (e.g. `<user>`) — an ACP
 bridge in an IDE, `openclaw acp`, or the Control UI.
 
 Scope note: this is client-side access. No Nix edit is required to make a second
@@ -20,14 +20,13 @@ credential", and do not let the documentation's loopback/lan auth table imply
 it.
 
 Check which credential the gateway accepts BEFORE handing one over — read
-`gateway.auth` in the gateway config (via the nix module source). Verified
-2026-10-05: with `gateway.auth.mode = "trusted-proxy"` and
-`gateway.auth.token` unset, `openclaw acp --token-file ~/.secrets/openclaw-
-gateway-token` fails with `unauthorized … auth=token …
-reason=trusted_proxy_missing_header_x-forwarded-for` in the gateway log; the
-accepting credential is the password (`--password-file
-~/.secrets/openclaw-gateway-password`). Both files live in `~/.secrets/` — do
-not assume the `-token` file is the one a client needs.
+`gateway.auth` in the gateway config (via the nix module source). With
+`gateway.auth.mode = "trusted-proxy"` and `gateway.auth.token` unset,
+`openclaw acp --token-file ~/.secrets/openclaw-gateway-token` fails with
+`unauthorized … auth=token … reason=trusted_proxy_missing_header_x-forwarded-for`
+in the gateway log. The accepting credential is the password
+(`--password-file ~/.secrets/openclaw-gateway-password`). Both files live in
+`~/.secrets/` — do not assume the `-token` file is the one a client needs.
 
 For a JetBrains IDE (`~/.jetbrains/acp.json`), use absolute paths (the bridge
 user's `~` may differ) and the correct flag:
@@ -44,8 +43,7 @@ it fails (`No session found`). Pick an existing key (e.g.
 `agent:coordinator:main`) unless a dedicated session is wanted.
 
 Tilde in `--token-file`/`--password-file` args is expanded by the openclaw CLI
-itself (verified via strace) — do not "fix" it when the bridge user's HOME is
-right.
+itself — do not "fix" it when the bridge user's HOME is right.
 
 Two things look like success and are not:
 
@@ -72,10 +70,9 @@ Where the gateway token lives: nix-openclaw does not put it in
 `openclaw.json` — the unit wrapper (`openclaw-export-env.sh`) reads the file
 named by `programs.openclaw.environment.OPENCLAW_GATEWAY_TOKEN` at gateway
 startup, and interactive shells never receive it. So
-`openclaw gateway auth-token --show` fails in a shell by design; the user
-declined the shell-export fix (reverted 2026-10-01). When a token value is
-needed, read `~/.secrets/openclaw-gateway-token` itself — do not re-attempt
-the export.
+`openclaw gateway auth-token --show` fails in a shell by design. Do not attempt
+a shell export of the token. When a token value is needed, read
+`~/.secrets/openclaw-gateway-token` directly.
 
 ## Step 2 — hand over a copy, not a directory grant
 
@@ -110,10 +107,9 @@ command -v openclaw || echo "absent from PATH"
 ```
 
 If absent, adding a package to that user's home-manager is the durable fix. Pin
-the version to the **running gateway's** version, not to whatever the user's
-flake resolves: on this host `pkgs.openclaw` was `2026.6.33` against a
-`2026.9.5` gateway, and the config schema moves between them, so a mismatched
-CLI can misread config. Verify the resolved version before adding it.
+the CLI to the **running gateway's** version, not to whatever the user's flake
+resolves: the config schema moves between versions, so a mismatched CLI can
+misread config. Verify the resolved version before adding it.
 
 A store path to the gateway's own binary works immediately but breaks on the
 next package update — say that, and do not present it as stable.

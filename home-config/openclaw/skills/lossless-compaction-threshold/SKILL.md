@@ -25,19 +25,18 @@ grep -iE "summar|error|threshold|debt|sweep" /tmp/openclaw/lossless-claw-*.log |
 `assemble: done` lines carry the numbers that decide everything:
 `tokenBudget`, `estimatedTokens`, `internalEstimatedTokens`, `hasSummaryItems`.
 
-A direct read-only DB route DOES work: `sqlite3` lives in the nix store
+A direct read-only DB route works: `sqlite3` lives in the nix store
 (`find /nix/store -maxdepth 3 -name sqlite3 -path '*bin*'`), and SELECT queries
-against the live `~/.openclaw/lcm.db` return real rows (verified 2026-10-06:
-Batch D read `conversations`/`conversation_compaction_maintenance`/`messages`
-live). Writes are refused, the gateway writes concurrently (WAL — live numbers
-drift, so timestamp every before/after capture), and the table names are
-`conversations`, `messages`, `summaries`,
+against the live `~/.openclaw/lcm.db` return real rows. Writes are refused. The
+gateway writes concurrently (WAL — live numbers drift, so timestamp every
+before/after capture). Table names are `conversations`, `messages`, `summaries`,
 `conversation_compaction_maintenance` (not "compaction tables"). For a stable
-snapshot, `sqlite3 <db> ".backup <path>"` first (~305 MB) and query the copy.
+snapshot, run `sqlite3 <db> ".backup <path>"` first (the file is large) and
+query the copy.
 
 ## Step 2 — do the arithmetic before changing anything
 
-The single decision site (`src/compaction.ts`, v1.1.1) is:
+The single decision site (`src/compaction.ts`) is:
 
 ```
 thresholdTokens = floor(contextThreshold * tokenBudget)
@@ -64,10 +63,10 @@ basis and chasing it wastes the whole investigation.
 **When `maxAssemblyTokenBudget` IS set, the rule changes.** The cap clamps both
 the assembly budget and threshold evaluation (`min(budget, cap)`), so the
 threshold basis becomes the capped value. Verify which base actually applied
-from the decision line — `targetTokens` divided by `threshold` gives the base:
-verified 2026-10-06, `targetTokens=14400` at `threshold=0.08` → base 180000 (the
-host budget), while assembly separately ran at ~1.04M. Do not assume the cap
-moved the base; read the multiplication.
+from the decision line: `targetTokens` divided by `threshold` gives the base
+(for example, `targetTokens=14400` at `threshold=0.08` means base 180000, the
+host budget, while assembly separately ran at a much larger size). Do not assume
+the cap moved the base; read the multiplication.
 
 ## Step 3 — decide whether overhead counts, from host source
 
@@ -86,12 +85,12 @@ successful compaction and adjust from the measured value — do not guess it.
 
 **Pair the threshold with `maxAssemblyTokenBudget` deliberately: trigger =
 threshold × min(host budget, cap).** Aim the trigger at roughly 16–24k of
-history. Verified 2026-10-06: threshold 0.08 fired `compact: decision
-force=true` at 14.4k nearly every turn and tripped the summarizer spend guard
-twice in one morning — 24 summary calls per 10 min per session → 30-minute
-backoff → 512-token fallback summaries (lossy, `compact ok=false`). A bare low
-fraction schedules summarizer storms; compute the trigger from the resolved
-base instead of copying a fraction.
+history. A too-low fraction (0.08 was tried) fired `compact: decision force=true`
+at ~14.4k nearly every turn; the summarizer spend guard then tripped (24 summary
+calls per 10 min per session → 30-minute backoff → 512-token fallback summaries,
+which are lossy and log `compact ok=false`). A bare low fraction schedules
+summarizer storms; compute the trigger from the resolved base instead of copying
+a fraction.
 
 ```nix
 "lossless-claw" = {
@@ -139,33 +138,27 @@ it did nothing — that is the most likely way a correct threshold change appear
 to fail. Debt is SQLite-backed, so it survives a restart; a row written under an
 old threshold is superseded by live config and cannot wedge the session.
 
-Even with the drain hook present, `deferred` can idle indefinitely: verified
-2026-10-03, context grew 52k→160k over two hours while 33 `pending=1` debt rows
-accumulated — the hook existed, but the drain only fires on the gateway's
-maintenance interval and a flaky summarizer (mimo 60s timeouts) starves it.
-When debt rows pile up while context keeps growing, check the summarizer lane
-(step 7) **before** reaching for `inline`: if the summarizer is the starver,
-fixing `summaryModel` beats mode-switching. Verified 2026-10-06 on a host with
-a healthy drain hook: 108 of 109 inline sweeps were turn-path no-ops and one
-ran 197.5 s on the turn-critical path, so `inline` buys nothing when the
-threshold is the real problem — deferred plus a healthy summarizer was the
-chosen posture. Switch to `inline` only when the drain hook itself is absent
-or never fires and turn-path cost is acceptable
+Even with the drain hook present, `deferred` can idle: the drain fires only on
+the gateway's maintenance interval, and a flaky summarizer can starve it. When
+debt rows pile up while context keeps growing, check the summarizer lane
+(Step 7) before reaching for `inline`; fixing `summaryModel` beats
+mode-switching. Do not switch to `inline` while the threshold is the real
+problem: its turn-path sweeps can be slow (one ran ~200 s on the turn-critical
+path) and mostly do nothing. Switch to `inline` only when the drain hook itself
+is absent or never fires and turn-path cost is acceptable
 (`proactiveThresholdCompactionMode` accepts `inline | deferred`, default
 `deferred`).
 
 Manual recovery that bypasses the deferred path entirely: user `/compact` runs
-a synchronous foreground summarization of the whole tail (~1.5 min, 7 LLM calls
-on 160k context) and publishes immediately — no maintenance, no drain gating.
-It is the reliable "get the context back now" move when the plugin idles, and
-the resulting post-compaction state (context below threshold) satisfies the
-plugin's own bookkeeping.
+a synchronous foreground summarization of the whole tail (takes minutes, several
+LLM calls on a large context) and publishes immediately — no maintenance, no
+drain gating. It is the reliable "get the context back now" move when the plugin
+idles, and the resulting post-compaction state (context below threshold)
+satisfies the plugin's own bookkeeping.
 
 ## Steps 6–7 → `assets/verify-and-summarizer.md`
 
-Full text moved to the support file (SKILL.md 10K-char limit): **Step 6 —
-trigger, then verify** (arming the drain, what a real pass prints) and
-**Step 7 — armed but never completes: check the summarizer** (summary lane
+Full text is in the support file. Read it after setting the threshold:
+**Step 6 — trigger, then verify** (arming the drain, what a real pass prints)
+and **Step 7 — armed but never completes: check the summarizer** (summary lane
 unusable, `summaryModel` + fallback, `reduced=true reachedTarget=true`).
-Read them after setting the threshold.
-

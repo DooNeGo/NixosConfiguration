@@ -39,7 +39,7 @@ in
     skills = [
       {
         name = "kokoro-voice";
-        description = "Voice replies via local kokoro-ru TTS (Russian, Telegram).";
+        description = "Russian voice note or spoken reply request: runs kokoro TTS, delivers a Telegram opus .ogg voice note.";
         mode = "symlink";
         source = toString ./skills/kokoro-voice;
       }
@@ -50,28 +50,10 @@ in
         source = toString ./skills/skill-vetter;
       }
       {
-        name = "ai-chat-bot-admin-access";
-        description = "ai-chat-bot on ai-server — service status, last request via admin /logs, reproduce failing request. Bot lives in /home/admin/configuration/chat-bot, unit ai-chat-bot.service, port 5000.";
-        mode = "symlink";
-        source = toString ./skills/ai-chat-bot-admin-access;
-      }
-      {
-        name = "ai-chat-bot-classifier";
-        description = "ai-chat-bot on ai-server — fix classifier misrouting of context-dependent follow-ups, multi-label composition rule, off_topic refusal cost analysis.";
-        mode = "symlink";
-        source = toString ./skills/ai-chat-bot-classifier;
-      }
-      {
         name = "ai-chat-bot-debugging";
-        description = "ai-chat-bot on ai-server misbehaves — last request via admin /logs, KB junk/duplicated chunks, or rebuild/verify airport_kb (pages missing, garbage).";
+        description = "ai-chat-bot on ai-server misbehaves - last request via admin /logs, off_topic refusals, junk KB chunks, airport_kb rebuild.";
         mode = "symlink";
         source = toString ./skills/ai-chat-bot-debugging;
-      }
-      {
-        name = "ai-chat-bot-kb-management";
-        description = "ai-chat-bot on ai-server — rebuild/verify the airport_kb Qdrant collection, diagnose KB junk-chunk contamination, indexer pipeline facts. Same host/repo: /home/admin/configuration/chat-bot.";
-        mode = "symlink";
-        source = toString ./skills/ai-chat-bot-kb-management;
       }
       {
         name = "cross-user-gateway-access";
@@ -81,7 +63,7 @@ in
       }
       {
         name = "head-to-head-model-test";
-        description = "Compare two live LLM endpoints (local vLLM vs OpenRouter) on coding and tool-calling with deterministic scorers — use when asked which model is better.";
+        description = "Which model is better, or compare two LLM endpoints: live head-to-head run with deterministic scorers and latency.";
         mode = "symlink";
         source = toString ./skills/head-to-head-model-test;
       }
@@ -93,7 +75,7 @@ in
       }
       {
         name = "mac-mini-gateway-ops";
-        description = "Remote OpenClaw administration on the Mac-mini node — plugin installs, config edits, gateway stop/start; \"on the Mac-mini...\" plugin/config tasks.";
+        description = "Mac-mini gateway start/stop, plugin install, config edit: backed-up, LaunchDaemon-controlled change with a log entry.";
         mode = "symlink";
         source = toString ./skills/mac-mini-gateway-ops;
       }
@@ -102,12 +84,6 @@ in
         description = "Mac-mini node — Google account auth (gog) invalid_client recovery; probe client secret in keyring, import fresh secret, final OAuth.";
         mode = "symlink";
         source = toString ./skills/mac-mini-gog-auth;
-      }
-      {
-        name = "mac-mini-node-ops";
-        description = "Remote OpenClaw administration on the Mac-mini node — plugin installs, config edits, gateway stop/start, provider timeouts; \"on the Mac-mini…\" tasks.";
-        mode = "symlink";
-        source = toString ./skills/mac-mini-node-ops;
       }
       {
         name = "mac-mini-provider-timeouts";
@@ -122,38 +98,32 @@ in
         source = toString ./skills/workshop-skill-authoring;
       }
       {
-        name = "self-improving-agent";
-        description = "Captures and maintains learnings, errors, and corrections. Use when a command fails, the user corrects an assumption, a capability is missing, knowledge is outdated, or a better approach is found.";
-        mode = "symlink";
-        source = toString ./skills/self-improving-agent;
-      }
-      {
         name = "nix-openclaw-config";
-        description = "Change a Nix-managed OpenClaw setting (reasoning, models, providers, channels) - edit source, eval, apply with consent; ghost home-manager units.";
+        description = "Change a Nix-managed OpenClaw setting (reasoning, models, providers, channels) — edit source, eval, apply with consent; ghost home-manager units.";
         mode = "symlink";
         source = toString ./skills/nix-openclaw-config;
       }
       {
         name = "nixos-system-config";
-        description = "Edit the NixOS system config (system-config/*.nix) - upstream option check, toplevel build verify, user applies via nixos-rebuild switch.";
+        description = "Edit the NixOS system config (system-config/*.nix) — upstream option check, toplevel build verify, user applies via nixos-rebuild switch.";
         mode = "symlink";
         source = toString ./skills/nixos-system-config;
       }
       {
         name = "nix-dev-env-tooling";
-        description = "Nix/NixOS tooling pitfalls - Android SDK license eval, JetBrains Gateway IDE detection, remote hosts missing PATH tools, foreign binaries (stub-ld).";
+        description = "android-sdk-license eval error, Gateway misses Nix-installed IDE, NixOS refuses foreign ELF binary (stub-ld) - Nix dev-env tooling fixes.";
         mode = "symlink";
         source = toString ./skills/nix-dev-env-tooling;
       }
       {
         name = "maui-android-build";
-        description = "Build the MAUI Android app (Wallet.Droid in ~/projects/maui) on NixOS - regenerate tool wrappers, Directory.Build.props build, fix the stale R.java crash.";
+        description = "Build the MAUI Android app (Wallet.Droid, ~/projects/maui) on NixOS: regenerate tool wrappers, build, fix stale R.java crash.";
         mode = "symlink";
         source = toString ./skills/maui-android-build;
       }
       {
         name = "resilient-delegated-batch";
-        description = "Long delegated batch work a restart, model cut, or timeout can kill - persist every unit immediately, order phases by value, resume from the kept session.";
+        description = "Long delegated batch work a restart, model cut, or timeout can kill — persist every unit immediately, order phases by value, resume from the kept session.";
         mode = "symlink";
         source = toString ./skills/resilient-delegated-batch;
       }
@@ -337,7 +307,6 @@ in
               "browser-automation"
               "summarize"
               "healthcheck"
-              "self-improving-agent"
               "visualize"
               "diagram-maker"
               "weather"
@@ -346,26 +315,14 @@ in
               "clawhub"
               "gog"
               "node-connect"
-              "add-model-provider"
-              "configure-channel"
               "diagnose-gateway"
-              "lossless-claw"
-              "ai-chat-bot-admin-access"
-              "ai-chat-bot-classifier"
               "ai-chat-bot-debugging"
-              "ai-chat-bot-kb-management"
               "cross-user-gateway-access"
-              "head-to-head-model-test"
               "lossless-compaction-threshold"
               "mac-mini-gateway-ops"
               "mac-mini-gog-auth"
-              "mac-mini-node-ops"
               "mac-mini-provider-timeouts"
               "workshop-skill-authoring"
-              "nix-openclaw-config"
-              "nixos-system-config"
-              "nix-dev-env-tooling"
-              "maui-android-build"
               "resilient-delegated-batch"
             ];
 
@@ -413,7 +370,7 @@ in
               "python-debugpy"
               "spike"
               "healthcheck"
-              "resilient-delegated-batch"
+              "head-to-head-model-test"
             ];
 
             model = {
@@ -449,7 +406,6 @@ in
               "tmux"
               "python-debugpy"
               "spike"
-              "self-improving-agent"
               "skill-creator"
               "nix-openclaw-config"
               "nixos-system-config"

@@ -1,6 +1,6 @@
 ---
 name: "mac-mini-gateway-ops"
-description: "Remote OpenClaw administration on the Mac-mini node — plugin installs, config edits, gateway stop/start; \"on the Mac-mini...\" plugin/config tasks."
+description: "Mac-mini gateway start/stop, plugin install, config edit: backed-up, LaunchDaemon-controlled change with a log entry."
 ---
 
 # Mac-mini gateway operations
@@ -12,20 +12,20 @@ CLI is `/opt/homebrew/bin/openclaw` (not on non-interactive PATH: use `zsh -lc`)
 ## Rules (order matters)
 
 1. **Backup first**: `cp ~/.openclaw/openclaw.json
-   ~/openclaw-backup-<date>/openclaw.json.pre-<task>-$(date +%H%M)` before any
-   change. An existing set `~/openclaw-backup-20261006/` also holds agent DBs.
+   ~/openclaw-backup-<YYYYMMDD>/openclaw.json.pre-<task>-$(date +%H%M)` before any
+   change.
 2. **Check gateway state**: `lsof -nP -iTCP:18789 -sTCP:LISTEN` (listener =
    running). `openclaw gateway status` does NOT see the daemon: it reports
    "LaunchAgent (not loaded)"; trust its connectivity probe only.
 3. **Gateway control**: the gateway is a system LaunchDaemon
    (`/Library/LaunchDaemons/ai.openclaw.gateway.plist`, runs as `worker`,
-   starts at boot). The user LaunchAgent was retired 2026-10-10 (plist moved
-   to `~/openclaw-backup-20261010/launchagent-retired/`); never load both.
+   starts at boot). The user LaunchAgent is retired: never load it alongside
+   the LaunchDaemon.
    Do not use `openclaw gateway start|stop|restart`. Use (NOPASSWD, arguments
    must match the sudoers rule exactly):
-   - Start (verified): `~/start_openclaw.sh` = `sudo -n /bin/launchctl bootstrap system /Library/LaunchDaemons/ai.openclaw.gateway.plist`, waits for port 18789.
-   - Stop: `~/stop_openclaw.sh` = `sudo -n /bin/launchctl bootout system/ai.openclaw.gateway` (not yet executed).
-   - Restart: `sudo -n /bin/launchctl kickstart -k system/ai.openclaw.gateway` (not yet executed).
+   - Start: `~/start_openclaw.sh` = `sudo -n /bin/launchctl bootstrap system /Library/LaunchDaemons/ai.openclaw.gateway.plist`, waits for port 18789.
+   - Stop: `~/stop_openclaw.sh` = `sudo -n /bin/launchctl bootout system/ai.openclaw.gateway` (UNVERIFIED).
+   - Restart: `sudo -n /bin/launchctl kickstart -k system/ai.openclaw.gateway` (UNVERIFIED).
    - KeepAlive is true: `kill` respawns, only `bootout` stops durably.
 4. **Plugin semantics**: `openclaw plugins install` hot-applies only when a
    Gateway is running; with no Gateway it is saved for next start. Therefore
@@ -44,10 +44,6 @@ CLI is `/opt/homebrew/bin/openclaw` (not on non-interactive PATH: use `zsh -lc`)
 - `openclaw plugins inspect <id>` for a single plugin
 - Final check for stopped-gateway changes: no listener on 18789 + config JSON
   valid (`python3 -m json.tool ~/.openclaw/openclaw.json`).
-
-Policy context: mac-mini is a wide-spectrum general-purpose agent (owner
-decision 2026-10-06) — do not mass-disable plugins on usage evidence; disable
-only providers without keys or true duplicates.
 
 ## Completion check
 

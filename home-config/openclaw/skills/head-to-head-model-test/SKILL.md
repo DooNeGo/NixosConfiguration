@@ -1,22 +1,20 @@
 ---
 name: head-to-head-model-test
-description: Compare two live LLM endpoints (local vLLM vs OpenRouter) on coding and tool-calling with deterministic scorers — use when asked which model is better.
+description: Which model is better, or compare two LLM endpoints: live head-to-head run with deterministic scorers and latency.
 ---
 
 # Head-to-head model test
 
-Compare two models by running them, not by citing leaderboards. Trigger: "which
-model is better for X", "compare our local model with <provider> model", or
-any claim about which model should fill an agent role.
+Compare two models by running them, not by citing leaderboards. Triggers: "which
+model is better for X", "compare our local model with <provider> model", or any
+claim about which model should fill an agent role.
 
 ## Step 1 — resolve real endpoints from config
 
-Read the actual provider block, never guess URLs or ids. In OpenClaw
-agent/model overrides the id must be the plain
-`openrouter/<vendor>/<model>` form — a `~` prefix variant
-(`openrouter/~xiaomi/mimo-v2.6-flash`) is rejected by the provider with
-"model not found" while the same id without `~` works (verified 2026-10-03
-two failed subagent spawns before the live probe proved the form).
+Read the actual provider block, never guess URLs or ids. In OpenClaw agent/model
+overrides the id must be the plain `openrouter/<vendor>/<model>` form. A
+`~`-prefixed variant is rejected by the provider with "model not found" while the
+same id without `~` works.
 
 ```sh
 readlink -f ~/.openclaw/openclaw.json   # live path; may be a symlink into /nix/store
@@ -32,7 +30,7 @@ anything — a model route can be dead independently of the gateway.
 OpenRouter and other internet hosts go through the configured proxy. A
 Tailscale/LAN vLLM host does **not** and fails unless proxying is disabled for
 it, so pass `--noproxy '*'` on local calls and leave it off for provider calls.
-Verified working pair:
+Working pair:
 
 ```sh
 # provider: via proxy, bearer auth
@@ -82,17 +80,16 @@ report the observed cap as a finding — an incomplete run beats a lost run.
 
 Record wall-clock seconds, completion tokens, and tok/s per call. A model that
 scores marginally higher at 3× the latency is the wrong default for an
-interactive agent role. Note that reasoning effort changes this independently
-of quality: sweep it (low/medium/high) on a couple of tests before adopting a
-default, and pin the effort explicitly when a provider's catalog default is
-higher than the measured optimum.
+interactive agent role. Reasoning effort changes this independently of quality:
+sweep it (low/medium/high) on a couple of tests before adopting a default, and
+pin the effort explicitly when a provider's catalog default is higher than the
+measured optimum.
 
 **Confirm the provider reports reasoning tokens at all before sweeping effort.**
-Space Bunny Alpha accepts every effort level (including `xhigh`, verified HTTP
-200) yet reported zero reasoning tokens at all of them, while latency went
-1.0s→10.2s on the same test. A knob that yields no reasoning tokens buys only
-latency, and accepting the parameter is not evidence that it did anything —
-compare reported reasoning tokens per effort, not just the HTTP status.
+Some providers accept every effort level (including `xhigh`) with HTTP 200 yet
+report zero reasoning tokens, while latency still changes. Accepting the
+parameter is not evidence that it did anything: compare reported reasoning
+tokens per effort, not just the HTTP status.
 
 ## Report honestly
 

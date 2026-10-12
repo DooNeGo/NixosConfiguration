@@ -7,10 +7,9 @@ description: Mac-mini node — diagnose model/provider timeouts (agent slow to r
 
 Trigger: user reports the mac agent answers slowly, or the log shows repeated
 `[model-fetch] error ... model=<m> elapsedMs≈20000` (usually
-"Activity recap timed out"). Verified 2026-10-07: the model and key were
-healthy; the `responses` endpoint hung while `chat/completions` worked —
-OpenClaw defaults to `api=openai-responses`, so every call hit the 20 s cap
-and fell back.
+"Activity recap timed out"). Known pattern: the model and key are healthy, but
+the `responses` endpoint hangs while `chat/completions` works. OpenClaw defaults
+to `api=openai-responses`, so every call hits the 20 s cap and falls back.
 
 ## Step 1 — read the log
 
@@ -30,7 +29,7 @@ proof of breakage on its own.
 ## Step 3 — locate the key without exposing it
 
 It is not in `openclaw.json` plaintext; the path is in
-`.secrets.providers.<name>.path` (2026-10-07: `~/.secrets/openai-api-key`).
+`.secrets.providers.<name>.path` (for example `~/.secrets/openai-api-key`).
 Read it into a shell variable on the Mac (`KEY=$(cat <path>)`); never
 echo, paste, or transmit it.
 
