@@ -186,7 +186,9 @@ in
         lib.concatMap (
           agent:
           map (personaFile agent) (
-            lib.filter (file: builtins.pathExists (./openclaw-local/workspace + "/${agent}/${file}")) personaFiles
+            lib.filter (
+              file: builtins.pathExists (./openclaw-local/workspace + "/${agent}/${file}")
+            ) personaFiles
           )
         ) personaAgents
       );
@@ -416,7 +418,7 @@ in
 
             model = {
               primary = "anthropic/claude-haiku-5-5";
-              fallbacks = [               
+              fallbacks = [
                 "zai/glm-5.3-flash"
                 "openrouter/free"
               ];
@@ -604,6 +606,8 @@ in
           "memory-lancedb"
           "active-memory"
           "anthropic"
+          "browser"
+          "telegram"
         ];
 
         slots = {
@@ -673,7 +677,6 @@ in
               logging = true;
             };
           };
-
         }
 
         // lib.listToAttrs (
@@ -720,6 +723,7 @@ in
       };
 
       browser = {
+        enabled = true;
         executablePath = "/home/openclaw/.nix-profile/bin/chromium";
       };
     };
