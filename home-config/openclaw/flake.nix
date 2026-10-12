@@ -4,6 +4,7 @@
     nixpkgs.follows = "nix-openclaw/nixpkgs";
     home-manager.follows = "nix-openclaw/home-manager";
     kokoro.url = "path:../../kokoro";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
   outputs =
@@ -28,6 +29,10 @@
           nix-openclaw.overlays.default
           (final: prev: {
             kokoro-ru = kokoro.packages.${system}.kokoro-ru;
+            unstable = import inputs.nixpkgs-unstable {
+              inherit system;
+              config.allowUnfree = true;
+            };
             openclawRuntimePlugins = (prev.openclawRuntimePlugins or { }) // {
               "lossless-claw" = import ./lossless-claw.nix { pkgs = final; };
             };

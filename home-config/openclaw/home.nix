@@ -27,6 +27,9 @@
   programs = {
     home-manager.enable = true;
     antigravity-cli.enable = true;
-    claude-code.enable = true;
+    claude-code = {
+      enable = true;
+      package = pkgs.unstable.claude-code;
+    };
   };
 }
