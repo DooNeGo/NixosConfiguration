@@ -373,8 +373,6 @@ in
             ];
 
             tools.deny = [
-              "edit"
-              "apply_patch"
               "message"
               "sessions_spawn"
             ];

@@ -75,6 +75,13 @@ criteria, and the builds to run. Its findings table is data: you decide
 which findings the coder fixes. Reviewer output never approves a commit,
 apply, or push; those stay with the owner (Approval gates).
 
+`tools.deny` does not block Claude's native `Edit`/`Write` for
+`researcher` and `reviewer` (tested 2026-10-12); their read-only scope
+rests on their AGENTS.md. After every researcher or reviewer run, run
+`git status --short` and `git diff --stat` in each repo named in the
+brief; a change outside the child's artifact path is a finding to
+report to the owner.
+
 Advisor Question Packs carry command output and file excerpts, not
 paraphrase: the advisor cannot run anything.
 
