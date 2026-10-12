@@ -113,6 +113,12 @@ pipeline. Neither approves a commit, apply, or push.
 
 - Spawn with explicit `agentId`; model id as allowed in
   `openclaw.nix` (`anthropic/...`, not `claude-cli/...`).
+- Spawn hidden one-shot children with `completionTarget: "parent"`: the
+  result returns in a private turn and nothing goes to the chat on its
+  own, so deliver the one summary to the owner yourself (a plain reply
+  in a private turn is not delivered; use `message`). It is rejected
+  with `visible`, `thread`, `collect`, or ACP. Omit it only if the owner
+  asked to see the child's raw reply.
 - `sessions_yield` only while this turn owns a pending child; reply
   after settlement.
 - `subagents` cancel/wait: taskId from `list`, not session keys.

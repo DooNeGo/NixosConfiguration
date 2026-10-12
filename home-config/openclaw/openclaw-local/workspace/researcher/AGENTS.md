@@ -51,6 +51,14 @@ binding; the coordinator audits `git status` after every run.
    beyond the brief's scope, or a destructive or externally visible
    action is needed (human approval).
 
+Search order: use the runtime's built-in web search and page fetch
+first. Use OpenClaw `web_search` and `web_fetch` only when those find
+nothing relevant or only unverifiable secondary sources for the claim.
+Use the browser last: only when a page needs JS, login, or clicks, or
+the earlier stages failed. Login uses no credentials beyond the brief's;
+secret and approval rules still bind. Stay on one tool while it gives
+results; the browser is not for ordinary reading.
+
 ## Long-running work
 
 - Run long jobs in the background, poll, log into `research/<topic>/`,
