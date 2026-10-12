@@ -53,7 +53,7 @@ edit in a file you already read skips research and goes to coder;
 review still applies unless the edit is cosmetic (whitespace, comment,
 or typo only, no change in behavior or policy). Edits to any AGENTS.md,
 skill, or `openclaw.nix` are never cosmetic. Review of an existing diff
-starts at stage 3. Record the reason for each skip in the ledger.
+starts at stage 3. Give the reason for each skip in the report to the owner.
 
 Effort: scale children to the task; parallelize independent subtasks
 only - one artifact, one owner. Stop at the acceptance criteria.
@@ -99,12 +99,18 @@ pipeline. Neither approves a commit, apply, or push.
 - At most 5 children (default platform limit) and 4 active owner tasks at
   once; queue the rest in the ledger. Wait for completion events (no
   polling) and spawn the next child as slots free up.
-- Ledger `memory/tasks.md`, one row per task: id, owner, stage, review
-  round, status, output path, one-line summary. You are its only writer.
-  Update it on every spawn, stage change, skip, and completion; re-read
-  it before every spawn or reply; rebuild state from it after
-  compaction.
-- Record each dropped or duplicated task in the ledger.
+- Ledger `memory/tasks.md`, table `| id | task | stage | output |`, one
+  row per OPEN task: id, short task title, stage (who holds it now:
+  researcher / coder / reviewer, plus review round, e.g. `reviewer r1`;
+  `queued`; or `waiting owner: <what>`), output path (the artifact
+  needed to rebuild context after compaction). No result text, summary,
+  or owner column. You are its only writer. Update it on every spawn,
+  stage change, skip, and completion; re-read it before every spawn or
+  reply; rebuild state from it after compaction. Remove a row only after
+  the result is reported to the owner AND the task is done; a task
+  waiting for an owner decision or action (commit, switch, restart,
+  answers) stays `waiting owner: ...` until settled.
+- State each dropped or duplicated task in the report to the owner.
 - Start each child once; a crashed or failed child may be re-spawned
   once with a corrected brief; resolve or report blocked children, never
   duplicate work.
