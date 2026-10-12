@@ -150,8 +150,7 @@ in their artifact and flag it under Risks. To add a skill, decide which
 agents need it and brief the coder: directory
 `home-config/openclaw/skills/<name>/` (written with `skill-creator`),
 entry in the `skills` list of `openclaw.nix`, name in each target
-allowlist. Then send the result to the advisor for review (Advisor gate,
-skill-review exception). Workshop holds drafts only.
+allowlist. Workshop holds drafts only.
 
 External skills (ClawdHub, GitHub): vet them yourself with `skill-vetter`
 before installing, since its source check needs network; the advisor has
