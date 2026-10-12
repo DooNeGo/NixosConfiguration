@@ -50,10 +50,112 @@ in
         source = toString ./skills/skill-vetter;
       }
       {
+        name = "ai-chat-bot-admin-access";
+        description = "ai-chat-bot on ai-server — service status, last request via admin /logs, reproduce failing request. Bot lives in /home/admin/configuration/chat-bot, unit ai-chat-bot.service, port 5000.";
+        mode = "symlink";
+        source = toString ./skills/ai-chat-bot-admin-access;
+      }
+      {
+        name = "ai-chat-bot-classifier";
+        description = "ai-chat-bot on ai-server — fix classifier misrouting of context-dependent follow-ups, multi-label composition rule, off_topic refusal cost analysis.";
+        mode = "symlink";
+        source = toString ./skills/ai-chat-bot-classifier;
+      }
+      {
+        name = "ai-chat-bot-debugging";
+        description = "ai-chat-bot on ai-server misbehaves — last request via admin /logs, KB junk/duplicated chunks, or rebuild/verify airport_kb (pages missing, garbage).";
+        mode = "symlink";
+        source = toString ./skills/ai-chat-bot-debugging;
+      }
+      {
+        name = "ai-chat-bot-kb-management";
+        description = "ai-chat-bot on ai-server — rebuild/verify the airport_kb Qdrant collection, diagnose KB junk-chunk contamination, indexer pipeline facts. Same host/repo: /home/admin/configuration/chat-bot.";
+        mode = "symlink";
+        source = toString ./skills/ai-chat-bot-kb-management;
+      }
+      {
+        name = "cross-user-gateway-access";
+        description = "Reach an OpenClaw Gateway from a second OS user — ACP/IDE bridge, token handover, client binary install.";
+        mode = "symlink";
+        source = toString ./skills/cross-user-gateway-access;
+      }
+      {
+        name = "head-to-head-model-test";
+        description = "Compare two live LLM endpoints (local vLLM vs OpenRouter) on coding and tool-calling with deterministic scorers — use when asked which model is better.";
+        mode = "symlink";
+        source = toString ./skills/head-to-head-model-test;
+      }
+      {
+        name = "lossless-compaction-threshold";
+        description = "lossless-claw produced no summaries, or context grows unchecked — read the plugin log, compute the threshold vs the model's window, set a working one.";
+        mode = "symlink";
+        source = toString ./skills/lossless-compaction-threshold;
+      }
+      {
+        name = "mac-mini-gateway-ops";
+        description = "Remote OpenClaw administration on the Mac-mini node — plugin installs, config edits, gateway stop/start; \"on the Mac-mini...\" plugin/config tasks.";
+        mode = "symlink";
+        source = toString ./skills/mac-mini-gateway-ops;
+      }
+      {
+        name = "mac-mini-gog-auth";
+        description = "Mac-mini node — Google account auth (gog) invalid_client recovery; probe client secret in keyring, import fresh secret, final OAuth.";
+        mode = "symlink";
+        source = toString ./skills/mac-mini-gog-auth;
+      }
+      {
+        name = "mac-mini-node-ops";
+        description = "Remote OpenClaw administration on the Mac-mini node — plugin installs, config edits, gateway stop/start, provider timeouts; \"on the Mac-mini…\" tasks.";
+        mode = "symlink";
+        source = toString ./skills/mac-mini-node-ops;
+      }
+      {
+        name = "mac-mini-provider-timeouts";
+        description = "Mac-mini node — diagnose model/provider timeouts (agent slow to reply, model-fetch errors), test both OpenAI APIs, set correct api in config.";
+        mode = "symlink";
+        source = toString ./skills/mac-mini-provider-timeouts;
+      }
+      {
+        name = "workshop-skill-authoring";
+        description = "Create or update coordinator skills via skill_workshop — 160-byte description cap, patch rejected for unused skills, update+apply route.";
+        mode = "symlink";
+        source = toString ./skills/workshop-skill-authoring;
+      }
+      {
         name = "self-improving-agent";
         description = "Captures and maintains learnings, errors, and corrections. Use when a command fails, the user corrects an assumption, a capability is missing, knowledge is outdated, or a better approach is found.";
         mode = "symlink";
         source = toString ./skills/self-improving-agent;
+      }
+      {
+        name = "nix-openclaw-config";
+        description = "Change a Nix-managed OpenClaw setting (reasoning, models, providers, channels) - edit source, eval, apply with consent; ghost home-manager units.";
+        mode = "symlink";
+        source = toString ./skills/nix-openclaw-config;
+      }
+      {
+        name = "nixos-system-config";
+        description = "Edit the NixOS system config (system-config/*.nix) - upstream option check, toplevel build verify, user applies via nixos-rebuild switch.";
+        mode = "symlink";
+        source = toString ./skills/nixos-system-config;
+      }
+      {
+        name = "nix-dev-env-tooling";
+        description = "Nix/NixOS tooling pitfalls - Android SDK license eval, JetBrains Gateway IDE detection, remote hosts missing PATH tools, foreign binaries (stub-ld).";
+        mode = "symlink";
+        source = toString ./skills/nix-dev-env-tooling;
+      }
+      {
+        name = "maui-android-build";
+        description = "Build the MAUI Android app (Wallet.Droid in ~/projects/maui) on NixOS - regenerate tool wrappers, Directory.Build.props build, fix the stale R.java crash.";
+        mode = "symlink";
+        source = toString ./skills/maui-android-build;
+      }
+      {
+        name = "resilient-delegated-batch";
+        description = "Long delegated batch work a restart, model cut, or timeout can kill - persist every unit immediately, order phases by value, resume from the kept session.";
+        mode = "symlink";
+        source = toString ./skills/resilient-delegated-batch;
       }
     ];
 
