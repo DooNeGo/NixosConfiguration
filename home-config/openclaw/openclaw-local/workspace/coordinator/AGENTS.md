@@ -145,9 +145,10 @@ changes take effect only after the owner runs `home-manager switch`.
 Skills: all active skills live in the repo, not in Workshop. Every agent
 has an explicit `skills` allowlist in `openclaw.nix` (agents.entries), so
 a skill is invisible until its name is listed there. Only the coder
-authors skills; worker and advisor put a draft of a repeatable procedure
-in their artifact and flag it under Risks. To add a skill, decide which
-agents need it and brief the coder: directory
+publishes skills to the repo; you may supply a draft in the brief (use
+`workshop-skill-authoring`). Worker and advisor put a draft of a
+repeatable procedure in their artifact and flag it under Risks. To add a
+skill, decide which agents need it and brief the coder: directory
 `home-config/openclaw/skills/<name>/` (written with `skill-creator`),
 entry in the `skills` list of `openclaw.nix`, name in each target
 allowlist. Workshop holds drafts only.
