@@ -11,7 +11,7 @@ Adding entries to `agents.defaults.models` has a second side effect. With no
 explicit `modelPolicy.allow`, the gateway treats the **keys** of that block as the
 model allowlist, so the first `params.*` entry silently forbids every other model
 for subagent spawns (`sessions_spawn` fails with `model not allowed: <model>`
-for worker and coder alike). Fix it inside `agents.defaults`:
+for researcher and coder alike). Fix it inside `agents.defaults`:
 
 ```nix
 modelPolicy.allow = [ "openrouter/*" "vllm/*" ];

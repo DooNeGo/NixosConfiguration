@@ -134,7 +134,8 @@ in
         personaAgents = [
           "coordinator"
           "coder"
-          "worker"
+          "researcher"
+          "reviewer"
           "advisor"
         ];
         personaFiles = [
@@ -329,8 +330,9 @@ in
             subagents = {
               delegationMode = "prefer";
               allowAgents = [
-                "worker"
+                "researcher"
                 "coder"
+                "reviewer"
                 "advisor"
               ];
             };
@@ -355,22 +357,26 @@ in
             ];
           };
 
-          worker = {
+          researcher = {
             identity = {
               name = "Scuttle";
               emoji = "🦐";
             };
 
-            workspace = "~/.openclaw/workspace/worker";
+            workspace = "~/.openclaw/workspace/researcher";
 
             skills = [
               "browser-automation"
               "summarize"
-              "tmux"
-              "python-debugpy"
-              "spike"
               "healthcheck"
               "head-to-head-model-test"
+            ];
+
+            tools.deny = [
+              "edit"
+              "apply_patch"
+              "message"
+              "sessions_spawn"
             ];
 
             model = {
@@ -452,6 +458,39 @@ in
 
             modelPolicy.allow = [
               "anthropic/claude-opus-5-5"
+              "anthropic/claude-sonnet-5-5"
+              "zai/glm-5.3"
+              "openrouter/free"
+            ];
+          };
+
+          reviewer = {
+            identity = {
+              name = "Gauge";
+              emoji = "🔍";
+            };
+
+            workspace = "~/.openclaw/workspace/reviewer";
+
+            skills = [ "skill-vetter" ];
+
+            tools.deny = [
+              "edit"
+              "apply_patch"
+              "browser"
+              "message"
+              "sessions_spawn"
+            ];
+
+            model = {
+              primary = "anthropic/claude-sonnet-5-5";
+              fallbacks = [
+                "zai/glm-5.3"
+                "openrouter/free"
+              ];
+            };
+
+            modelPolicy.allow = [
               "anthropic/claude-sonnet-5-5"
               "zai/glm-5.3"
               "openrouter/free"

@@ -64,7 +64,7 @@ home.activation.copyCoderSkill = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
 
 - Skills: `openclaw skills list --agent <id>` is the ground truth. `ready` means
   loaded, `excluded` means discovered but not allowlisted, and absent means
-  discovery failed (the traps above). Check coordinator and worker absence too
+  discovery failed (the traps above). Check coordinator and researcher absence too
   when the goal is coder-only.
 - Bootstrap: `ls -la` shows regular files (no `l`), and the `[UNREADABLE: …]`
   marker is gone from the agent's next system prompt.
