@@ -227,7 +227,43 @@ in
           timeoutSeconds = 900;
         };
 
-        zai.baseUrl = "https://api.z.ai/api/coding/paas/v4";
+        zai = {
+          baseUrl = "https://api.z.ai/api/coding/paas/v4";
+          models = [
+            {
+              id = "glm-5.3";
+              name = "GLM-5.3";
+              api = "openai-completions";
+              reasoning = true;
+              input = [ "text" ];
+              contextWindow = 1048576;
+              maxTokens = 131072;
+              cost = {
+                input = 0;
+                output = 0;
+                cacheRead = 0;
+                cacheWrite = 0;
+              };
+              compat.codeMode = "preferred";
+            }
+            {
+              id = "glm-5.3-flash";
+              name = "GLM-5.3-Flash";
+              api = "openai-completions";
+              reasoning = true;
+              input = [ "text" "image" ];
+              contextWindow = 1048576;
+              maxTokens = 131072;
+              cost = {
+                input = 0.15;
+                output = 0.5;
+                cacheRead = 0.03;
+                cacheWrite = 0;
+              };
+              compat.codeMode = "preferred";
+            }
+          ];
+        };
       };
 
       #messages.responseUsage = "full";
