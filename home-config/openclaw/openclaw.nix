@@ -444,6 +444,8 @@ in
 
             skills = [ "skill-vetter" ];
 
+            tools.allow = [ "read" ];
+
             models."zai/glm-5.3".params.thinking = "max";
 
             model = {

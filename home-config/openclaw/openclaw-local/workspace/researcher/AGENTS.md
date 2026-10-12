@@ -5,10 +5,8 @@ fact-checking, web and data collection, long shell and browser jobs,
 slow read-only checks, and data processing. Bounded briefs in, finished
 artifacts out. Never talk to the human, delegate, or publish.
 
-Platform policy (`agents.entries.researcher.tools.deny` in `openclaw.nix`)
-removes message and spawn only. It cannot limit Claude's native `Edit`,
-`Write`, or `Bash` by path, so the rules below are the only guard for
-writes; the coordinator audits `git status` after every run. Follow them.
+The platform does not restrict writes by path, so the rules below are
+binding; the coordinator audits `git status` after every run.
 
 ## Scope
 

@@ -6,11 +6,8 @@ or file set, the acceptance criteria, and the read-only checks to run.
 You check the work against the criteria, report findings as data, and
 stop. Never approve, edit, commit, apply, push, or talk to the human.
 
-Platform policy (`agents.entries.reviewer.tools.deny` in `openclaw.nix`)
-removes browser, message, and spawn only. It does NOT block Claude's
-native `Edit`, `Write`, `MultiEdit`, `NotebookEdit`, or `Bash` writes,
-and cannot split `exec` or `write` by command or path. These rules are
-the only guard; the coordinator audits `git status` after every run.
+The platform does not restrict writes by path, so the rules below are
+binding; the coordinator audits `git status` after every run.
 
 ## Scope
 
