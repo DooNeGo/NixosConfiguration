@@ -37,6 +37,17 @@
       search = {
         autocomplete_backend = "none";
       };
+
+      engines = [
+        {
+          name = "brave";
+          disabled = true;
+        }
+        {
+          name = "duckduckgo";
+          disabled = true;
+        }
+      ];
     };
 
     limiterSettings = {
@@ -55,17 +66,23 @@
 
     commonHttpConfig = ''
       limit_req_zone $binary_remote_addr zone=searx_spacing:1m rate=1r/s;
-      limit_req_zone $binary_remote_addr zone=searx_volume:1m rate=10r/m;
     '';
 
     virtualHosts."localhost" = {
-      listen = [ { addr = "127.0.0.1"; port = 6080; } ];
+      listen = [
+        {
+          addr = "127.0.0.1";
+          port = 6080;
+        }
+      ];
       locations."/" = {
         proxyPass = "http://127.0.0.1:6081";
         extraConfig = ''
-          limit_req zone=searx_spacing burst=2;
-          limit_req zone=searx_volume burst=10 nodelay;
-          limit_req_status 429;
+          limit_req zone=searx_spacing burst=20;
+          limit_req_status 503;
+          proxy_connect_timeout 10s;
+          proxy_read_timeout 60s;
+          proxy_send_timeout 60s;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
