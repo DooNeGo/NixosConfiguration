@@ -87,6 +87,9 @@ assert lib.all (i: lib.hasPrefix "/etc/" i.runtimeKey) (lib.attrValues instances
     HTTP_PROXY = "http://${main.listenAddress}:${proxyPort}";
     HTTPS_PROXY = "http://${main.listenAddress}:${proxyPort}";
     NO_PROXY = "localhost,127.0.0.1,::1,100.64.0.0/10,.ts.net,192.168.0.0/16,10.0.0.0/8";
+    http_proxy = "http://${main.listenAddress}:${proxyPort}";
+    https_proxy = "http://${main.listenAddress}:${proxyPort}";
+    no_proxy = "localhost,127.0.0.1,::1,100.64.0.0/10,.ts.net,192.168.0.0/16,10.0.0.0/8";
   };
 
   systemd.services = lib.listToAttrs (

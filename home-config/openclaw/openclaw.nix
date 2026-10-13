@@ -13,6 +13,8 @@ in
     inputs.nix-openclaw.homeManagerModules.openclaw
   ];
 
+  home.packages = with pkgs; [ ffmpeg ];
+
   programs.openclaw = {
     enable = true;
 
@@ -198,9 +200,6 @@ in
         mode = "singleValue";
       };
 
-      session.dmScope = "per-channel-peer";
-
-      # Owner-only commands (/trace, /diagnostics, /restart) check this list, not channels.telegram.allowFrom.
       commands.ownerAllowFrom = [ "telegram:760128577" ];
 
       channels.telegram = {
@@ -228,43 +227,27 @@ in
           timeoutSeconds = 900;
         };
 
-        zai = {
-          baseUrl = "https://api.z.ai/api/coding/paas/v4";
-          #models = [
-            #{
-              #id = "glm-5.3";
-              #name = "GLM-5.3";
-              #api = "openai-completions";
-              #reasoning = true;
-              #input = [ "text" ];
-              #contextWindow = 1048576;
-              #maxTokens = 131072;
-              #cost = {
-                #input = 0;
-                #output = 0;
-                #cacheRead = 0;
-                #cacheWrite = 0;
-              #};
-              #compat.codeMode = "preferred";
-            #}
-            #{
-              #id = "glm-5.3-flash";
-              #name = "GLM-5.3-Flash";
-              #api = "openai-completions";
-              #reasoning = true;
-              #input = [ "text" "image" ];
-              #contextWindow = 1048576;
-              #maxTokens = 131072;
-              #cost = {
-                #input = 0.15;
-                #output = 0.5;
-                #cacheRead = 0.03;
-                #cacheWrite = 0;
-              #};
-              #compat.codeMode = "preferred";
-            #}
-          #];
-        };
+        zai.baseUrl = "https://api.z.ai/api/coding/paas/v4";
+
+        # claude-cli runs Claude Code, which auto-compacts at the model window
+        # (1M for Sonnet 5); this cap makes compaction happen at 100k instead.
+        anthropic.models = [
+          {
+            id = "claude-haiku-5-5";
+            name = "Claude Haiku 5.5";
+            contextTokens = 100000;
+          }
+          {
+            id = "claude-sonnet-5-5";
+            name = "Claude Sonnet 5.5";
+            contextTokens = 100000;
+          }
+          {
+            id = "claude-opus-5-5";
+            name = "Claude Opus 5.5";
+            contextTokens = 100000;
+          }
+        ];
       };
 
       #messages.responseUsage = "full";
@@ -303,14 +286,12 @@ in
               ) claudes
             );
 
-          utilityModel =
-            "anthropic/claude-haiku-5-5";
-            #"zai/glm-5.3-flash";
+          utilityModel = "anthropic/claude-haiku-5-5";
+          #"zai/glm-5.3-flash";
 
           heartbeat = {
-            model =
-              "anthropic/claude-haiku-5-5";
-              #"zai/glm-5.3-flash";
+            model = "anthropic/claude-haiku-5-5";
+            #"zai/glm-5.3-flash";
             isolatedSession = true;
             lightContext = true;
             every = "0m";
@@ -466,7 +447,10 @@ in
 
             skills = [ "skill-vetter" ];
 
-            tools.allow = [ "read" "skill_workshop" ];
+            tools.allow = [
+              "read"
+              "skill_workshop"
+            ];
 
             models."zai/glm-5.3".params.thinking = "max";
 
@@ -522,19 +506,7 @@ in
         };
       };
 
-      bindings = [
-        {
-          agentId = "coordinator";
-          match = {
-            channel = "telegram";
-            accountId = "*";
-          };
-        }
-      ];
-
-      talk = {
-        agentId = "coordinator";
-      };
+      talk.agentId = "coordinator";
 
       tools.web = {
         search.provider = "searxng";
@@ -639,7 +611,6 @@ in
             enabled = true;
           };
 
-          # Tailscale Serve itself is configured by root in
           "device-pair".config.publicUrl = "https://openclaw-webui.tail416d29.ts.net";
 
           searxng = {
@@ -653,21 +624,16 @@ in
             llm = {
               allowModelOverride = true;
               allowedModels = [
-                "vllm/${cfg.llmModel}"
-                "zai/glm-5.3-flash"
                 "anthropic/claude-haiku-5-5"
               ];
             };
             config = {
               maxAssemblyTokenBudget = 100000;
               freshTailMaxTokens = 24000;
-              summaryMaxCallsPerWindow = 48;
               # claude-cli host lacks assemble/compact; capture-only lowers requirement to bootstrap/after-turn/maintain
               hostFallbackMode = "capture-only";
-              summaryModel =
-                "anthropic/claude-haiku-5-5";
-                #"zai/glm-5.3-flash";
-              cacheAwareCompaction.enabled = true;
+              summaryModel = "anthropic/claude-haiku-5-5";
+              #"zai/glm-5.3-flash";
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
                 "agent:*:**:active-memory:**"
@@ -694,14 +660,18 @@ in
             enabled = true;
             config = {
               mode = "escalate";
-              model =
-                "anthropic/claude-haiku-5-5";
-                #"zai/glm-5.3-flash";
+              model = "anthropic/claude-haiku-5-5";
+              #"zai/glm-5.3-flash";
               agents = [ "coordinator" ];
               logging = true;
               queryMode = "recent";
               promptStyle = "balanced";
-              toolsAllow = [ "memory_recall" "lcm_grep" "lcm_describe" "lcm_expand_query" ];
+              toolsAllow = [
+                "memory_recall"
+                "lcm_grep"
+                "lcm_describe"
+                "lcm_expand_query"
+              ];
               promptAppend = "Use memory_recall for long-term preferences and decisions. Use lcm_grep first for compacted conversation recall, lcm_describe for a specific summary, lcm_expand_query only when exact details may have been compacted away. Return NONE if nothing is clearly useful.";
             };
           };
@@ -738,7 +708,7 @@ in
       };
 
       memory.search = {
-        rememberAcrossConversations = false;
+        rememberAcrossConversations = true;
         provider = "openai-compatible";
         model = cfg.embeddingModel;
         remote = {
@@ -787,6 +757,4 @@ in
       TimeoutStopSec = "330";
     };
   };
-
-  home.packages = with pkgs; [ ffmpeg ];
 }

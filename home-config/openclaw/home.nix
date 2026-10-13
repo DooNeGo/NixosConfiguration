@@ -21,6 +21,11 @@
     stateVersion = "26.05";
     packages = with pkgs.unstable; [
       ungoogled-chromium
+      # только chattr/lsattr: полный e2fsprogs конфликтует с androidsdk (mke2fs)
+      (pkgs.runCommand "e2fsprogs-attr" { } ''
+        mkdir -p $out/bin
+        ln -s ${e2fsprogs}/bin/chattr ${e2fsprogs}/bin/lsattr $out/bin/
+      '')
     ];
   };
 
