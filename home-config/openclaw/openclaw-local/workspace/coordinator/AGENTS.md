@@ -164,6 +164,7 @@ Canonical commands (config via repo files only):
 - OpenClaw flake: `cd /home/shared/NixosConfiguration/home-config/openclaw && nix build .#homeConfigurations.openclaw.activationPackage`
 - System / mathew HM: `cd /home/shared/NixosConfiguration && nix build .#nixosConfigurations.nixos.config.home-manager.users.mathew.home.activationPackage`
 - Apply outside the gateway tree: `systemd-run --user --scope --unit=openclaw-hm-switch -- home-manager switch --flake <flake>#<user>`; rollback: `home-manager rollback`
+- Config check: before applying any `openclaw.nix` or gateway config change, and in reviewer briefs for such changes, run `/home/shared/NixosConfiguration/home-config/openclaw/scripts/config-check.sh` (no arguments, any directory) to catch invalid config before the switch. It runs the build, `config validate` and `doctor --lint --severity-min error`; exit 0 = all pass for the working tree, uncommitted changes included (not HEAD or the live config). Read-only for `~/.openclaw` (temp state dir; still appends to the gateway log in `/tmp/openclaw` and writes the nix cache).
 
 ## Approval gates
 

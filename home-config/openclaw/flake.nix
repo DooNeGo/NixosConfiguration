@@ -5,6 +5,7 @@
     home-manager.follows = "nix-openclaw/home-manager";
     kokoro.url = "path:../../kokoro";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs =
@@ -30,6 +31,10 @@
           (final: prev: {
             kokoro-ru = kokoro.packages.${system}.kokoro-ru;
             unstable = import inputs.nixpkgs-unstable {
+              inherit system;
+              config.allowUnfree = true;
+            };
+            stable = import inputs.nixpkgs-stable {
               inherit system;
               config.allowUnfree = true;
             };

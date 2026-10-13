@@ -32,8 +32,6 @@ in
     environment = {
       OPENROUTER_API_KEY = "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
       ZAI_API_KEY = "${config.home.homeDirectory}/.secrets/zai-api-key";
-      # Plugin source builds use os.tmpdir(); /tmp is a 16G tmpfs.
-      TMPDIR = "/var/tmp/openclaw";
     };
 
     skills = [
@@ -229,51 +227,53 @@ in
 
         zai = {
           baseUrl = "https://api.z.ai/api/coding/paas/v4";
-          models = [
-            {
-              id = "glm-5.3";
-              name = "GLM-5.3";
-              api = "openai-completions";
-              reasoning = true;
-              input = [ "text" ];
-              contextWindow = 1048576;
-              maxTokens = 131072;
-              cost = {
-                input = 0;
-                output = 0;
-                cacheRead = 0;
-                cacheWrite = 0;
-              };
-              compat.codeMode = "preferred";
-            }
-            {
-              id = "glm-5.3-flash";
-              name = "GLM-5.3-Flash";
-              api = "openai-completions";
-              reasoning = true;
-              input = [ "text" "image" ];
-              contextWindow = 1048576;
-              maxTokens = 131072;
-              cost = {
-                input = 0.15;
-                output = 0.5;
-                cacheRead = 0.03;
-                cacheWrite = 0;
-              };
-              compat.codeMode = "preferred";
-            }
-          ];
+          #models = [
+            #{
+              #id = "glm-5.3";
+              #name = "GLM-5.3";
+              #api = "openai-completions";
+              #reasoning = true;
+              #input = [ "text" ];
+              #contextWindow = 1048576;
+              #maxTokens = 131072;
+              #cost = {
+                #input = 0;
+                #output = 0;
+                #cacheRead = 0;
+                #cacheWrite = 0;
+              #};
+              #compat.codeMode = "preferred";
+            #}
+            #{
+              #id = "glm-5.3-flash";
+              #name = "GLM-5.3-Flash";
+              #api = "openai-completions";
+              #reasoning = true;
+              #input = [ "text" "image" ];
+              #contextWindow = 1048576;
+              #maxTokens = 131072;
+              #cost = {
+                #input = 0.15;
+                #output = 0.5;
+                #cacheRead = 0.03;
+                #cacheWrite = 0;
+              #};
+              #compat.codeMode = "preferred";
+            #}
+          #];
         };
       };
 
       #messages.responseUsage = "full";
 
       agents = {
+        ownership = "explicit";
+
         defaults = {
           model = {
-            primary = "zai/glm-5.3-flash";
+            primary = "anthropic/claude-haiku-5-5";
             fallbacks = [
-              "anthropic/claude-haiku-5-5"
+              "zai/glm-5.3-flash"
               "openrouter/free"
             ];
           };
@@ -300,14 +300,22 @@ in
               ) claudes
             );
 
-          utilityModel = "zai/glm-5.3-flash";
+          utilityModel =
+            "anthropic/claude-haiku-5-5";
+            #"zai/glm-5.3-flash";
 
           heartbeat = {
-            model = "zai/glm-5.3-flash";
+            model =
+              "anthropic/claude-haiku-5-5";
+              #"zai/glm-5.3-flash";
             isolatedSession = true;
             lightContext = true;
             every = "0m";
           };
+
+          # Ambient owners (systemAgent, heartbeat) fall back to this path;
+          # without it they land in the shared root ~/.openclaw/workspace.
+          workspace = "~/.openclaw/workspace/coordinator";
 
           systemAgent.agentId = "coordinator";
           authInheritance.agentId = "coordinator";
@@ -329,14 +337,10 @@ in
 
         entries = {
           coordinator = {
-            default = true;
-
             identity = {
               name = "Claw";
               emoji = "🦞";
             };
-
-            #heartbeat.every = "2h";
 
             workspace = "~/.openclaw/workspace/coordinator";
 
@@ -384,10 +388,7 @@ in
             };
 
             modelPolicy.allow = [
-              "anthropic/claude-opus-5-5"
               "anthropic/claude-sonnet-5-5"
-              "anthropic/claude-haiku-5-5"
-              "zai/glm-5.3-flash"
               "zai/glm-5.3"
               "openrouter/free"
             ];
@@ -406,6 +407,7 @@ in
               "summarize"
               "healthcheck"
               "head-to-head-model-test"
+              "mac-mini-gateway-ops"
             ];
 
             tools.deny = [
@@ -413,19 +415,9 @@ in
               "sessions_spawn"
             ];
 
-            model = {
-              primary = "anthropic/claude-haiku-5-5";
-              fallbacks = [
-                "zai/glm-5.3-flash"
-                "openrouter/free"
-              ];
-            };
-
             modelPolicy.allow = [
-              "anthropic/claude-sonnet-5-5"
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
-              "zai/glm-5.3"
               "openrouter/free"
             ];
           };
@@ -451,21 +443,12 @@ in
               "nixos-system-config"
               "nix-dev-env-tooling"
               "maui-android-build"
+              "mac-mini-gateway-ops"
             ];
 
-            model = {
-              primary = "anthropic/claude-haiku-5-5";
-              fallbacks = [
-                "zai/glm-5.3"
-                "openrouter/free"
-              ];
-            };
-
             modelPolicy.allow = [
-              "anthropic/claude-sonnet-5-5"
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
-              "zai/glm-5.3"
               "openrouter/free"
             ];
           };
@@ -480,7 +463,7 @@ in
 
             skills = [ "skill-vetter" ];
 
-            tools.allow = [ "read" ];
+            tools.allow = [ "read" "skill_workshop" ];
 
             models."zai/glm-5.3".params.thinking = "max";
 
@@ -494,7 +477,6 @@ in
 
             modelPolicy.allow = [
               "anthropic/claude-opus-5-5"
-              "anthropic/claude-sonnet-5-5"
               "zai/glm-5.3"
               "openrouter/free"
             ];
@@ -508,11 +490,13 @@ in
 
             workspace = "~/.openclaw/workspace/reviewer";
 
-            skills = [ "skill-vetter" ];
+            skills = [
+              "skill-vetter"
+              "nixos-system-config"
+              "nix-openclaw-config"
+            ];
 
             tools.deny = [
-              "edit"
-              "apply_patch"
               "browser"
               "message"
               "sessions_spawn"
@@ -639,6 +623,7 @@ in
           "anthropic"
           "browser"
           "telegram"
+          "device-pair"
         ];
 
         slots = {
@@ -650,6 +635,9 @@ in
           telegram = {
             enabled = true;
           };
+
+          # Tailscale Serve itself is configured by root in
+          "device-pair".config.publicUrl = "https://openclaw-webui.tail416d29.ts.net";
 
           searxng = {
             enabled = true;
@@ -664,21 +652,18 @@ in
               allowedModels = [
                 "vllm/${cfg.llmModel}"
                 "zai/glm-5.3-flash"
+                "anthropic/claude-haiku-5-5"
               ];
             };
-            #subagent = {
-            #allowModelOverride = true;
-            #allowedModels = [
-            #"openrouter/xiaomi/mimo-v2.6-flash"
-            #];
-            #};
             config = {
               maxAssemblyTokenBudget = 100000;
               freshTailMaxTokens = 24000;
               summaryMaxCallsPerWindow = 48;
               # claude-cli host lacks assemble/compact; capture-only lowers requirement to bootstrap/after-turn/maintain
               hostFallbackMode = "capture-only";
-              summaryModel = "zai/glm-5.3-flash";
+              summaryModel =
+                "anthropic/claude-haiku-5-5";
+                #"zai/glm-5.3-flash";
               cacheAwareCompaction.enabled = true;
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
@@ -697,15 +682,22 @@ in
               baseUrl = "http://localhost:11434";
               dimensions = 1024;
             };
+            config.autoRecall = false;
           };
 
           "active-memory" = {
             enabled = true;
             config = {
               mode = "escalate";
-              model = "zai/glm-5.3-flash";
+              model =
+                "anthropic/claude-haiku-5-5";
+                #"zai/glm-5.3-flash";
               agents = [ "coordinator" ];
               logging = true;
+              queryMode = "recent";
+              promptStyle = "balanced";
+              toolsAllow = [ "memory_recall" "lcm_grep" "lcm_describe" "lcm_expand_query" ];
+              promptAppend = "Use memory_recall for long-term preferences and decisions. Use lcm_grep first for compacted conversation recall, lcm_describe for a specific summary, lcm_expand_query only when exact details may have been compacted away. Return NONE if nothing is clearly useful.";
             };
           };
         }

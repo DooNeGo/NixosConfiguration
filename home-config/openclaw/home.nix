@@ -19,7 +19,7 @@
     inherit username;
     homeDirectory = "/home/${username}";
     stateVersion = "26.05";
-    packages = with pkgs; [
+    packages = with pkgs.unstable; [
       ungoogled-chromium
     ];
   };
