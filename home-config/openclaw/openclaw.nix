@@ -768,10 +768,24 @@ in
 
   # nix-openclaw gateway unit fixes:
   # - WantedBy: the unit ships without autostart, so enable it for boot;
-  # - TimeoutStopSec 330s: gateway drains up to 300s (docs/gateway/index.md)
+  # - TimeoutStopSec 330s: gateway drains up to 300s (docs/gateway/index.md);
+  # - failed starts leak a ~380 MB /tmp/openclaw-plugin-build-* dir each, so
+  #   clear them before every start (failure ignored via "-");
+  # - crash-loop cap: 10s between starts, at most 5 starts per 300s. After
+  #   that the unit stays failed until `systemctl --user reset-failed`.
   systemd.user.services."openclaw-gateway" = {
+    Unit = {
+      StartLimitIntervalSec = 300;
+      StartLimitBurst = 5;
+    };
     Install.WantedBy = [ "default.target" ];
-    Service.TimeoutStopSec = "330";
+    Service = {
+      ExecStartPre = [
+        "-${pkgs.bash}/bin/sh -c '${pkgs.coreutils}/bin/rm -rf /tmp/openclaw-plugin-build-*'"
+      ];
+      RestartSec = lib.mkForce "10s";
+      TimeoutStopSec = "330";
+    };
   };
 
   home.packages = with pkgs; [ ffmpeg ];
