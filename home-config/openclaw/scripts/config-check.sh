@@ -18,6 +18,8 @@ cfg=$(grep -m1 openclaw-default.json <<<"$refs" || true)
 [ -n "$cfg" ] || { echo "openclaw-default.json not found in build closure" >&2; exit 1; }
 
 export OPENCLAW_STATE_DIR=$state OPENCLAW_CONFIG_PATH=$cfg
+# openclaw leaks openclaw-plugin-build-* dirs under os.tmpdir(); keep them in $state so the EXIT trap removes them.
+export TMPDIR=$state
 
 echo "== config validate"
 openclaw config validate
