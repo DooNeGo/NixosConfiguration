@@ -200,6 +200,9 @@ in
 
       session.dmScope = "per-channel-peer";
 
+      # Owner-only commands (/trace, /diagnostics, /restart) check this list, not channels.telegram.allowFrom.
+      commands.ownerAllowFrom = [ "telegram:760128577" ];
+
       channels.telegram = {
         tokenFile = "${config.home.homeDirectory}/.secrets/openclaw-telegram-bot-token";
         richMessages = true;
