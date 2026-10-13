@@ -679,13 +679,15 @@ in
           "memory-lancedb" = {
             enabled = true;
             hooks.allowConversationAccess = true;
-            config.embedding = {
-              provider = "ollama";
-              model = cfg.embeddingModel;
-              baseUrl = "http://localhost:11434";
-              dimensions = 1024;
+            config = {
+              autoRecall = false;
+              embedding = {
+                provider = "ollama";
+                model = cfg.embeddingModel;
+                baseUrl = "http://localhost:11434";
+                dimensions = 1024;
+              };
             };
-            config.autoRecall = false;
           };
 
           "active-memory" = {
