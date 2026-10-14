@@ -22,7 +22,7 @@ in
       "searxng"
       "lossless-claw"
       "memory-lancedb"
-      "tokenjuice"
+      #"tokenjuice"
       "zai"
     ];
 
@@ -34,6 +34,12 @@ in
     environment = {
       OPENROUTER_API_KEY = "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
       ZAI_API_KEY = "${config.home.homeDirectory}/.secrets/zai-api-key";
+      # temporary: cache tracing for the native-runtime cache investigation (T52); contains full prompts, remove after diagnosis
+      OPENCLAW_CACHE_TRACE = "1";
+      OPENCLAW_CACHE_TRACE_FILE = "${config.home.homeDirectory}/.openclaw/logs/cache-trace.jsonl";
+      OPENCLAW_CACHE_TRACE_MESSAGES = "1";
+      OPENCLAW_CACHE_TRACE_PROMPT = "1";
+      OPENCLAW_CACHE_TRACE_SYSTEM = "1";
     };
 
     skills = [
@@ -228,26 +234,6 @@ in
         };
 
         zai.baseUrl = "https://api.z.ai/api/coding/paas/v4";
-
-        # claude-cli runs Claude Code, which auto-compacts at the model window
-        # (1M for Sonnet 5); this cap makes compaction happen at 100k instead.
-        anthropic.models = [
-          {
-            id = "claude-haiku-5-5";
-            name = "Claude Haiku 5.5";
-            contextTokens = 100000;
-          }
-          {
-            id = "claude-sonnet-5-5";
-            name = "Claude Sonnet 5.5";
-            contextTokens = 100000;
-          }
-          {
-            id = "claude-opus-5-5";
-            name = "Claude Opus 5.5";
-            contextTokens = 100000;
-          }
-        ];
       };
 
       #messages.responseUsage = "full";
@@ -257,7 +243,9 @@ in
 
         defaults = {
           model = {
-            primary = "anthropic/claude-haiku-5-5";
+            primary =
+              #"anthropic/claude-haiku-5-5";
+              "zai/glm-5.3-flash";
             fallbacks = [
               "zai/glm-5.3-flash"
               "openrouter/free"
@@ -286,12 +274,14 @@ in
               ) claudes
             );
 
-          utilityModel = "anthropic/claude-haiku-5-5";
-          #"zai/glm-5.3-flash";
+          utilityModel =
+            #"anthropic/claude-haiku-5-5";
+            "zai/glm-5.3-flash";
 
           heartbeat = {
-            model = "anthropic/claude-haiku-5-5";
-            #"zai/glm-5.3-flash";
+            model =
+              #"anthropic/claude-haiku-5-5";
+              "zai/glm-5.3-flash";
             isolatedSession = true;
             lightContext = true;
             every = "0m";
@@ -364,7 +354,9 @@ in
             models."zai/glm-5.3".params.thinking = "high";
 
             model = {
-              primary = "anthropic/claude-sonnet-5-5";
+              primary =
+                #"anthropic/claude-sonnet-5-5";
+                "zai/glm-5.3";
               fallbacks = [
                 "zai/glm-5.3"
                 "openrouter/free"
@@ -455,7 +447,9 @@ in
             models."zai/glm-5.3".params.thinking = "max";
 
             model = {
-              primary = "anthropic/claude-opus-5-5";
+              primary =
+                #"anthropic/claude-opus-5-5";
+                "zai/glm-5.3";
               fallbacks = [
                 "zai/glm-5.3"
                 "openrouter/free"
@@ -489,8 +483,12 @@ in
               "sessions_spawn"
             ];
 
+            models."zai/glm-5.3".params.thinking = "high";
+
             model = {
-              primary = "anthropic/claude-sonnet-5-5";
+              primary =
+                #"anthropic/claude-sonnet-5-5";
+                "zai/glm-5.3";
               fallbacks = [
                 "zai/glm-5.3"
                 "openrouter/free"
@@ -625,15 +623,17 @@ in
               allowModelOverride = true;
               allowedModels = [
                 "anthropic/claude-haiku-5-5"
+                "zai/glm-5.3-flash"
               ];
             };
             config = {
-              maxAssemblyTokenBudget = 100000;
-              freshTailMaxTokens = 24000;
+              maxAssemblyTokenBudget = 200000;
+              freshTailMaxTokens = 20000;
               # claude-cli host lacks assemble/compact; capture-only lowers requirement to bootstrap/after-turn/maintain
               hostFallbackMode = "capture-only";
-              summaryModel = "anthropic/claude-haiku-5-5";
-              #"zai/glm-5.3-flash";
+              summaryModel =
+                #"anthropic/claude-haiku-5-5";
+                "zai/glm-5.3-flash";
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
                 "agent:*:**:active-memory:**"
@@ -657,7 +657,7 @@ in
           };
 
           "active-memory" = {
-            enabled = true;
+            enabled = false;
             config = {
               mode = "escalate";
               model = "anthropic/claude-haiku-5-5";
