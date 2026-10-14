@@ -229,7 +229,8 @@ in
 
       models.providers = {
         vllm = {
-          baseUrl = "http://100.114.127.10:${toString cfg.llmPort}/v1";
+          baseUrl = "http://100.114.127.10:8000/v1";
+          apiKey = "EMPTY";
           timeoutSeconds = 900;
         };
 
@@ -245,10 +246,11 @@ in
           model = {
             primary =
               #"anthropic/claude-haiku-5-5";
-              "zai/glm-5.3-flash";
+              "zai/glm-5.3-flashx";
             fallbacks = [
-              "zai/glm-5.3-flash"
-              "openrouter/free"
+              "vllm/${cfg.llmModel}"
+              "zai/glm-5.3-flashx"
+              #"openrouter/free"
             ];
           };
 
@@ -263,6 +265,7 @@ in
             {
               "zai/glm-5.3-flash".params.thinking = "low";
               "zai/glm-5.3".params.thinking = "low";
+              "vllm/${cfg.llmModel}".params.thinking = "low";
             }
             // lib.listToAttrs (
               map (
@@ -352,20 +355,23 @@ in
             };
 
             models."zai/glm-5.3".params.thinking = "high";
+            models."vllm/${cfg.llmModel}".params.thinking = "medium";
 
             model = {
               primary =
                 #"anthropic/claude-sonnet-5-5";
                 "zai/glm-5.3";
               fallbacks = [
+                "vllm/${cfg.llmModel}"
                 "zai/glm-5.3"
-                "openrouter/free"
+                #"openrouter/free"
               ];
             };
 
             modelPolicy.allow = [
               "anthropic/claude-sonnet-5-5"
               "zai/glm-5.3"
+              "vllm/${cfg.llmModel}"
               "openrouter/free"
             ];
           };
@@ -395,6 +401,7 @@ in
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
               "openrouter/free"
+              "vllm/${cfg.llmModel}"
             ];
           };
 
@@ -426,6 +433,7 @@ in
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
               "openrouter/free"
+              "vllm/${cfg.llmModel}"
             ];
           };
 
@@ -445,14 +453,16 @@ in
             ];
 
             models."zai/glm-5.3".params.thinking = "max";
+            models."vllm/${cfg.llmModel}".params.thinking = "xhigh";
 
             model = {
               primary =
                 #"anthropic/claude-opus-5-5";
                 "zai/glm-5.3";
               fallbacks = [
+                "vllm/${cfg.llmModel}"
                 "zai/glm-5.3"
-                "openrouter/free"
+                #"openrouter/free"
               ];
             };
 
@@ -460,6 +470,7 @@ in
               "anthropic/claude-opus-5-5"
               "zai/glm-5.3"
               "openrouter/free"
+              "vllm/${cfg.llmModel}"
             ];
           };
 
@@ -484,14 +495,16 @@ in
             ];
 
             models."zai/glm-5.3".params.thinking = "high";
+            models."vllm/${cfg.llmModel}".params.thinking = "medium";
 
             model = {
               primary =
                 #"anthropic/claude-sonnet-5-5";
                 "zai/glm-5.3";
               fallbacks = [
+                "vllm/${cfg.llmModel}"
                 "zai/glm-5.3"
-                "openrouter/free"
+                #"openrouter/free"
               ];
             };
 
@@ -499,6 +512,7 @@ in
               "anthropic/claude-sonnet-5-5"
               "zai/glm-5.3"
               "openrouter/free"
+              "vllm/${cfg.llmModel}"
             ];
           };
         };
@@ -623,17 +637,19 @@ in
               allowModelOverride = true;
               allowedModels = [
                 "anthropic/claude-haiku-5-5"
-                "zai/glm-5.3-flash"
+                "zai/glm-5.3-flashx"
+                "vllm/${cfg.llmModel}"
               ];
             };
             config = {
-              maxAssemblyTokenBudget = 200000;
+              maxAssemblyTokenBudget = 130000;
               freshTailMaxTokens = 20000;
               # claude-cli host lacks assemble/compact; capture-only lowers requirement to bootstrap/after-turn/maintain
               hostFallbackMode = "capture-only";
               summaryModel =
                 #"anthropic/claude-haiku-5-5";
-                "zai/glm-5.3-flash";
+                #"zai/glm-5.3-flashx";
+                "vllm/${cfg.llmModel}";
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
                 "agent:*:**:active-memory:**"
@@ -657,11 +673,13 @@ in
           };
 
           "active-memory" = {
-            enabled = false;
+            enabled = true;
             config = {
               mode = "escalate";
-              model = "anthropic/claude-haiku-5-5";
-              #"zai/glm-5.3-flash";
+              model =
+                #"anthropic/claude-haiku-5-5";
+                "zai/glm-5.3-flashx";
+              modelFallback = "vllm/${cfg.llmModel}";
               agents = [ "coordinator" ];
               logging = true;
               queryMode = "recent";
@@ -717,7 +735,7 @@ in
       };
 
       proxy = {
-        proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
+        #proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
       };
 
       browser = {
