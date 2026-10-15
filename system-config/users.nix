@@ -27,4 +27,10 @@
     ];
     shell = pkgs.zsh;
   };
+
+  users.users.openclaw-npm = {
+    isNormalUser = true;
+    linger = true;
+    shell = pkgs.zsh;
+  };
 }

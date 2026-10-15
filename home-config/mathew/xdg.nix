@@ -1,20 +1,7 @@
-{ pkgs, ... }: {
+{ config, pkgs, ... }: {
   xdg = {
     enable = true;
     mimeApps.enable = true;
-
-    portal = {
-      enable = true;
-      extraPortals = with pkgs; [
-        xdg-desktop-portal-hyprland
-        xdg-desktop-portal-gtk
-      ];
-      config.common.default = "*";
-      config.hyprland.default = [
-        "hyprland"
-        "gtk"
-      ];
-    };
 
     userDirs = {
       enable = true;
@@ -22,6 +9,9 @@
     };
 
     configFile."mimeapps.list".force = true;
+
+    # UWSM sources this file at login; it is the only path that carries HM session variables into the compositor session.
+    configFile."uwsm/env".source = "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
 
     mimeApps.defaultApplications =
       let

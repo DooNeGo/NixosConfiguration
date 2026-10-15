@@ -4,6 +4,8 @@ let
   #contrib = nix-colors.lib.contrib { inherit pkgs; };
 in
 {
+  fonts.fontconfig.enable = true;
+
   home.pointerCursor = {
     enable = true;
     x11.enable = true;

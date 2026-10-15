@@ -81,15 +81,6 @@
           })
           inputs.stylix.nixosModules.stylix
           agenix.nixosModules.age
-          home-manager.nixosModules.home-manager
-          {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              extraSpecialArgs = { inherit inputs; };
-              users.mathew = ./home-config/mathew/home.nix;
-            };
-          }
         ];
       };
     };

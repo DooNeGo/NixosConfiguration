@@ -1,0 +1,72 @@
+# Ported for the v2026.10.3 gateway override (T26 stage 1).
+#
+# Based on nix-openclaw's allow-nix-store-plugin-ownership.patch (f62d33f, the
+# v2026.9.5 pin) but adapted to the v2026.10.3 tree, where the functions the
+# original patch threaded an `env` parameter through
+# (findCandidateBlockIssue / isUnsafePluginCandidate) were refactored away and
+# the uid-ownership check in checkPathStatAndPermissions now has a single call
+# site.
+#
+# - hardlink-policy.ts: unchanged from the original patch (adds the exported
+#   isTrustedNixStorePluginRoot helper and routes shouldRejectHardlinkedPluginFiles
+#   through it).
+# - discovery.ts: keeps the isTrustedNixStorePluginRoot import and adds the
+#   !isTrustedNixStorePluginRoot(...) clause to the uid-ownership condition.
+#   The single call site has no `env` in scope, so the check reads process.env
+#   (resolveIsNixMode's default) directly.
+# - Dropped the original patch's findCandidateBlockIssue / isUnsafePluginCandidate
+#   env-threading hunks (targets removed in the 2026.9.5 -> 2026.10.3 window).
+#
+# Purpose: runtime plugins loaded from /nix/store (searxng, memory-lancedb, zai,
+# lossless-claw) run as a different uid than the gateway process; without this
+# patch they are blocked as "suspicious ownership".
+
+diff -ruN a/src/plugins/discovery.ts b/src/plugins/discovery.ts
+--- a/src/plugins/discovery.ts	2026-10-14 11:30:13.395339080 +0300
++++ b/src/plugins/discovery.ts	2026-10-14 11:30:13.410790669 +0300
+@@ -32,7 +32,10 @@
+ } from "./discovery-availability.js";
+ import { addMissingRequiredPluginDiagnostics } from "./discovery-required-plugins.js";
+ import type { PluginCandidate, PluginDiscoveryResult } from "./discovery.types.js";
+-import { shouldRejectHardlinkedPluginFiles } from "./hardlink-policy.js";
++import {
++  isTrustedNixStorePluginRoot,
++  shouldRejectHardlinkedPluginFiles,
++} from "./hardlink-policy.js";
+ import { hashStableJson } from "./installed-plugin-index-hash.js";
+ import type { PluginBundleFormat, PluginDiagnostic, PluginFormat } from "./manifest-types.js";
+ import {
+@@ -168,6 +171,7 @@
+     if (
+       params.origin !== "bundled" &&
+       params.uid !== null &&
++      !isTrustedNixStorePluginRoot({ rootDir: params.rootDir, env: process.env }) &&
+       typeof stat.uid === "number" &&
+       stat.uid !== params.uid &&
+       stat.uid !== 0
+diff -ruN a/src/plugins/hardlink-policy.ts b/src/plugins/hardlink-policy.ts
+--- a/src/plugins/hardlink-policy.ts	2026-10-14 11:30:13.396354808 +0300
++++ b/src/plugins/hardlink-policy.ts	2026-10-14 11:30:13.410838548 +0300
+@@ -23,6 +23,13 @@
+   return rootRealPath === NIX_STORE_ROOT || rootRealPath.startsWith(`${NIX_STORE_ROOT}/`);
+ }
+ 
++export function isTrustedNixStorePluginRoot(params: {
++  rootDir: string;
++  env?: NodeJS.ProcessEnv;
++}): boolean {
++  return resolveIsNixMode(params.env) && isNixStorePluginRoot(params.rootDir);
++}
++
+ /** Decides whether plugin file hardlinks should fail boundary validation for one root. */
+ export function shouldRejectHardlinkedPluginFiles(params: {
+   origin: PluginOrigin;
+@@ -33,7 +40,7 @@
+   if (params.origin === "bundled") {
+     return false;
+   }
+-  if (resolveIsNixMode(params.env) && isNixStorePluginRoot(params.rootDir)) {
++  if (isTrustedNixStorePluginRoot(params)) {
+     return false;
+   }
+   return true;

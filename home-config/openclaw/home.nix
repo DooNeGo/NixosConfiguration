@@ -13,6 +13,7 @@
     ../shared/zsh.nix
     ../shared/maui-dev.nix
     ../shared/ssh.nix
+    ../shared/git.nix
   ];
 
   home = {
@@ -31,10 +32,15 @@
 
   programs = {
     home-manager.enable = true;
-    antigravity-cli.enable = true;
+
     claude-code = {
       enable = true;
       package = pkgs.unstable.claude-code;
+    };
+
+    codex = {
+      enable = true;
+      package = pkgs.unstable.codex;
     };
   };
 }

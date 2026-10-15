@@ -23,6 +23,7 @@ in
       "lossless-claw"
       "memory-lancedb"
       #"tokenjuice"
+      "codex"
       "zai"
     ];
 
@@ -35,103 +36,19 @@ in
       OPENROUTER_API_KEY = "${config.home.homeDirectory}/.secrets/openclaw-openrouter-api-key";
       ZAI_API_KEY = "${config.home.homeDirectory}/.secrets/zai-api-key";
       # temporary: cache tracing for the native-runtime cache investigation (T52); contains full prompts, remove after diagnosis
-      OPENCLAW_CACHE_TRACE = "1";
-      OPENCLAW_CACHE_TRACE_FILE = "${config.home.homeDirectory}/.openclaw/logs/cache-trace.jsonl";
-      OPENCLAW_CACHE_TRACE_MESSAGES = "1";
-      OPENCLAW_CACHE_TRACE_PROMPT = "1";
-      OPENCLAW_CACHE_TRACE_SYSTEM = "1";
+      #OPENCLAW_CACHE_TRACE = "1";
+      #OPENCLAW_CACHE_TRACE_FILE = "${config.home.homeDirectory}/.openclaw/logs/cache-trace.jsonl";
+      #OPENCLAW_CACHE_TRACE_MESSAGES = "1";
+      #OPENCLAW_CACHE_TRACE_PROMPT = "1";
+      #OPENCLAW_CACHE_TRACE_SYSTEM = "1";
     };
 
     skills = [
-      {
-        name = "kokoro-voice";
-        description = "Russian voice note or spoken reply request: runs kokoro TTS, delivers a Telegram opus .ogg voice note.";
-        mode = "symlink";
-        source = toString ./skills/kokoro-voice;
-      }
       {
         name = "skill-vetter";
         description = "Security-first skill vetting for AI agents. Use before installing any skill from ClawdHub, GitHub, or other sources. Checks for red flags, permission scope, and suspicious patterns.";
         mode = "symlink";
         source = toString ./skills/skill-vetter;
-      }
-      {
-        name = "ai-chat-bot-debugging";
-        description = "ai-chat-bot on ai-server misbehaves - last request via admin /logs, off_topic refusals, junk KB chunks, airport_kb rebuild.";
-        mode = "symlink";
-        source = toString ./skills/ai-chat-bot-debugging;
-      }
-      {
-        name = "cross-user-gateway-access";
-        description = "Reach an OpenClaw Gateway from a second OS user — ACP/IDE bridge, token handover, client binary install.";
-        mode = "symlink";
-        source = toString ./skills/cross-user-gateway-access;
-      }
-      {
-        name = "head-to-head-model-test";
-        description = "Which model is better, or compare two LLM endpoints: live head-to-head run with deterministic scorers and latency.";
-        mode = "symlink";
-        source = toString ./skills/head-to-head-model-test;
-      }
-      {
-        name = "lossless-compaction-threshold";
-        description = "lossless-claw produced no summaries, or context grows unchecked — read the plugin log, compute the threshold vs the model's window, set a working one.";
-        mode = "symlink";
-        source = toString ./skills/lossless-compaction-threshold;
-      }
-      {
-        name = "mac-mini-gateway-ops";
-        description = "Mac-mini gateway start/stop, plugin install, config edit: backed-up, LaunchDaemon-controlled change with a log entry.";
-        mode = "symlink";
-        source = toString ./skills/mac-mini-gateway-ops;
-      }
-      {
-        name = "mac-mini-gog-auth";
-        description = "Mac-mini node — Google account auth (gog) invalid_client recovery; probe client secret in keyring, import fresh secret, final OAuth.";
-        mode = "symlink";
-        source = toString ./skills/mac-mini-gog-auth;
-      }
-      {
-        name = "mac-mini-provider-timeouts";
-        description = "Mac-mini node — diagnose model/provider timeouts (agent slow to reply, model-fetch errors), test both OpenAI APIs, set correct api in config.";
-        mode = "symlink";
-        source = toString ./skills/mac-mini-provider-timeouts;
-      }
-      {
-        name = "workshop-skill-authoring";
-        description = "Create or update coordinator skills via skill_workshop — 160-byte description cap, patch rejected for unused skills, update+apply route.";
-        mode = "symlink";
-        source = toString ./skills/workshop-skill-authoring;
-      }
-      {
-        name = "nix-openclaw-config";
-        description = "Change a Nix-managed OpenClaw setting (reasoning, models, providers, channels) — edit source, eval, apply with consent; ghost home-manager units.";
-        mode = "symlink";
-        source = toString ./skills/nix-openclaw-config;
-      }
-      {
-        name = "nixos-system-config";
-        description = "Edit the NixOS system config (system-config/*.nix) — upstream option check, toplevel build verify, user applies via nixos-rebuild switch.";
-        mode = "symlink";
-        source = toString ./skills/nixos-system-config;
-      }
-      {
-        name = "nix-dev-env-tooling";
-        description = "android-sdk-license eval error, Gateway misses Nix-installed IDE, NixOS refuses foreign ELF binary (stub-ld) - Nix dev-env tooling fixes.";
-        mode = "symlink";
-        source = toString ./skills/nix-dev-env-tooling;
-      }
-      {
-        name = "maui-android-build";
-        description = "Build the MAUI Android app (Wallet.Droid, ~/projects/maui) on NixOS: regenerate tool wrappers, build, fix stale R.java crash.";
-        mode = "symlink";
-        source = toString ./skills/maui-android-build;
-      }
-      {
-        name = "resilient-delegated-batch";
-        description = "Long delegated batch work a restart, model cut, or timeout can kill — persist every unit immediately, order phases by value, resume from the kept session.";
-        mode = "symlink";
-        source = toString ./skills/resilient-delegated-batch;
       }
     ];
 
@@ -245,11 +162,14 @@ in
         defaults = {
           model = {
             primary =
-              #"anthropic/claude-haiku-5-5";
-              "zai/glm-5.3-flashx";
+              "anthropic/claude-haiku-5-5";
+              #"zai/glm-5.3-flashx";
             fallbacks = [
-              "vllm/${cfg.llmModel}"
               "zai/glm-5.3-flashx"
+              "zai/glm-5.3-flash"
+              #"anthropic/claude-haiku-5-5"
+              "vllm/${cfg.llmModel}"
+              #"zai/glm-5.3-flashx"
               #"openrouter/free"
             ];
           };
@@ -278,13 +198,13 @@ in
             );
 
           utilityModel =
-            #"anthropic/claude-haiku-5-5";
-            "zai/glm-5.3-flash";
+            "anthropic/claude-haiku-5-5";
+            #"zai/glm-5.3-flash";
 
           heartbeat = {
             model =
-              #"anthropic/claude-haiku-5-5";
-              "zai/glm-5.3-flash";
+              "anthropic/claude-haiku-5-5";
+              #"zai/glm-5.3-flash";
             isolatedSession = true;
             lightContext = true;
             every = "0m";
@@ -321,29 +241,6 @@ in
 
             workspace = "~/.openclaw/workspace/coordinator";
 
-            skills = [
-              "browser-automation"
-              "summarize"
-              "healthcheck"
-              "visualize"
-              "diagram-maker"
-              "weather"
-              "skill-vetter"
-              "kokoro-voice"
-              "clawhub"
-              "gog"
-              "node-connect"
-              "diagnose-gateway"
-              "ai-chat-bot-debugging"
-              "cross-user-gateway-access"
-              "lossless-compaction-threshold"
-              "mac-mini-gateway-ops"
-              "mac-mini-gog-auth"
-              "mac-mini-provider-timeouts"
-              "workshop-skill-authoring"
-              "resilient-delegated-batch"
-            ];
-
             subagents = {
               delegationMode = "prefer";
               allowAgents = [
@@ -354,21 +251,28 @@ in
               ];
             };
 
-            models."zai/glm-5.3".params.thinking = "high";
-            models."vllm/${cfg.llmModel}".params.thinking = "medium";
+            tools.codeMode = "auto";
+
+            models = {
+              "zai/glm-5.3".params.thinking = "high";
+              "vllm/${cfg.llmModel}".params.thinking = "medium";
+            };
 
             model = {
               primary =
-                #"anthropic/claude-sonnet-5-5";
-                "zai/glm-5.3";
+                #"openai/gpt-6.1-sol";
+                "anthropic/claude-sonnet-5-5";
+                #"zai/glm-5.3";
               fallbacks = [
-                "vllm/${cfg.llmModel}"
+                "anthropic/claude-sonnet-5-5"
                 "zai/glm-5.3"
+                "vllm/${cfg.llmModel}"
                 #"openrouter/free"
               ];
             };
 
             modelPolicy.allow = [
+              "openai/gpt-6.1-sol"
               "anthropic/claude-sonnet-5-5"
               "zai/glm-5.3"
               "vllm/${cfg.llmModel}"
@@ -384,22 +288,17 @@ in
 
             workspace = "~/.openclaw/workspace/researcher";
 
-            skills = [
-              "browser-automation"
-              "summarize"
-              "healthcheck"
-              "head-to-head-model-test"
-              "mac-mini-gateway-ops"
-            ];
-
             tools.deny = [
               "message"
               "sessions_spawn"
             ];
 
+            tools.codeMode = "auto";
+
             modelPolicy.allow = [
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
+              "zai/glm-5.3-flashx"
               "openrouter/free"
               "vllm/${cfg.llmModel}"
             ];
@@ -413,28 +312,15 @@ in
 
             workspace = "~/.openclaw/workspace/coder";
 
-            tools = {
-              codeMode = "auto";
-            };
-
-            skills = [
-              "tmux"
-              "python-debugpy"
-              "spike"
-              "skill-creator"
-              "nix-openclaw-config"
-              "nixos-system-config"
-              "nix-dev-env-tooling"
-              "maui-android-build"
-              "mac-mini-gateway-ops"
-            ];
-
             modelPolicy.allow = [
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
+              "zai/glm-5.3-flashx"
               "openrouter/free"
               "vllm/${cfg.llmModel}"
             ];
+
+            tools.codeMode = "auto";
           };
 
           advisor = {
@@ -445,23 +331,23 @@ in
 
             workspace = "~/.openclaw/workspace/advisor";
 
-            skills = [ "skill-vetter" ];
-
             tools.allow = [
               "read"
               "skill_workshop"
             ];
+
+            tools.codeMode = "auto";
 
             models."zai/glm-5.3".params.thinking = "max";
             models."vllm/${cfg.llmModel}".params.thinking = "xhigh";
 
             model = {
               primary =
-                #"anthropic/claude-opus-5-5";
-                "zai/glm-5.3";
+                "anthropic/claude-opus-5-5";
+                #"zai/glm-5.3";
               fallbacks = [
-                "vllm/${cfg.llmModel}"
                 "zai/glm-5.3"
+                "vllm/${cfg.llmModel}"
                 #"openrouter/free"
               ];
             };
@@ -482,25 +368,21 @@ in
 
             workspace = "~/.openclaw/workspace/reviewer";
 
-            skills = [
-              "skill-vetter"
-              "nixos-system-config"
-              "nix-openclaw-config"
-            ];
-
             tools.deny = [
               "browser"
               "message"
               "sessions_spawn"
             ];
 
+            tools.codeMode = "auto";
+
             models."zai/glm-5.3".params.thinking = "high";
             models."vllm/${cfg.llmModel}".params.thinking = "medium";
 
             model = {
               primary =
-                #"anthropic/claude-sonnet-5-5";
-                "zai/glm-5.3";
+                "anthropic/claude-sonnet-5-5";
+                #"zai/glm-5.3";
               fallbacks = [
                 "vllm/${cfg.llmModel}"
                 "zai/glm-5.3"
@@ -526,7 +408,7 @@ in
       };
 
       skills = {
-        workshop.autonomous.mode = "propose";
+        workshop.autonomous.mode = "auto";
 
         entries = lib.listToAttrs (
           map (n: lib.nameValuePair n { enabled = false; }) [
@@ -611,6 +493,7 @@ in
           "browser"
           "telegram"
           "device-pair"
+          "codex"
         ];
 
         slots = {
@@ -619,9 +502,8 @@ in
         };
 
         entries = {
-          telegram = {
-            enabled = true;
-          };
+          telegram.enabled = true;
+          codex.enabled = true;
 
           "device-pair".config.publicUrl = "https://openclaw-webui.tail416d29.ts.net";
 
@@ -637,6 +519,7 @@ in
               allowModelOverride = true;
               allowedModels = [
                 "anthropic/claude-haiku-5-5"
+                "zai/glm-5.3-flash"
                 "zai/glm-5.3-flashx"
                 "vllm/${cfg.llmModel}"
               ];
@@ -647,9 +530,9 @@ in
               # claude-cli host lacks assemble/compact; capture-only lowers requirement to bootstrap/after-turn/maintain
               hostFallbackMode = "capture-only";
               summaryModel =
-                #"anthropic/claude-haiku-5-5";
-                #"zai/glm-5.3-flashx";
-                "vllm/${cfg.llmModel}";
+                "anthropic/claude-haiku-5-5";
+                #"zai/glm-5.3-flash";
+                #"vllm/${cfg.llmModel}";
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
                 "agent:*:**:active-memory:**"
@@ -677,8 +560,8 @@ in
             config = {
               mode = "escalate";
               model =
-                #"anthropic/claude-haiku-5-5";
-                "zai/glm-5.3-flashx";
+                "anthropic/claude-haiku-5-5";
+                #"zai/glm-5.3-flashx";
               modelFallback = "vllm/${cfg.llmModel}";
               agents = [ "coordinator" ];
               logging = true;
@@ -714,7 +597,6 @@ in
             "microsoft-foundry"
             "minimax"
             "nvidia"
-            "openai"
             "opencode-go"
             "runway"
             "senseaudio"
@@ -735,7 +617,7 @@ in
       };
 
       proxy = {
-        #proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
+        proxyUrl = "http://127.0.0.1:${toString cfg.openclaw.singboxPort}";
       };
 
       browser = {
@@ -757,8 +639,12 @@ in
   # nix-openclaw gateway unit fixes:
   # - WantedBy: the unit ships without autostart, so enable it for boot;
   # - TimeoutStopSec 330s: gateway drains up to 300s (docs/gateway/index.md);
-  # - failed starts leak a ~380 MB /tmp/openclaw-plugin-build-* dir each, so
-  #   clear them before every start (failure ignored via "-");
+  # - TMPDIR: the gateway snapshots plugins (~380 MB each) under os.tmpdir(),
+  #   which is tmpfs /tmp by default; point it at /var/tmp/openclaw instead;
+  # - failed starts leak openclaw-plugin-build-* dirs, so ExecStartPre clears
+  #   both the old /tmp ones and the new location (failure ignored via "-").
+  #   Manual cleanup: stop the unit first; deleting them while the gateway
+  #   runs breaks plugin loading (MODULE_NOT_FOUND for subagents);
   # - crash-loop cap: 10s between starts, at most 5 starts per 300s. After
   #   that the unit stays failed until `systemctl --user reset-failed`.
   systemd.user.services."openclaw-gateway" = {
@@ -768,8 +654,9 @@ in
     };
     Install.WantedBy = [ "default.target" ];
     Service = {
+      Environment = [ "TMPDIR=/var/tmp/openclaw" ];
       ExecStartPre = [
-        "-${pkgs.bash}/bin/sh -c '${pkgs.coreutils}/bin/rm -rf /tmp/openclaw-plugin-build-*'"
+        "-${pkgs.bash}/bin/sh -c '${pkgs.coreutils}/bin/rm -rf /tmp/openclaw-plugin-build-* /var/tmp/openclaw/openclaw-plugin-build-*'"
       ];
       RestartSec = lib.mkForce "10s";
       TimeoutStopSec = "330";

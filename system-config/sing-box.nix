@@ -11,6 +11,7 @@ let
         "aistudio.google.com"
         "gemini.google.com"
         "openai.com"
+        "chatgpt.com"
         "muse.ai"
         "jetbrains.com"
         "mobileapi-stage.credits.com"

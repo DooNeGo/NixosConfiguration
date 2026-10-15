@@ -1,9 +1,14 @@
 {
+  imports = [
+    ../shared/git.nix
+  ];
+
   programs.git = {
-    enable = true;
-    settings.user = {
-      email = "matveyprostomac@gmail.com";
-      name = "Mathew Kastrama";
+    settings = {
+      user = {
+        email = "matveyprostomac@gmail.com";
+        name = "Mathew Kastrama";
+      };
     };
   };
 }
