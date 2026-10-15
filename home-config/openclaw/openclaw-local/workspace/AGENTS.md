@@ -47,7 +47,7 @@ Local infrastructure facts.
   (Home Manager flake in `home-config/`, user mathew)
 - OpenClaw gateway (user systemd service): `openclaw-gateway.service`
   — restart: `systemctl --user restart openclaw-gateway.service`
-- Rollback home: `home-manager rollback`
+- Rollback home: `home-manager switch --rollback --flake <flake>#<user>` (activates the generation before the current one; run once; a rollback does not undo state-schema migrations)
 - Hugging Face cache: /var/lib/huggingface
 - Qdrant storage: /var/lib/qdrant/storage
 

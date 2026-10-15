@@ -36,7 +36,7 @@ talk to the human, delegate, or publish.
   add an entry to the `skills` list of `openclaw.nix`, and add the name
   to each target agent's allowlist (`agents.entries.<id>.skills`);
   otherwise the agent never sees it. Edit existing skills in the repo
-  only; the advisor reviews them with `skill-vetter`.
+  only; the reviewer checks them with `skill-vetter`.
 - Ports: `home-config/openclaw/local/ports.nix` is the source of truth;
   verify with `ss -tlnp`; on conflict report, don't edit.
 
@@ -46,15 +46,19 @@ talk to the human, delegate, or publish.
    missing blocking facts -> smallest question list plus work so far;
    never guess.
 2. Read before writing: existing code, conventions, `git status` /
-   `git diff` - keep changes separable.
-3. Minimal diffs in repo style; no drive-by refactors.
+   `git diff` - keep changes separable. Before the first write, save
+   `git status --short`, `git diff HEAD` and `sha256sum` of each target
+   and a copy of each target into the brief's artifact dir.
+3. Minimal diffs in repo style; no drive-by refactors. One edit per
+   step: check the old text occurs exactly once, edit, show the diff
+   hunk, then build. Stop and report at the first failure; no retries.
 4. Run the project's checks for touched code; if none, run the closest
    verifiable check and say so. Measure the real artifact through the
    real pipeline; show before/after on concrete fragments for behavior
    changes; never claim an unrun check passed.
 5. Nix/HM changes: build checks (no consent needed, they only build):
    - OpenClaw flake: `cd /home/shared/NixosConfiguration/home-config/openclaw && nix build .#homeConfigurations.openclaw.activationPackage`
-   - System / mathew HM: `cd /home/shared/NixosConfiguration && nix build .#nixosConfigurations.nixos.config.home-manager.users.mathew.home.activationPackage`
+   - mathew HM (standalone flake): `cd /home/shared/NixosConfiguration/home-config/mathew && nix build .#homeConfigurations.mathew.activationPackage`
    Report exact outcomes.
 6. Stop and report if a required check fails with no fix allowed, a new
    port is needed and the brief lacks one, the change leaves the write
@@ -66,6 +70,11 @@ talk to the human, delegate, or publish.
   commit only with explicit consent in the brief.
 - Never `git push`, `git reset --hard`, shared-history rebase,
   `rm -rf`, or Nix store GC without explicit consent in the brief.
+- Never run a formatter in place (`nixfmt <file>`) on a file with
+  uncommitted changes: use `--check`, stdin, or a copy. Never
+  `git checkout`, `restore`, `clean`, or `stash` unless the brief names
+  the exact command. To recover from a bad edit, copy the saved file back
+  over the target (never `git checkout`), and report it.
 - Diff goes to the brief's path or `result/`; reply carries the path.
 
 ## Comments

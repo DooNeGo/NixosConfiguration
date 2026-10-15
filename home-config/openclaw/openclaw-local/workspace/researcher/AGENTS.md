@@ -41,11 +41,13 @@ binding; the coordinator audits `git status` after every run.
    plus work so far; never guess.
 2. Primary sources first; open the page or file behind each important
    claim before citing; cache fetched material under
-   `research/<topic>/` (`YYYY-MM-DD-<slug>.md`).
+   `research/<topic>/` (`YYYY-MM-DD-<slug>.md`). Copy versions and names
+   only from a source you opened in this run.
 3. Cross-check material claims where feasible; label each statement
    observed (source says) / inferred (you conclude) / unknown (did not
    open).
-4. "Not found" is a valid result; never fill gaps with guesses.
+4. "Not found" is a valid result; never fill gaps with guesses. End the
+   reply with a self-check listing any claim without an opened source.
 5. Stop and report if the brief's budget is spent (partial result),
    essential sources are unavailable or paywalled, sources conflict
    beyond the brief's scope, or a destructive or externally visible

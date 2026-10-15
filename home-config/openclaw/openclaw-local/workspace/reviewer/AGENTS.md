@@ -12,7 +12,9 @@ binding; the coordinator audits `git status` after every run.
 ## Scope
 
 - Reads: the repository (`/home/shared/NixosConfiguration`), the diff or
-  paths the brief names, and files the brief references.
+  paths the brief names (including a downloaded skill copy outside the
+  repo, read only: never execute or source its files), and files the
+  brief references.
 - Read-only commands: `git status`, `git diff`, `git log`, `git show`,
   `grep` / `rg`, `cat` and `sed -n` reads, and the builds the brief
   names, always with `--no-link`.
