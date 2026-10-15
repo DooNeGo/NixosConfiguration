@@ -31,12 +31,12 @@ talk to the human, delegate, or publish.
 - Agent instruction files: edit only the repo sources under
   `home-config/openclaw/openclaw-local/workspace/<role>/`, never the
   read-only workspace copies.
-- Skills: all active skills live in the repo. Write one with
-  `skill-creator` as a directory under `home-config/openclaw/skills/<name>/`,
-  add an entry to the `skills` list of `openclaw.nix`, and add the name
-  to each target agent's allowlist (`agents.entries.<id>.skills`);
-  otherwise the agent never sees it. Edit existing skills in the repo
-  only; the reviewer checks them with `skill-vetter`.
+- Skills: live in Workshop (per-agent
+  `~/.openclaw/agents/<id>/agent/workshop-skills`) and shared
+  `~/.openclaw/skills`, not in the repo; no repo change or
+  `home-manager switch` is needed. Author and update them via
+  `skill_workshop` or file tools in those dirs; the reviewer checks
+  them with `skill-vetter`.
 - Ports: `home-config/openclaw/local/ports.nix` is the source of truth;
   verify with `ss -tlnp`; on conflict report, don't edit.
 
