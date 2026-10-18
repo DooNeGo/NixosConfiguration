@@ -13,7 +13,7 @@
     ./sshd.nix
     #./virt-manager.nix
     #./docker.nix
-    ./podman.nix
+    #./podman.nix
     ./nvidia.nix
     ./razer.nix
     ./tmux.nix
@@ -26,6 +26,7 @@
     ./usbmux.nix
     ./remote-access.nix
     ./searx.nix
+    ./whisper-cpp.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -65,7 +66,6 @@
 
   environment.systemPackages = with pkgs; [
     vim
-    git
     htop
     kdiskmark
     nixfmt
@@ -73,6 +73,12 @@
     sshpass
     home-manager
     agenix
+    iotop
+    iftop
+    unzip
+    zip
+    pv
+    ntfs3g
   ];
 
   hardware = {

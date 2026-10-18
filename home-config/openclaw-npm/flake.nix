@@ -21,19 +21,21 @@
     let
       system = "x86_64-linux";
 
-      pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
+      mkPkgs =
+        p:
+        import p {
+          inherit system;
+          config = {
+            allowUnfree = true;
+            android_sdk.accept_license = true;
+          };
+        };
+
+      pkgs = mkPkgs nixpkgs // {
         overlays = [
           (final: prev: {
-            unstable = import inputs.nixpkgs-unstable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-            stable = import inputs.nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
+            unstable = mkPkgs inputs.nixpkgs-unstable;
+            stable = mkPkgs inputs.nixpkgs-stable;
           })
         ];
       };

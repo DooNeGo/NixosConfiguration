@@ -1,8 +1,9 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   imports = [
     ../shared/zsh.nix
     ../shared/git.nix
+    ../shared/maui-dev.nix
   ];
 
   home = {
@@ -15,36 +16,43 @@
       jq
       curl
       ungoogled-chromium
-      e2fsprogs
+      (lib.hiPrio e2fsprogs)
       psmisc
-      pkgs.unstable.yt-dlp
+      yt-dlp
+      python3
       #(pkgs.runCommand "e2fsprogs-attr" { } ''
-        #mkdir -p $out/bin
-        #ln -s ${e2fsprogs}/bin/chattr ${e2fsprogs}/bin/lsattr $out/bin/
+      #mkdir -p $out/bin
+      #ln -s ${e2fsprogs}/bin/chattr ${e2fsprogs}/bin/lsattr $out/bin/
       #'')
     ];
 
     sessionVariables = {
-      "OPENCLAW_GATEWAY_PORT" = "19001";
+      "WHISPER_CPP_MODEL" = "/var/lib/whisper-cpp/ggml-small.bin";
       #NPM_CONFIG_PREFIX = "$HOME/.npm-global";
     };
 
     sessionPath = [
       "$HOME/.npm/bin"
-      "$HOME/.local/share/pnpm"
     ];
   };
 
   programs = {
     home-manager.enable = true;
+    codex.enable = true;
+
     npm = {
       enable = true;
       package = pkgs.unstable.nodejs_latest;
     };
-    pnpm.enable = true;
+
     claude-code = {
       enable = true;
       package = pkgs.unstable.claude-code;
     };
+
+    zsh.initContent = ''
+      # OpenClaw Completion
+      [ -f '/home/openclaw-npm/.openclaw/completions/openclaw.zsh' ] && source '/home/openclaw-npm/.openclaw/completions/openclaw.zsh'
+    '';
   };
 }

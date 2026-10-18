@@ -152,20 +152,36 @@ in
         };
 
         zai.baseUrl = "https://api.z.ai/api/coding/paas/v4";
-      };
 
-      #messages.responseUsage = "full";
+        anthropic.models = [
+          {
+            id = "claude-haiku-5-5";
+            name = "Claude Haiku 5.5";
+            contextTokens = 200000;
+            reasoning = true;
+          }
+          {
+            id = "claude-sonnet-5-5";
+            name = "Claude Sonnet 5.5";
+            contextTokens = 200000;
+            reasoning = true;
+          }
+          {
+            id = "claude-opus-5-5";
+            name = "Claude Opus 5.5";
+            contextTokens = 200000;
+            reasoning = true;
+          }
+        ];
+      };
 
       agents = {
         ownership = "explicit";
 
         defaults = {
           model = {
-            primary =
-              "anthropic/claude-haiku-5-5";
-              #"zai/glm-5.3-flashx";
+            primary = "anthropic/claude-haiku-5-5";
             fallbacks = [
-              "zai/glm-5.3-flashx"
               "zai/glm-5.3-flash"
               #"anthropic/claude-haiku-5-5"
               "vllm/${cfg.llmModel}"
@@ -183,6 +199,14 @@ in
               ];
             in
             {
+              "openai/gpt-6.1-sol" = {
+                agentRuntime.id = "codex";
+                params.thinking = "medium";
+              };
+              "openai/gpt-6.1-luna" = {
+                agentRuntime.id = "codex";
+                params.thinking = "medium";
+              };
               "zai/glm-5.3-flash".params.thinking = "low";
               "zai/glm-5.3".params.thinking = "low";
               "vllm/${cfg.llmModel}".params.thinking = "low";
@@ -197,14 +221,13 @@ in
               ) claudes
             );
 
-          utilityModel =
-            "anthropic/claude-haiku-5-5";
-            #"zai/glm-5.3-flash";
+          utilityModel = "anthropic/claude-haiku-5-5";
+          #"zai/glm-5.3-flash";
 
           heartbeat = {
-            model =
-              "anthropic/claude-haiku-5-5";
-              #"zai/glm-5.3-flash";
+            agentId = "coordinator";
+            model = "anthropic/claude-haiku-5-5";
+            #"zai/glm-5.3-flash";
             isolatedSession = true;
             lightContext = true;
             every = "0m";
@@ -251,8 +274,6 @@ in
               ];
             };
 
-            tools.codeMode = "auto";
-
             models = {
               "zai/glm-5.3".params.thinking = "high";
               "vllm/${cfg.llmModel}".params.thinking = "medium";
@@ -260,10 +281,11 @@ in
 
             model = {
               primary =
-                #"openai/gpt-6.1-sol";
-                "anthropic/claude-sonnet-5-5";
-                #"zai/glm-5.3";
+                #"anthropic/claude-sonnet-5-5";
+                "openai/gpt-6.1-sol";
+              #"zai/glm-5.3";
               fallbacks = [
+                #"openai/gpt-6.1-sol"
                 "anthropic/claude-sonnet-5-5"
                 "zai/glm-5.3"
                 "vllm/${cfg.llmModel}"
@@ -293,12 +315,10 @@ in
               "sessions_spawn"
             ];
 
-            tools.codeMode = "auto";
-
             modelPolicy.allow = [
+              "openai/gpt-6-luna"
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
-              "zai/glm-5.3-flashx"
               "openrouter/free"
               "vllm/${cfg.llmModel}"
             ];
@@ -313,14 +333,12 @@ in
             workspace = "~/.openclaw/workspace/coder";
 
             modelPolicy.allow = [
+              "openai/gpt-6-luna"
               "anthropic/claude-haiku-5-5"
               "zai/glm-5.3-flash"
-              "zai/glm-5.3-flashx"
               "openrouter/free"
               "vllm/${cfg.llmModel}"
             ];
-
-            tools.codeMode = "auto";
           };
 
           advisor = {
@@ -336,16 +354,17 @@ in
               "skill_workshop"
             ];
 
-            tools.codeMode = "auto";
-
-            models."zai/glm-5.3".params.thinking = "max";
-            models."vllm/${cfg.llmModel}".params.thinking = "xhigh";
+            models = {
+              "zai/glm-5.3".params.thinking = "max";
+              "vllm/${cfg.llmModel}".params.thinking = "xhigh";
+              "openai/gpt-6.1-sol".params.thinking = "high";
+            };
 
             model = {
-              primary =
-                "anthropic/claude-opus-5-5";
-                #"zai/glm-5.3";
+              primary = "anthropic/claude-opus-5-5";
+              #"zai/glm-5.3";
               fallbacks = [
+                "openai/gpt-6.1-sol"
                 "zai/glm-5.3"
                 "vllm/${cfg.llmModel}"
                 #"openrouter/free"
@@ -353,6 +372,7 @@ in
             };
 
             modelPolicy.allow = [
+              "openai/gpt-6.1-sol"
               "anthropic/claude-opus-5-5"
               "zai/glm-5.3"
               "openrouter/free"
@@ -374,23 +394,22 @@ in
               "sessions_spawn"
             ];
 
-            tools.codeMode = "auto";
-
             models."zai/glm-5.3".params.thinking = "high";
-            models."vllm/${cfg.llmModel}".params.thinking = "medium";
+            models."vllm/${cfg.llmModel}".params.thinking = "xhigh";
 
             model = {
-              primary =
-                "anthropic/claude-sonnet-5-5";
-                #"zai/glm-5.3";
+              primary = "anthropic/claude-sonnet-5-5";
+              #"zai/glm-5.3";
               fallbacks = [
-                "vllm/${cfg.llmModel}"
+                "openai/gpt-6.1-sol"
                 "zai/glm-5.3"
+                "vllm/${cfg.llmModel}"
                 #"openrouter/free"
               ];
             };
 
             modelPolicy.allow = [
+              "openai/gpt-6.1-sol"
               "anthropic/claude-sonnet-5-5"
               "zai/glm-5.3"
               "openrouter/free"
@@ -402,9 +421,12 @@ in
 
       talk.agentId = "coordinator";
 
-      tools.web = {
-        search.provider = "searxng";
-        fetch.useTrustedEnvProxy = true;
+      tools = {
+        codeMode = "auto";
+        web = {
+          search.provider = "searxng";
+          fetch.useTrustedEnvProxy = true;
+        };
       };
 
       skills = {
@@ -461,10 +483,10 @@ in
         models = [
           {
             type = "cli";
-            command = "${pkgs.whisper-cpp}/bin/whisper-cli";
+            command = "whisper-cli";
             args = [
               "-m"
-              "${config.home.homeDirectory}/.local/share/whisper-models/ggml-small.bin"
+              "/var/lib/whisper-cpp/ggml-small.bin"
               "-l"
               "ru"
               "-nt"
@@ -494,6 +516,7 @@ in
           "telegram"
           "device-pair"
           "codex"
+          "openai"
         ];
 
         slots = {
@@ -505,7 +528,7 @@ in
           telegram.enabled = true;
           codex.enabled = true;
 
-          "device-pair".config.publicUrl = "https://openclaw-webui.tail416d29.ts.net";
+          "device-pair".config.publicUrl = "https://nixos.tail416d29.ts.net";
 
           searxng = {
             enabled = true;
@@ -520,7 +543,6 @@ in
               allowedModels = [
                 "anthropic/claude-haiku-5-5"
                 "zai/glm-5.3-flash"
-                "zai/glm-5.3-flashx"
                 "vllm/${cfg.llmModel}"
               ];
             };
@@ -529,10 +551,9 @@ in
               freshTailMaxTokens = 20000;
               # claude-cli host lacks assemble/compact; capture-only lowers requirement to bootstrap/after-turn/maintain
               hostFallbackMode = "capture-only";
-              summaryModel =
-                "anthropic/claude-haiku-5-5";
-                #"zai/glm-5.3-flash";
-                #"vllm/${cfg.llmModel}";
+              summaryModel = "anthropic/claude-haiku-5-5";
+              #"zai/glm-5.3-flash";
+              #"vllm/${cfg.llmModel}";
               ignoreSessionPatterns = [
                 "agent:*:cron:**"
                 "agent:*:**:active-memory:**"
@@ -559,10 +580,9 @@ in
             enabled = true;
             config = {
               mode = "escalate";
-              model =
-                "anthropic/claude-haiku-5-5";
-                #"zai/glm-5.3-flashx";
-              modelFallback = "vllm/${cfg.llmModel}";
+              model = "anthropic/claude-haiku-5-5";
+              modelFallback = "zai/glm-5.3-flash";
+              #"vllm/${cfg.llmModel}";
               agents = [ "coordinator" ];
               logging = true;
               queryMode = "recent";
@@ -652,7 +672,7 @@ in
       StartLimitIntervalSec = 300;
       StartLimitBurst = 5;
     };
-    Install.WantedBy = [ "default.target" ];
+    #Install.WantedBy = [ "default.target" ];
     Service = {
       Environment = [ "TMPDIR=/var/tmp/openclaw" ];
       ExecStartPre = [

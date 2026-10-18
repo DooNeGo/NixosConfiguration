@@ -10,17 +10,19 @@ let
       proxyDomains = [
         "aistudio.google.com"
         "gemini.google.com"
+        "googleapis.com"
         "openai.com"
         "chatgpt.com"
         "muse.ai"
         "jetbrains.com"
         "mobileapi-stage.credits.com"
         "swagger.io"
-        "github.com"
-        "googleapis.com"
+        #"github.com"
         "anthropic.com"
         "claude.ai"
         "claude.com"
+        "bing.com"
+        "microsoft.com"
       ];
       routeMatch = "domain_suffix";
       fetchIntervalSec = 21600;

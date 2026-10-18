@@ -10,9 +10,11 @@
       enable = true;
       serve = {
         enable = true;
-        services.openclaw-webui = {
-          endpoints = {
-            "tcp:443" = "http://127.0.0.1:18789";
+        services = {
+          openclaw-webui.endpoints = {
+            "tcp:80" = "http://127.0.0.1:19001";
+            "tcp:443" = "https://127.0.0.1:19001";
+            #"tcp:444" = "http://127.0.0.1:18789";
           };
         };
       };

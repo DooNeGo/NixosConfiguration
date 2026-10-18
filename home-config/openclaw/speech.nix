@@ -1,19 +1,7 @@
 { lib, pkgs, ... }:
 
 let
-  hf = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main";
   piperTag = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ru/ru_RU";
-
-  whisperModels = {
-    small = {
-      url = "${hf}/ggml-small.bin";
-      sha256 = "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b";
-    };
-    medium = {
-      url = "${hf}/ggml-medium.bin";
-      sha256 = "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208";
-    };
-  };
 
   piperVoices = {
     "ru_RU-irina-medium.onnx" = {
@@ -57,10 +45,6 @@ let
     source = pkgs.fetchurl (m // { name = baseNameOf target; });
   };
 
-  whisperFiles = lib.mapAttrs' (
-    name: m: lib.nameValuePair "whisper-${name}" (link ".local/share/whisper-models/ggml-${name}.bin" m)
-  ) whisperModels;
-
   piperFiles = lib.mapAttrs' (
     name: m: lib.nameValuePair "piper-${name}" (link ".local/share/piper-voices/${name}" m)
   ) piperVoices;
@@ -68,11 +52,10 @@ in
 {
   home = {
     packages = with pkgs; [
-      whisper-cpp
       piper-tts
       kokoro-ru
     ];
 
-    file = whisperFiles // piperFiles;
+    file = piperFiles;
   };
 }

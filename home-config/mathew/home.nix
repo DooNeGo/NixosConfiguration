@@ -31,6 +31,7 @@
     ./hyprlauncher.nix
     ./xdg.nix
     ./obs-studio.nix
+    ./podman.nix
   ];
 
   home = {
@@ -42,7 +43,6 @@
       freerdp
       obsidian
       compsize
-      pv
       osu-lazer-bin
       hyprpicker
       hyprpwcenter
@@ -53,17 +53,12 @@
       kdePackages.gwenview
       gpu-screen-recorder-gtk
       polychromatic
-      iotop
-      iftop
       mumble
       teams-for-linux
       libreoffice
-      ntfs3g
       crosspipe
       pwvucontrol
       audacious
-      unzip
-      zip
       smartmontools
       flatpak
       qbittorrent
