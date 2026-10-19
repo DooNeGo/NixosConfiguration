@@ -31,14 +31,20 @@
           };
         };
 
-      pkgs = mkPkgs nixpkgs // {
-        overlays = [
-          (final: prev: {
-            unstable = mkPkgs inputs.nixpkgs-unstable;
-            stable = mkPkgs inputs.nixpkgs-stable;
-          })
-        ];
-      };
+      pkgs = (mkPkgs nixpkgs).extend (final: prev: {
+        unstable = mkPkgs inputs.nixpkgs-unstable;
+        stable = mkPkgs inputs.nixpkgs-stable;
+        jetbrains = prev.jetbrains // {
+          rider = prev.jetbrains.rider.overrideAttrs (old: {
+            version = "2026.2.3.1";
+            passthru = old.passthru // { buildNumber = "262.10968.170"; };
+            src = final.fetchurl {
+              url = "https://download.jetbrains.com/rider/JetBrains.Rider-2026.2.3.1.tar.gz";
+              hash = "sha256-+ksJpffPS2Y1sJOtxzE5kXeKjcdPJWFKK4l2sE3uXU4=";
+            };
+          });
+        };
+      });
     in
     {
       homeConfigurations.openclaw-npm = home-manager.lib.homeManagerConfiguration {

@@ -3,6 +3,7 @@
   imports = [
     ../shared/zsh.nix
     ../shared/git.nix
+    ../shared/ssh.nix
     ../shared/maui-dev.nix
   ];
 
@@ -20,14 +21,11 @@
       psmisc
       yt-dlp
       python3
-      #(pkgs.runCommand "e2fsprogs-attr" { } ''
-      #mkdir -p $out/bin
-      #ln -s ${e2fsprogs}/bin/chattr ${e2fsprogs}/bin/lsattr $out/bin/
-      #'')
     ];
 
     sessionVariables = {
       "WHISPER_CPP_MODEL" = "/var/lib/whisper-cpp/ggml-small.bin";
+      "QT_QPA_PLATFORM" = "offscreen";
       #NPM_CONFIG_PREFIX = "$HOME/.npm-global";
     };
 

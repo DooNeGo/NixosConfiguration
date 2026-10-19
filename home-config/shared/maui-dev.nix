@@ -46,8 +46,23 @@ let
   androidHome = "${androidComposition.androidsdk}/libexec/android-sdk";
   jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-21;
   #jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-17;
+
+  devEnvironment = {
+    JAVA_HOME = "${config.home.homeDirectory}/.android/jdk";
+    DOTNET_ROOT = "${dotnet}/share/dotnet";
+    ANDROID_HOME = "${config.home.homeDirectory}/.android/sdk";
+    ANDROID_SDK_ROOT = "${config.home.homeDirectory}/.android/sdk";
+    ANDROID_AVD_HOME = "${config.home.homeDirectory}/.android/avd";
+  };
 in
 {
+  systemd.user.sessionVariables = devEnvironment;
+
+  systemd.user.tmpfiles.rules = [
+    "d /var/lib/nocow/${config.home.username} 0755 - - -"
+    "d /var/lib/nocow/${config.home.username}/android-avds 0755 - - -"
+  ];
+
   programs.jetbrains-remote = {
     enable = true;
     ides = [ pkgs.jetbrains.rider ];
@@ -62,17 +77,13 @@ in
       jdk
     ];
 
-    sessionVariables = {
-      JAVA_HOME = "$HOME/.android/jdk";
-      DOTNET_ROOT = "${dotnet}/share/dotnet";
+    sessionVariables = devEnvironment // {
       PATH = "${dotnet}/bin:$PATH";
-      ANDROID_HOME = "$HOME/.android/sdk";
-      ANDROID_SDK_ROOT = "$HOME/.android/sdk";
-      ANDROID_AVD_HOME = "$HOME/.android/avd";
     };
 
     file = {
-      ".android/avd".source = config.lib.file.mkOutOfStoreSymlink "/var/lib/nocow/android-avds";
+      ".android/avd".source =
+        config.lib.file.mkOutOfStoreSymlink "/var/lib/nocow/${config.home.username}/android-avds";
       ".android/sdk".source = config.lib.file.mkOutOfStoreSymlink androidHome;
       ".android/jdk".source = config.lib.file.mkOutOfStoreSymlink jdk.home;
       #".android/jdk17".source = config.lib.file.mkOutOfStoreSymlink jdk17.home;
