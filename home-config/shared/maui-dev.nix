@@ -23,7 +23,7 @@ let
   dotnet = pkgs.dotnet-sdk_10;
 
   riderFHS = pkgs.buildFHSEnv {
-    name = "rider-fhs";
+    name = "rider";
     targetPkgs =
       pkgs: with pkgs; [
         jetbrains.rider
@@ -35,10 +35,15 @@ let
     runScript = "rider";
   };
 
+  # `rider` on PATH resolves to the FHS wrapper (used by MCP: `rider stdioMcpServer`)
+  #riderCli = pkgs.writeShellScriptBin "rider" ''
+    #exec ${riderFHS}/bin/rider-fhs "$@"
+  #'';
+
   riderDesktop = pkgs.makeDesktopItem {
     name = "rider";
     desktopName = "Rider";
-    exec = "rider-fhs";
+    exec = "rider";
     terminal = false;
     mimeTypes = [ "text/plain" ];
   };

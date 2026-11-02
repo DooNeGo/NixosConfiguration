@@ -1,4 +1,9 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 {
   imports = [
     ../shared/zsh.nix
@@ -26,11 +31,13 @@
     sessionVariables = {
       "WHISPER_CPP_MODEL" = "/var/lib/whisper-cpp/ggml-small.bin";
       "QT_QPA_PLATFORM" = "offscreen";
-      #NPM_CONFIG_PREFIX = "$HOME/.npm-global";
     };
 
     sessionPath = [
       "$HOME/.npm/bin"
+      "$HOME/.local/bin"
+      "${config.programs.claude-code.package}/bin"
+      "${config.programs.codex.package}/bin"
     ];
   };
 
