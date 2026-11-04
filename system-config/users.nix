@@ -14,23 +14,10 @@
     shell = pkgs.zsh;
   };
 
-  users.users.openclaw = {
-    isNormalUser = true;
-    #linger = true;
-    description = "Openclaw user";
-    hashedPassword = "$y$j9T$qEa6nXlqe74ZWOuYHsLN..$cym2MjTNePrMhkWvm9bI.7zsJeLj8XpqfZjuaVfD9Q/";
-    extraGroups = [
-      "wireshark"
-      "adbusers"
-      "kvm"
-      "adm"
-    ];
-    shell = pkgs.zsh;
-  };
-
   users.users.openclaw-npm = {
     isNormalUser = true;
     linger = true;
     shell = pkgs.zsh;
+    extraGroups = [ "systemd-journal" ]; # read-only access to the system/user journals for diagnostics
   };
 }
