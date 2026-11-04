@@ -30,6 +30,9 @@
         encoder = "nvenc";
         nvenc_preset = 4;
         min_log_level = 3;
+        lan_encryption_mode = 0;
+        wan_encryption_mode = 0;
+        csrf_allowed_origins = "https://nixos,https://100.113.78.93";
       };
     };
   };
