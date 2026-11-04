@@ -29,10 +29,6 @@
     };
   };
 
-  # Hyprland holds the X11 socket and starts Xwayland lazily; if that fails the
-  # socket backlog fills and libEGL_nvidia's XOpenDisplay blocks Sunshine at startup.
-  systemd.user.services.sunshine.serviceConfig.UnsetEnvironment = [ "DISPLAY" ];
-
   networking = {
     nftables.enable = true;
     firewall = {
