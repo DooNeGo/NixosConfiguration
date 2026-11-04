@@ -29,6 +29,7 @@
         config.android_sdk.accept_license = true;
         config.cudaSupport = true;
         overlays = [
+          (import ../shared/overlays/rider.nix)
           (final: prev: {
             unstable = import inputs.nixpkgs-unstable {
               inherit system;
