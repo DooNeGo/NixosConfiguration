@@ -25,7 +25,12 @@
       autoStart = true;
       capSysAdmin = true;
       openFirewall = true;
-      settings.capture = "wlr";
+      settings = {
+        capture = "wlr";
+        encoder = "nvenc";
+        nvenc_preset = 4;
+        min_log_level = 3;
+      };
     };
   };
 
