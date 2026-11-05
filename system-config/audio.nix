@@ -1,4 +1,6 @@
-{ pkgs, ... }: {
+{ config, pkgs, ... }: {
+  age.secrets.murmur-password.file = ../secrets/murmur-password.age;
+
   security.rtkit.enable = true;
 
   services.pipewire = {
@@ -367,7 +369,8 @@
     package = pkgs.stable.murmur;
     bandwidth = 540000;
     bonjour = true;
-    password = "562389";
+    environmentFile = config.age.secrets.murmur-password.path;
+    password = "$MURMURD_PASSWORD";
     autobanTime = 0;
   };
 
