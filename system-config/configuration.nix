@@ -6,6 +6,7 @@
     ./users.nix
     ./steam.nix
     ./sddm.nix
+    ./hyprland-session.nix
     ./audio.nix
     ./printing.nix
     ./network.nix

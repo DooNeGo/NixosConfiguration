@@ -8,13 +8,8 @@
   ];
 
   services.displayManager = {
-    # Autologin must start the UWSM session: HM session vars (NVIDIA env etc.) reach the compositor only via ~/.config/uwsm/env.
+    # The session must be the UWSM one: HM session vars (NVIDIA env etc.) reach the compositor only via ~/.config/uwsm/env.
     defaultSession = "hyprland-uwsm";
-
-    autoLogin = {
-      enable = true;
-      user = "mathew";
-    };
 
     sddm = {
       enable = true;
