@@ -19,7 +19,6 @@
       pkgsLib = import ./lib/pkgs.nix { inherit inputs; };
     in
     {
-      # `nix fmt` formats the tree (deadnix/statix are installed system-wide, see scripts/lint.sh).
       formatter.${system} = inputs.nixpkgs.legacyPackages.${system}.nixfmt-tree;
 
       nixosConfigurations.nixos = inputs.nixpkgs.lib.nixosSystem {

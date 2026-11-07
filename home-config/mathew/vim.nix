@@ -7,8 +7,7 @@
       vim-wayland-clipboard
     ];
 
-    # Nix files are formatted with nixfmt on :w. If nixfmt fails (syntax error) the buffer is left untouched and
-    # the error is shown. `gq` uses nixfmt too. Turn the on-save part off with `:let g:nix_autoformat = 0`.
+    # nixfmt on :w for Nix files; a nixfmt error leaves the buffer untouched. `:let g:nix_autoformat = 0` disables it.
     extraConfig = ''
       " The Home Manager wrapper starts vim with `-u <this file>`, which skips the built-in defaults
       " (filetype detection, syntax, incsearch, ...): load them explicitly.

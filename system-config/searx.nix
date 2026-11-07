@@ -1,6 +1,6 @@
 { config, ... }:
 {
-  # KEY=value file (SEARX_SECRET_KEY=...); systemd reads it as root, so the default root:root 0400 is fine.
+  # KEY=value file (SEARX_SECRET_KEY=...), read by systemd as root.
   age.secrets.searx-env.file = ../secrets/searx-env.age;
 
   services.searx = {

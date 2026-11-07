@@ -1,5 +1,5 @@
 { config, pkgs, ... }: {
-  # Decrypted by agenix before users are created (users.deps = agenixInstall), so it is usable here.
+  # agenix decrypts it before users are created, so hashedPasswordFile can use it.
   age.secrets.mathew-password.file = ../secrets/mathew-password.age;
 
   users.users.mathew = {

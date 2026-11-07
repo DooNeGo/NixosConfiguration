@@ -110,7 +110,7 @@
       ];
     };
 
-    # Deduplicate the store once a day (03:45) instead of on every build (auto-optimise-store).
+    # On a timer instead of auto-optimise-store, which deduplicates on every build.
     optimise.automatic = true;
   };
 
