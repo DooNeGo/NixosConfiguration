@@ -4,7 +4,8 @@ let
 
   defaultBtrfsOptions = [
     "defaults"
-    "compress=zstd:-1"
+    # Plain compress leaves a file uncompressed when its first extent does not shrink, even if the rest would.
+    "compress-force=zstd:-1"
     "noatime"
   ];
 in
