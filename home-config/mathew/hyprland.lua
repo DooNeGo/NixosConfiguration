@@ -103,6 +103,13 @@ hl.config({
     },
 })
 
+-- Moonlight/Sunshine virtual mouse: the MacBook trackpad scrolls in fine
+-- steps, so it needs a lower factor than a real wheel mouse.
+hl.device({
+    name = "libvirtualhid-mouse",
+    scroll_factor = 0.6,
+})
+
 hl.window_rule({
     match = { class = "pioneergame.exe" },
     immediate = true,
