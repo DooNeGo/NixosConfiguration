@@ -29,6 +29,7 @@
     ./xdg.nix
     ./obs-studio.nix
     ./podman.nix
+    ./vim.nix
   ];
 
   home = {
