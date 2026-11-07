@@ -31,7 +31,7 @@
           };
         };
 
-      pkgs = ((mkPkgs nixpkgs).extend (import ../shared/overlays/rider.nix)).extend (final: prev: {
+      pkgs = ((mkPkgs nixpkgs).extend (import ../shared/overlays/rider.nix)).extend (_final: _prev: {
         unstable = mkPkgs inputs.nixpkgs-unstable;
         stable = mkPkgs inputs.nixpkgs-stable;
       });

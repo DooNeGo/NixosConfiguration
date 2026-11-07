@@ -25,12 +25,14 @@
 
       pkgs = import nixpkgs {
         inherit system;
-        config.allowUnfree = true;
-        config.android_sdk.accept_license = true;
-        config.cudaSupport = true;
+        config = {
+          allowUnfree = true;
+          android_sdk.accept_license = true;
+          cudaSupport = true;
+        };
         overlays = [
           (import ../shared/overlays/rider.nix)
-          (final: prev: {
+          (_final: _prev: {
             unstable = import inputs.nixpkgs-unstable {
               inherit system;
               config.allowUnfree = true;

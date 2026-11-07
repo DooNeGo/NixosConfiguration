@@ -1,4 +1,4 @@
-{ pkgs, stylix, ... }: {
+{ pkgs, ... }: {
   stylix = {
     enable = true;
     image = builtins.path { path = ../../Wallpapers/default.jpg; };

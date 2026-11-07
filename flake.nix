@@ -32,7 +32,6 @@
       nixpkgs,
       nixpkgs-unstable,
       nixpkgs-stable,
-      home-manager,
       agenix,
       ...
     }:
@@ -48,8 +47,12 @@
         inherit system;
         config.allowUnfree = true;
       };
+      devPkgs = import nixpkgs { inherit system; };
     in
     {
+      # `nix fmt` formats the tree (deadnix/statix are installed system-wide, see scripts/lint.sh).
+      formatter.${system} = devPkgs.nixfmt-tree;
+
       nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
@@ -61,7 +64,7 @@
           ./system-config/configuration.nix
           ({ pkgs, ... }: {
             nixpkgs.overlays = [
-              (final: prev: {
+              (_final: _prev: {
                 stable = import nixpkgs-stable {
                   system = pkgs.stdenv.hostPlatform.system;
                   config.allowUnfree = true;

@@ -60,7 +60,7 @@ let
     ];
   };
 
-  main = instances.main;
+  inherit (instances) main;
 
   ports = lib.attrValues (lib.mapAttrs (_: i: i.listenPort) instances);
   proxyPort = toString main.listenPort;

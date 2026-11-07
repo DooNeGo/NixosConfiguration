@@ -32,21 +32,25 @@
     ./whisper-cpp.nix
   ];
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.supportedFilesystems = [ "btrfs" ];
+  boot = {
+    loader.systemd-boot.enable = true;
 
-  boot.kernelModules = [ "ntsync" ];
+    loader.efi.canTouchEfiVariables = true;
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+    supportedFilesystems = [ "btrfs" ];
 
-  boot.tmp = {
-    useTmpfs = true;
-    tmpfsSize = "50%";
-    tmpfsHugeMemoryPages = "within_size";
+    kernelModules = [ "ntsync" ];
+
+    kernelPackages = pkgs.linuxPackages_latest;
+
+    tmp = {
+      useTmpfs = true;
+      tmpfsSize = "50%";
+      tmpfsHugeMemoryPages = "within_size";
+    };
+
+    kernel.sysctl."vm.admin_reserve_kbytes" = 131072;
   };
-
-  boot.kernel.sysctl."vm.admin_reserve_kbytes" = 131072;
 
   networking.hostName = "nixos";
 
@@ -67,6 +71,8 @@
     kdiskmark
     nixfmt
     nixfmt-tree
+    deadnix
+    statix
     sshpass
     home-manager
     agenix
@@ -91,21 +97,23 @@
 
   services.gnome.gnome-keyring.enable = true;
 
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 14d";
-  };
+  nix = {
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 14d";
+    };
 
-  nix.settings = {
-    experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
-  };
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+    };
 
-  # Deduplicate the store once a day (03:45) instead of on every build (auto-optimise-store).
-  nix.optimise.automatic = true;
+    # Deduplicate the store once a day (03:45) instead of on every build (auto-optimise-store).
+    optimise.automatic = true;
+  };
 
   systemd.services.nix-daemon.environment = {
     HTTP_PROXY = "http://127.0.0.1:2080";

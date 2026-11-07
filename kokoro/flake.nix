@@ -9,7 +9,7 @@
   };
 
   outputs =
-    { self, nixpkgs }:
+    { nixpkgs, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -21,8 +21,7 @@
     in
     {
       packages.${system} = {
-        kokoro-ru-data = data.kokoro-ru-data;
-        ruaccent-data = data.ruaccent-data;
+        inherit (data) kokoro-ru-data ruaccent-data;
 
         pycrfsuite = pkgs.callPackage ./pkgs/pycrfsuite.nix { };
         ruaccent = pkgs.callPackage ./pkgs/ruaccent.nix { inherit data; };

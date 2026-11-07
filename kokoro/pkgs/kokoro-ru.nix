@@ -47,8 +47,8 @@ assert lib.assertMsg (
 ) "kokoro-ru: аргумент data без kokoro-ru-data — ожидается выход pkgs/data.nix (W2)";
 
 let
-  python = python3Packages.python;
   inherit (python3Packages)
+    python
     kokoro
     razdel
     onnxruntime

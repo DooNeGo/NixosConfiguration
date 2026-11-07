@@ -1,8 +1,4 @@
 { pkgs, ... }:
-let
-  #scheme = config.colorScheme;
-  #contrib = nix-colors.lib.contrib { inherit pkgs; };
-in
 {
   fonts.fontconfig.enable = true;
 

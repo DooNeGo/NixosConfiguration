@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 let
   uwsm = config.programs.uwsm.package;
   systemctl = "${config.systemd.package}/bin/systemctl";

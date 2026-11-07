@@ -28,7 +28,10 @@ home-manager build --flake ./home-config/mathew#mathew
 home-manager build --flake ./home-config/openclaw-npm#openclaw-npm
 nix build ./kokoro#kokoro-ru
 nix flake update --flake ./home-config/openclaw-npm  # per-flake lock update ("Update flake" commits)
+scripts/lint.sh                                       # deadnix + statix (system packages) over all flakes (config: statix.toml)
 ```
+
+`deadnix --edit` can break flake `outputs`: a closed pattern like `{ self, nixpkgs }:` must keep `...` after `self` is dropped. Rebuild all four flakes after an auto-fix.
 
 `home-config/openclaw-npm/scripts/config-check.sh` validates an OpenClaw config on an isolated temp state dir without touching `~/.openclaw`.
 
