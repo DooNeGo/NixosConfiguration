@@ -7,6 +7,7 @@
     ./steam.nix
     ./sddm.nix
     ./hyprland-session.nix
+    ./steam-bigpicture-session.nix
     ./audio.nix
     ./printing.nix
     ./network.nix
