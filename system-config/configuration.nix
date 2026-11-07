@@ -9,6 +9,7 @@
     ./hyprland-session.nix
     ./steam-bigpicture-session.nix
     ./audio.nix
+    ./murmur.nix
     ./printing.nix
     ./network.nix
     ./sing-box.nix
@@ -56,12 +57,6 @@
     extraLocales = [ "ru_RU.UTF-8/UTF-8" ];
   };
 
-  # Configure keymap in X11
-  services.xserver.xkb = {
-    layout = "us";
-    variant = "";
-  };
-
   powerManagement.cpuFreqGovernor = "performance";
 
   nixpkgs.config.allowUnfree = true;
@@ -99,7 +94,7 @@
   nix.gc = {
     automatic = true;
     dates = "weekly";
-    options = "--delete-older-than 5d";
+    options = "--delete-older-than 14d";
   };
 
   nix.settings = {
@@ -107,8 +102,10 @@
       "nix-command"
       "flakes"
     ];
-    auto-optimise-store = true;
   };
+
+  # Deduplicate the store once a day (03:45) instead of on every build (auto-optimise-store).
+  nix.optimise.automatic = true;
 
   systemd.services.nix-daemon.environment = {
     HTTP_PROXY = "http://127.0.0.1:2080";

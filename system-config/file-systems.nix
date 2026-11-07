@@ -24,15 +24,6 @@ in
     fileSystems = [ "/" ];
   };
 
-  #  services.beesd.filesystems = {
-  #    root = {
-  #      spec = "LABEL=NixOS";
-  #      hashTableSizeMB = 2048;
-  #      verbosity = "crit";
-  #      extraOptions = [ "--loadavg-target" "5.0" ];
-  #    };
-  #  };
-
   systemd.tmpfiles.rules = [
     "d /games 2775 root users -"
     "d /var/lib/nocow 775 root users -"
