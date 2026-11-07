@@ -9,6 +9,7 @@
     ];
     extraConfig = ''
       set -g mouse on
+      set -g renumber-windows on
     '';
   };
 }
