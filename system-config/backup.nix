@@ -2,16 +2,16 @@
 let
   top = "/mnt/btrfs-top"; # top-level subvolume of the NVMe filesystem, see file-systems.nix
   backupMount = "/backup"; # HDD (sda4, label games_arch)
-  # Created by hand on the HDD once (`sudo mkdir /backup/btrbk`), deliberately NOT by tmpfiles: if the HDD
-  # is missing, this path would otherwise land on the NVMe root and btrbk would receive backups onto the full disk.
+  # Created by hand on the HDD, NOT by tmpfiles: with the HDD missing the path would land on the NVMe root and
+  # btrbk would receive backups onto the full disk.
   targetDir = "${backupMount}/btrbk";
 in
 {
   fileSystems.${backupMount} = {
     device = "/dev/disk/by-uuid/66a4672a-820c-440c-9f9a-6b7b52c4e434";
     fsType = "btrfs";
-    # nofail + short timeout: a missing/slow HDD must not hold up boot. The HDD is not latency critical, so zstd:3
-    # (better ratio than the NVMe's -1) is cheap here.
+    # nofail + short timeout: a missing HDD must not hold up boot. zstd:3 rather than the NVMe's -1: latency does not
+    # matter here.
     options = [
       "defaults"
       "compress=zstd:3"
@@ -21,11 +21,7 @@ in
     ];
   };
 
-  # Backed up: @home (a snapshot every 10 minutes when it changed, kept locally for 2 hours as a quick undo window)
-  # and @root (once a day). The HDD receives about one snapshot per hour of @home and keeps 24 hourly,
-  # 14 daily, 8 weekly and 6 monthly backups; the system subvolumes keep 14 daily, 8 weekly and 6 monthly.
-  # /games, /nix and the logs (@log) are not backed up, nor is /var/lib/nocow. Explanation of every line:
-  # docs/btrfs.md. Two instances because @home is snapshotted often and @root only once a day.
+  # @home often, @root once a day; /games, /nix, @log and /var/lib/nocow are not backed up. Details: docs/btrfs.md.
   services.btrbk.instances =
     let
       mkInstance =
@@ -79,7 +75,7 @@ in
       unitConfig.ConditionPathIsMountPoint = backupMount;
     });
 
-    # The module sets AccuracySec = 10min, which would let a 10-minute timer drift by a whole period.
+    # The module sets AccuracySec = 10min, which would blur a 10-minute timer.
     timers.btrbk-home.timerConfig.AccuracySec = lib.mkForce "1min";
 
     tmpfiles.rules = [ "d ${top}/.snapshots 0755 root root -" ];
