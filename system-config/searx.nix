@@ -1,16 +1,11 @@
 { config, lib, ... }:
 {
-  age.secrets.searx-secret-key = {
-    enable = true;
-    mode = "0600";
-    owner = "searx";
-    group = "searx";
-    file = ../secrets/searx-secret-key.age;
-  };
+  # KEY=value file (SEARX_SECRET_KEY=...); systemd reads it as root, so the default root:root 0400 is fine.
+  age.secrets.searx-env.file = ../secrets/searx-env.age;
 
   services.searx = {
     enable = true;
-    #redisCreateLocally = true;
+    environmentFile = config.age.secrets.searx-env.path;
 
     settings = {
       search.formats = [
@@ -27,7 +22,7 @@
         bind_address = "localhost";
         port = 6081;
         image_proxy = true;
-        secret_key = "ggggggggggggggggggggg";
+        secret_key = "$SEARX_SECRET_KEY";
         limiter = false;
         outgoing = {
           proxies."all://" = [ "http://127.0.0.1:2080" ];

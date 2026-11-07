@@ -6,7 +6,10 @@ in
   "secrets/murmur-password.age".publicKeys = [
     host
   ];
-  "secrets/searx-secret-key.age".publicKeys = [
+  "secrets/searx-env.age".publicKeys = [
+    host
+  ];
+  "secrets/mathew-password.age".publicKeys = [
     host
   ];
   "secrets/vless-credits-git.age".publicKeys = [

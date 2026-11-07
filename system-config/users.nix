@@ -1,8 +1,11 @@
-{ pkgs, ... }: {
+{ config, pkgs, ... }: {
+  # Decrypted by agenix before users are created (users.deps = agenixInstall), so it is usable here.
+  age.secrets.mathew-password.file = ../secrets/mathew-password.age;
+
   users.users.mathew = {
     isNormalUser = true;
     description = "Default user for desktop";
-    hashedPassword = "$y$j9T$qEa6nXlqe74ZWOuYHsLN..$cym2MjTNePrMhkWvm9bI.7zsJeLj8XpqfZjuaVfD9Q/";
+    hashedPasswordFile = config.age.secrets.mathew-password.path;
     extraGroups = [
       "wheel"
       "input"
