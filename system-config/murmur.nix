@@ -3,7 +3,6 @@
 
   services.murmur = {
     enable = true;
-    package = pkgs.stable.murmur;
     bandwidth = 540000;
     bonjour = true;
     environmentFile = config.age.secrets.murmur-password.path;
