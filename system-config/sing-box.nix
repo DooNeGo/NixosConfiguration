@@ -23,6 +23,7 @@ let
         "claude.com"
         "bing.com"
         "microsoft.com"
+        #"dl.google.com"
       ];
       routeMatch = "domain_suffix";
       fetchIntervalSec = 21600;

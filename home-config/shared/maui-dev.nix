@@ -6,9 +6,10 @@
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
     platformVersions = [
+      "29"
       "33"
-      "36.1"
-      "37.0"
+      "36"
+      "37.2"
     ];
     buildToolsVersions = [ "latest" ];
     abiVersions = [ "x86_64" ];
@@ -34,11 +35,6 @@ let
     '';
     runScript = "rider";
   };
-
-  # `rider` on PATH resolves to the FHS wrapper (used by MCP: `rider stdioMcpServer`)
-  #riderCli = pkgs.writeShellScriptBin "rider" ''
-    #exec ${riderFHS}/bin/rider-fhs "$@"
-  #'';
 
   riderDesktop = pkgs.makeDesktopItem {
     name = "rider";
