@@ -120,6 +120,123 @@ Hash table: 1024 MB, see the comment in `bees.nix` (upstream: 2-4x the plain-fil
 data, counted on uncompressed volume: 1.7 TB here). A full `btrfs balance` invalidates the table (stop bees, delete
 `.beeshome/beeshash.dat` on the top-level subvolume). `@nocow` files have no checksums and are skipped.
 
+## 3. Backups (btrbk to the HDD)
+
+Implemented in `system-config/backup.nix`. Backed up: `@home` (instance `home`) and `@root` (instance
+`system`). The NVMe top-level subvolume is mounted at
+`/mnt/btrfs-top` (btrbk's working volume, `.snapshots` lives there); the backup disk is `sda4` (btrfs, label
+`games_arch`, UUID `66a4672a-...`, HDD) mounted at `/backup`.
+
+### Where the backups live
+
+`/backup`, next to `/games`: both are permanent data mounts of this machine. `/mnt` is the FHS place for
+temporary mounts, which is why only the technical top-level mount (`/mnt/btrfs-top`) is there. Games stay on the
+NVMe: `sda4` is a 7200 rpm disk (slow loading) and only 800 GB, and mixing games into the backup filesystem would
+let them compete for the space retention needs.
+
+### How the data is backed up
+
+1. **Snapshot.** btrbk takes a read-only snapshot of `@home` into `/mnt/btrfs-top/.snapshots/@home.<time>`. It is
+   instant and takes no space at first: it shares all blocks with the live `@home`. Later, every block you
+   overwrite or delete stays pinned by the snapshot, so a snapshot costs exactly what changed since it was taken.
+2. **Incremental send.** `btrfs send` compares the new snapshot with the previous one that is on the HDD and
+   streams only the difference to `btrfs receive` on `/backup/btrbk`. The first transfer is a full copy; after
+   that a run moves only what changed. The result on the HDD is again a read-only subvolume you can browse as
+   plain files, compressed with the HDD's own `zstd:3`.
+3. **Retention.** btrbk deletes snapshots that no longer fit the policy, locally and on the HDD. It always keeps the
+   newest snapshot that exists on both sides (the "latest pair"), because the next incremental send needs it as
+   the parent.
+
+Example, a Tuesday around noon: 10-minute snapshots from 10:00 to 12:00 exist locally; the HDD has about one snapshot per hour for the last day, then one per day for 14 days, one per week for
+8 weeks and one per month for 6 months. A file deleted by mistake at 11:40 is in a local snapshot (copy it back); one deleted three weeks ago is
+only on the HDD.
+
+### What is backed up
+
+| Subvolume | Instance | Snapshot | Local keep | HDD keep |
+|---|---|---|---|---|
+| `@home` | `home` | every 10 min if changed | 2 h | 24h 14d 8w 6m |
+| `@root` | `system` | daily 04:05 if changed | 2 days | 14d 8w 6m |
+
+Not backed up: `@games`, `@nix` (reproducible), `@log`, `@nocow`. Two instances because `@home` is snapshotted
+often and `@root` (little changes there) once a day.
+
+Nested subvolumes are **not** part of a snapshot of their parent (they show up as empty directories). Inside `@root`
+there are `/var/lib/machines`, `/var/lib/portables`, `/var/tmp` and `/srv` (created by systemd-tmpfiles), and the
+podman `btrfs` storage driver creates one per container layer under `~/.local/share/containers/storage`. All of
+that is skipped, which is fine here; list them with `sudo btrfs subvolume list /`.
+
+`@root` contains `/etc/ssh/ssh_host_ed25519_key`, the only recipient key of the agenix secrets, so the HDD now
+holds it as well: keep `/backup` readable by root only (the snapshots keep the original permissions).
+
+### What the settings mean
+
+| Setting | Meaning |
+|---|---|
+| `onCalendar = "*:0/10"` | (`home`) systemd timer: every hour at minute 0, 10, 20, ... (`AccuracySec` is forced to 1 min, the module's default of 10 min would blur it); `system` uses `*-*-* 04:05:00` |
+| `snapshot_create = "onchange"` | take a snapshot only if `@home` changed since the last one; an idle machine creates none |
+| `timestamp_format = "long"` | names carry the time (`@home.20261107T1530`); the default is a date only, which would collide every 10 minutes |
+| `snapshot_preserve_min = "2h"` | local snapshots younger than 2 hours are never deleted |
+| `snapshot_preserve = "no"` | after those 2 hours nothing more is kept locally (long history lives on the HDD) |
+| `target_preserve_min = "no"` | on the HDD only what `target_preserve` selects is kept |
+| `target_preserve = "24h 14d 8w 6m"` | `<n>h` hourly, `<n>d` daily, `<n>w` weekly, `<n>m` monthly: the last 24 hourly backups, then one per day for 14 days, one per week for 8 weeks, one per month for 6 months; which snapshot represents a day/week/month is decided by btrbk from the timestamps (`preserve_day_of_week`, default Sunday, anchors weekly and longer; `preserve_hour_of_day`, default 0, anchors daily) |
+| `incremental = "yes"` | send only differences against the common parent; if there is no parent a full copy is made |
+| `ConditionPathIsMountPoint=/backup` | if the HDD is not mounted the run is skipped: nothing is created and nothing piles up |
+
+btrbk sends only what the target's retention needs, so of the six snapshots per hour about one reaches the HDD.
+
+### Scenarios
+
+| | Snapshots | Local keep | HDD keep | Cost |
+|---|---|---|---|---|
+| A. conservative | daily | 2 days | 14d 8w 6m | minimal; up to a day of work can be lost |
+| **B. implemented** | every 10 min, only if changed | 2 h | 24h 14d 8w 6m | few snapshots alive at once, so little pinned space and little bees interference |
+| C. aggressive | every 10 min | 24 h | as B | ~144 snapshots; pins every overwritten block on a nearly full disk and multiplies bees' metadata cost |
+
+On a nearly full disk the retention window matters more than the frequency, which is why the local window is short.
+
+### Tool choice
+
+| Tool | Verdict |
+|---|---|
+| **btrbk** | chosen: snapshots + incremental send/receive + tiered retention in one tool, NixOS module, browsable backups |
+| snapper | local timeline snapshots only, no send/receive |
+| restic / borg | file-level, encrypted, independent of btrfs; slower, needs the tool to restore. Worth adding later as a second copy of the most important data |
+| rsync | no snapshots, no history |
+
+### Safety net and limits
+
+- `/backup/btrbk` is created by hand, never by tmpfiles: if the HDD is missing, a path on the NVMe root would
+  receive the backups onto the full disk.
+- Restoring `@root` from the HDD brings back the SSH host key, so the agenix secrets stay decryptable.
+- `@home` includes caches; if the first transfer is too big, move big caches to their own subvolume.
+
+### First start (after any defrag, see section 1)
+
+```sh
+sudo mount /backup && sudo btrfs filesystem usage /backup     # what is on the disk already, free space
+sudo mkdir /backup/btrbk
+sudo umount ~/mnt                                             # a top-level mount under /home inflates the size
+sudo btrfs filesystem du -s /home                             # size of the first full send
+sudo systemctl start btrbk-system btrbk-home && journalctl -fu btrbk-home
+systemctl list-timers 'btrbk-*'
+```
+
+The first run copies everything (hours for hundreds of GB over the HDD); later runs are incremental.
+
+### Watching and restoring
+
+```sh
+sudo btrbk -c /etc/btrbk/home.conf list backups   # also system.conf              # what exists locally and on the HDD
+sudo btrfs filesystem du -s /mnt/btrfs-top/.snapshots/*       # "Exclusive" = space a snapshot pins
+ls /backup/btrbk/                                             # browse any backup as plain files
+sudo cp -a --reflink=auto /mnt/btrfs-top/.snapshots/@home.<time>/mathew/<file> /home/mathew/   # quick undo
+sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the next run would do
+```
+
+Whole-subvolume restore: `btrfs send` the backup (or local snapshot) and `btrfs receive` it next to the broken
+one, then swap the subvolume in the top-level mount.
+
 ## 4. Measurements after recompressing (2026-11-07/08)
 
 All with `sudo compsize -x`; "Disk" is what is stored, "Uncomp." the same data without compression.

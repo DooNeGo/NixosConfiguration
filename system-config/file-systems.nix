@@ -20,6 +20,13 @@ in
       neededForBoot = true;
     };
     "/var/lib/nocow".options = defaultBtrfsOptions;
+
+    # Top-level subvolume (id 5): btrbk reads every subvolume from here and keeps its .snapshots here.
+    "/mnt/btrfs-top" = {
+      device = config.fileSystems."/".device;
+      fsType = "btrfs";
+      options = defaultBtrfsOptions ++ [ "subvolid=5" ];
+    };
   };
 
   services.btrfs.autoScrub = {
