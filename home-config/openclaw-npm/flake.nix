@@ -14,27 +14,13 @@
 
   outputs =
     inputs@{
-      nixpkgs,
       home-manager,
       ...
     }:
     let
       system = "x86_64-linux";
 
-      mkPkgs =
-        p:
-        import p {
-          inherit system;
-          config = {
-            allowUnfree = true;
-            android_sdk.accept_license = true;
-          };
-        };
-
-      pkgs = ((mkPkgs nixpkgs).extend (import ../shared/overlays/rider.nix)).extend (_final: _prev: {
-        unstable = mkPkgs inputs.nixpkgs-unstable;
-        stable = mkPkgs inputs.nixpkgs-stable;
-      });
+      pkgs = (import ../../lib/pkgs.nix { inherit inputs; }).mkPkgs { inherit system; };
     in
     {
       homeConfigurations.openclaw-npm = home-manager.lib.homeManagerConfiguration {

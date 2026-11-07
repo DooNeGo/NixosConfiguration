@@ -23,7 +23,6 @@
     ./xdg.nix
     #./gtk-theme.nix
     ./file-systems.nix
-    ./stylix.nix
     ./throne.nix
     ./android.nix
     ./usbmux.nix

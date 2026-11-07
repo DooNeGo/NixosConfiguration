@@ -11,9 +11,11 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, and the roo
 | Flake | Output | Applies to |
 |---|---|---|
 | `./flake.nix` | `nixosConfigurations.nixos` (modules in `system-config/`) | the whole system |
-| `home-config/mathew/` | `homeConfigurations.mathew` | desktop user `mathew` (Hyprland, waybar, kitty, stylix…) |
+| `home-config/mathew/` | `homeConfigurations.mathew` | desktop user `mathew` (Hyprland, waybar, kitty…) |
 | `home-config/openclaw-npm/` | `homeConfigurations.openclaw-npm` | agent/dev user (MAUI/Android SDK, Rider, nix-ld) |
 | `kokoro/` | Russian TTS packages (`kokoro-ru`, `ruaccent`, `pycrfsuite`, pinned data trees) + `cli/kokoro_cli.py` | standalone; pinned to its own nixpkgs rev |
+
+`lib/pkgs.nix` is a plain function (not a flake) used by the root flake and both home flakes: base nixpkgs `config`, the `pkgs.stable`/`pkgs.unstable` overlay (`channelsOverlay`) and `mkPkgs` for Home Manager; each flake passes its own `inputs`, `cudaSupport` stays per host (`extraConfig`). `kokoro/` is standalone and does not use it.
 
 `home-config/shared/*.nix` (git, zsh, ssh, maui-dev) are plain modules imported by several user configs. `system-config/configuration.nix` is the import list for system modules; commented-out imports are intentionally disabled.
 

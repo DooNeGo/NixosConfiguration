@@ -5,7 +5,6 @@
 }:
 {
   imports = [
-    # inputs.stylix.homeModules.stylix
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
     ./hyprland.nix
     ./theme.nix
@@ -24,7 +23,6 @@
     ./random-wallpaper.nix
     ./hyprpaper.nix
     ../shared/zsh.nix
-    #./stylix.nix
     ../shared/maui-dev.nix
     ../shared/ssh.nix
     ./hyprlauncher.nix

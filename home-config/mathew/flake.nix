@@ -16,33 +16,15 @@
 
   outputs =
     inputs@{
-      nixpkgs,
       home-manager,
       ...
     }:
     let
       system = "x86_64-linux";
 
-      pkgs = import nixpkgs {
+      pkgs = (import ../../lib/pkgs.nix { inherit inputs; }).mkPkgs {
         inherit system;
-        config = {
-          allowUnfree = true;
-          android_sdk.accept_license = true;
-          cudaSupport = true;
-        };
-        overlays = [
-          (import ../shared/overlays/rider.nix)
-          (_final: _prev: {
-            unstable = import inputs.nixpkgs-unstable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-            stable = import inputs.nixpkgs-stable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          })
-        ];
+        extraConfig.cudaSupport = true;
       };
     in
     {

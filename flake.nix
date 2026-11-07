@@ -6,21 +6,6 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
 
-    nix-flatpak = {
-      url = "github:gmodena/nix-flatpak/latest";
-      #inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    stylix = {
-      url = "github:nix-community/stylix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    home-manager = {
-      url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -28,57 +13,26 @@
   };
 
   outputs =
-    inputs@{
-      nixpkgs,
-      nixpkgs-unstable,
-      nixpkgs-stable,
-      agenix,
-      ...
-    }:
+    inputs:
     let
       system = "x86_64-linux";
-
-      pkgs-unstable = import nixpkgs-unstable {
-        inherit system;
-        config.allowUnfree = true;
-      };
-
-      pkgs-stable = import nixpkgs-stable {
-        inherit system;
-        config.allowUnfree = true;
-      };
-      devPkgs = import nixpkgs { inherit system; };
+      pkgsLib = import ./lib/pkgs.nix { inherit inputs; };
     in
     {
       # `nix fmt` formats the tree (deadnix/statix are installed system-wide, see scripts/lint.sh).
-      formatter.${system} = devPkgs.nixfmt-tree;
+      formatter.${system} = inputs.nixpkgs.legacyPackages.${system}.nixfmt-tree;
 
-      nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.nixos = inputs.nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
-          {
-            _module.args = {
-              inherit pkgs-unstable pkgs-stable;
-            };
-          }
           ./system-config/configuration.nix
-          ({ pkgs, ... }: {
+          {
             nixpkgs.overlays = [
-              (_final: _prev: {
-                stable = import nixpkgs-stable {
-                  system = pkgs.stdenv.hostPlatform.system;
-                  config.allowUnfree = true;
-                };
-                unstable = import nixpkgs-unstable {
-                  system = pkgs.stdenv.hostPlatform.system;
-                  config.allowUnfree = true;
-                };
-                agenix = agenix.packages."${system}".default;
-              })
+              pkgsLib.channelsOverlay
+              (_final: _prev: { agenix = inputs.agenix.packages."${system}".default; })
             ];
-          })
-          inputs.stylix.nixosModules.stylix
-          agenix.nixosModules.age
+          }
+          inputs.agenix.nixosModules.age
         ];
       };
     };
