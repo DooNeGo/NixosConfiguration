@@ -12,6 +12,7 @@ agent user has no root.
 | `services.fstrim` off | `file-systems.nix` | `discard=async` already trims freed extents |
 | bees dedup | `system-config/bees.nix` (import commented out) | expected gain small and the cost permanent, see section 2 |
 | btrbk snapshots + backup to the HDD | `system-config/backup.nix` | see "Backups" |
+| `compress-force=zstd:5` on `/backup`, scrub and reclaim | `system-config/backup.nix` | the HDD is the bottleneck, so a higher level is free; see section 5 |
 
 Watch reclaim: `grep . /sys/fs/btrfs/*/allocation/data/{reclaim_count,reclaim_bytes,reclaim_errors}`.
 Undo: write `0` into `periodic_reclaim` and `dynamic_reclaim` there.
@@ -142,7 +143,7 @@ let them compete for the space retention needs.
 2. **Incremental send.** `btrfs send` compares the new snapshot with the previous one that is on the HDD and
    streams only the difference to `btrfs receive` on `/backup/btrbk`. The first transfer is a full copy; after
    that a run moves only what changed. The result on the HDD is again a read-only subvolume you can browse as
-   plain files, compressed with the HDD's own `zstd:3`.
+   plain files, compressed with the HDD's own `compress-force=zstd:5` (section 5).
 3. **Retention.** btrbk deletes snapshots that no longer fit the policy, locally and on the HDD. It always keeps the
    newest snapshot that exists on both sides (the "latest pair"), because the next incremental send needs it as
    the parent.
@@ -296,3 +297,26 @@ RAM, reads and decompression were not measured.
   workers (`thread_pool`, default min(CPUs+2, 8)) busy.
 
 Decision: `compress-force=zstd:-1`.
+
+## 5. Compression on the backup HDD (2026-11-08)
+
+Same script as in section 4 with `MNT=/backup`, 8 GiB of Phasmophobia (compressible) and of World of Tanks Blitz
+(incompressible), one writer, one run per variant (speeds are noisy, sizes repeat). The HDD writes ~0.10 GiB/s.
+
+| Phasmophobia, 8.0 GiB | Disk | Write |
+|---|---|---|
+| no compression | 100% | 0.10 GiB/s |
+| `compress` zstd:1 .. 12 | 65-68% | 0.13 GiB/s |
+| `compress-force` zstd:1 / 3 | 51% / 49% | 0.20 GiB/s |
+| `compress-force` zstd:5 .. 10 | 46-47% | 0.20 GiB/s |
+| `compress-force` zstd:12 / 13 | 46% | 0.16 / 0.13 GiB/s |
+| `compress-force` zstd:14 / 15 | 45% | 0.09 / 0.08 GiB/s |
+
+- Blitz: `compress` stays at 100%, `compress-force` gives 95-96% at every level and the speed of the uncompressed
+  write (0.09-0.10 GiB/s), so forcing costs nothing here.
+- Unlike the NVMe, compression makes the write about twice as fast: the disk is the limit and less data reaches it.
+  Above zstd:10 the CPU becomes the limit and the write slows down, for a 1 point gain.
+- Levels 5 to 10 are the same within noise. Games are already on the plateau; `@home` and `@root` hold more text
+  and may gain from a higher level, which was not measured.
+
+Decision: `compress-force=zstd:5` (the lowest level on the plateau, least CPU).
