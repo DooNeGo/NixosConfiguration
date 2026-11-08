@@ -213,11 +213,23 @@ On a nearly full disk the retention window matters more than the frequency, whic
 
 ### First start (after any defrag, see section 1)
 
+The `/backup` entry in `fstab` exists only after `nixos-rebuild switch`, so before that the disk has to be mounted by
+UUID on a mount point you create. Prepare the disk once (the same commands work after `switch`; then the plain
+`sudo mount /backup` is enough and systemd creates the mount point itself):
+
 ```sh
-sudo mount /backup && sudo btrfs filesystem usage /backup     # what is on the disk already, free space
-sudo mkdir /backup/btrbk
+sudo mkdir -p /backup
+sudo mount /dev/disk/by-uuid/66a4672a-820c-440c-9f9a-6b7b52c4e434 /backup
+sudo btrfs filesystem usage /backup                           # what is on the disk already, free space
+sudo mkdir /backup/btrbk && sudo chmod 700 /backup/btrbk      # by hand, see "Safety net"; root-only: @root holds the agenix key
+```
+
+Then, after `switch`:
+
+```sh
 sudo umount ~/mnt                                             # a top-level mount under /home inflates the size
 sudo btrfs filesystem du -s /home                             # size of the first full send
+sudo btrbk -c /etc/btrbk/home.conf dryrun                     # what the first run would do (also system.conf)
 sudo systemctl start btrbk-system btrbk-home && journalctl -fu btrbk-home
 systemctl list-timers 'btrbk-*'
 ```
