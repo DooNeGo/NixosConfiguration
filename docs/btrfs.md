@@ -183,7 +183,7 @@ permissions).
 | `target_preserve_min = "no"` | on the HDD only what `target_preserve` selects is kept |
 | `target_preserve = "24h 14d 8w 6m"` | `<n>h` hourly, `<n>d` daily, `<n>w` weekly, `<n>m` monthly: the last 24 hourly backups, then one per day for 14 days, one per week for 8 weeks, one per month for 6 months; which snapshot represents a day/week/month is decided by btrbk from the timestamps (`preserve_day_of_week`, default Sunday, anchors weekly and longer; `preserve_hour_of_day`, default 0, anchors daily) |
 | `incremental = "yes"` | send only differences against the common parent; if there is no parent a full copy is made |
-| `ConditionPathIsMountPoint=/backup` | if the HDD is not mounted the run is skipped: nothing is created and nothing piles up |
+| `RequiresMountsFor=/mnt/btrfs-top /backup` + `x-systemd.automount` | `/backup` is mounted on first access, so no manual `mount`; if the HDD is missing the run fails before btrbk starts (`systemctl --failed`): nothing is created and nothing piles up |
 
 btrbk sends only what the target's retention needs, so of the six snapshots per hour about one reaches the HDD.
 

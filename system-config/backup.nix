@@ -11,19 +11,20 @@ in
   fileSystems.${backupMount} = {
     device = "/dev/disk/by-uuid/${backupUuid}";
     fsType = "btrfs";
-    # nofail + short timeout: a missing HDD must not hold up boot. The HDD (~100 MiB/s) is the bottleneck, not the CPU,
-    # so compress-force at zstd:5 writes ~2x faster than uncompressed on compressible data and costs nothing on
-    # incompressible data (measured, docs/btrfs.md).
+    # nofail + automount: a missing or slow HDD does not hold up boot, and /backup is mounted on first access (the
+    # btrbk and scrub units require it), so nobody has to mount it by hand. The HDD (~100 MiB/s) is the bottleneck, not the CPU, so compress-force at zstd:5 writes ~2x faster than
+    # uncompressed on compressible data and costs nothing on incompressible data (measured, docs/btrfs.md).
     options = [
       "defaults"
       "compress-force=zstd:5"
       "noatime"
       "nofail"
+      "x-systemd.automount"
       "x-systemd.device-timeout=10s"
     ];
   };
 
-  # Both are applied when the disk appears (path watcher / mount dependency), so a missing HDD costs nothing.
+  # Applied through the mount dependency / a path watcher on the filesystem's sysfs directory.
   services.btrfs.autoScrub.fileSystems = [ backupMount ];
   boot.kernel.sysfs.fs.btrfs.${backupUuid}.allocation.data = {
     periodic_reclaim = true;
@@ -79,12 +80,11 @@ in
     };
 
   systemd = {
-    # Without the HDD there is no target and btrbk would keep every local snapshot, filling the disk: skip the run.
+    # Without the HDD there is no target and btrbk would keep every local snapshot, filling the disk. Requiring the
+    # mounts makes the run fail before btrbk starts (visible in `systemctl --failed`) instead of being skipped silently;
+    # ConditionPathIsMountPoint would not work here, an automount point counts as a mount point even when unmounted.
     services = lib.genAttrs [ "btrbk-home" "btrbk-system" ] (_: {
-      unitConfig = {
-        ConditionPathIsMountPoint = backupMount;
-        RequiresMountsFor = top;
-      };
+      unitConfig.RequiresMountsFor = [ top backupMount ];
     });
 
     # The module sets AccuracySec = 10min, which would blur a 10-minute timer.
