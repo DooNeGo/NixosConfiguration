@@ -2,23 +2,32 @@
 let
   top = "/mnt/btrfs-top"; # top-level subvolume of the NVMe filesystem, see file-systems.nix
   backupMount = "/backup"; # HDD (sda4, label games_arch)
+  backupUuid = "66a4672a-820c-440c-9f9a-6b7b52c4e434";
   # Created by hand on the HDD, NOT by tmpfiles: with the HDD missing the path would land on the NVMe root and
   # btrbk would receive backups onto the full disk.
   targetDir = "${backupMount}/btrbk";
 in
 {
   fileSystems.${backupMount} = {
-    device = "/dev/disk/by-uuid/66a4672a-820c-440c-9f9a-6b7b52c4e434";
+    device = "/dev/disk/by-uuid/${backupUuid}";
     fsType = "btrfs";
-    # nofail + short timeout: a missing HDD must not hold up boot. zstd:3 rather than the NVMe's -1: latency does not
-    # matter here.
+    # nofail + short timeout: a missing HDD must not hold up boot. The HDD (~100 MiB/s) is the bottleneck, not the CPU,
+    # so compress-force at zstd:5 writes ~2x faster than uncompressed on compressible data and costs nothing on
+    # incompressible data (measured, docs/btrfs.md).
     options = [
       "defaults"
-      "compress=zstd:3"
+      "compress-force=zstd:5"
       "noatime"
       "nofail"
       "x-systemd.device-timeout=10s"
     ];
+  };
+
+  # Both are applied when the disk appears (path watcher / mount dependency), so a missing HDD costs nothing.
+  services.btrfs.autoScrub.fileSystems = [ backupMount ];
+  boot.kernel.sysfs.fs.btrfs.${backupUuid}.allocation.data = {
+    periodic_reclaim = true;
+    dynamic_reclaim = true;
   };
 
   # @home often, @root once a day; /games, /nix, @log and /var/lib/nocow are not backed up. Details: docs/btrfs.md.
