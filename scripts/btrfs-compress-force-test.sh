@@ -13,7 +13,7 @@ OUT_MD="${OUT_MD:-$HOME/compress-test.md}"
 DRY="${DRY:-0}"
 LEVELS="${LEVELS:--2 -1 1 2}"
 WRITERS="${WRITERS:-1 3 6}"
-NORMAL="compress=zstd:-1"
+REPEATS="${REPEATS:-1}"
 COMMON="${COMMON:-/games/SteamLibrary/steamapps/common}"
 # one per line: name|source|size cap in GiB
 DATASETS="${DATASETS:-phasmophobia|$COMMON/Phasmophobia|20
@@ -26,10 +26,10 @@ report() {
     function sort_asc(a, n,   i, j, t) { for (i = 1; i <= n; i++) for (j = i + 1; j <= n; j++) if (a[j] + 0 < a[i] + 0) { t = a[i]; a[i] = a[j]; a[j] = t } }
     function speeds(ds, mode, lvl,   k) {
       for (k = 1; k <= nw; k++)
-        if ((ds, mode, lvl, wl[k]) in sec) printf " %.2f |", logical[ds] / sec[ds, mode, lvl, wl[k]] / 2^30; else printf " |"
+        if ((ds, mode, lvl, wl[k]) in sec) printf " %.2f |", logical[ds] / (sec[ds, mode, lvl, wl[k]] / cnt[ds, mode, lvl, wl[k]]) / 2^30; else printf " |"
     }
     function row(ds, name, mode, lvl,   d) {
-      d = disk[ds, mode, lvl, wl[1]]
+      d = disk[ds, mode, lvl, wl[1]] / cnt[ds, mode, lvl, wl[1]]
       printf "| %s | %.1f | %d%% |", name, d / 2^30, 100 * d / logical[ds]
       speeds(ds, mode, lvl)
       printf "\n"
@@ -38,7 +38,7 @@ report() {
     { if (!($1 in ds_seen)) { ds_seen[$1] = 1; dl[++nd] = $1 }
       if (!($2 in w_seen)) { w_seen[$2] = 1; wl[++nw] = $2 }
       if ($4 != "" && !($4 in l_seen)) { l_seen[$4] = 1; ll[++nl] = $4 }
-      logical[$1] = $6; sec[$1, $3, $4, $2] = $5; disk[$1, $3, $4, $2] = $7 }
+      logical[$1] = $6; sec[$1, $3, $4, $2] += $5; disk[$1, $3, $4, $2] += $7; cnt[$1, $3, $4, $2]++ }
     END {
       sort_asc(wl, nw); sort_desc(ll, nl)
       for (i = 1; i <= nd; i++) {
@@ -55,7 +55,7 @@ report() {
           row(ds, "compress zstd:" ll[j], "compress", ll[j])
           row(ds, "compress-force zstd:" ll[j], "compress-force", ll[j])
         }
-        printf "\nDisk size is taken from the run with %s writer(s).\n\n", wl[1]
+        printf "\nDisk size is taken from the run with %s writer(s); speeds and sizes are means over %d run(s).\n\n", wl[1], cnt[ds, "none", "", wl[1]]
       }
     }' "$OUT_CSV"
 }
@@ -64,6 +64,15 @@ if [[ ${1:-} == --report ]]; then
   report | tee "$OUT_MD"
   exit 0
 fi
+
+# Restored on exit: the compression option the filesystem is mounted with now (compress=no when it has none).
+if [[ $DRY == 1 ]]; then
+  ORIG="compress=zstd:-1"
+else
+  ORIG=$(findmnt -no OPTIONS "$MNT" | tr ',' '\n' | grep -E '^compress(-force)?(=|$)' | head -1 || true)
+  ORIG="${ORIG:-compress=no}"
+fi
+echo "mount option to restore on exit: $ORIG"
 
 if [[ $DRY == 1 ]]; then
   DEST="${DEST_DRY:-/dev/shm/compress-test-dest}"
@@ -74,7 +83,7 @@ restore() {
   [[ -n $sudo_keepalive_pid ]] && kill "$sudo_keepalive_pid" 2>/dev/null || true
   jobs -p | xargs -r kill 2>/dev/null || true
   if [[ $DRY != 1 ]]; then
-    sudo mount -o "remount,$NORMAL" "$MNT" || echo "RESTORE FAILED: run: sudo mount -o remount,$NORMAL $MNT" >&2
+    sudo mount -o "remount,$ORIG" "$MNT" || echo "RESTORE FAILED: run: sudo mount -o remount,$ORIG $MNT" >&2
   fi
   rm -rf "$DEST" "$RAM" "$RAM".*
 }
@@ -168,7 +177,7 @@ step_begin() { # <label>: overall bar on stderr, then the label is shown by the 
 
 read -ra _w <<<"$WRITERS"
 read -ra _l <<<"$LEVELS"
-STEPS_TOTAL=$(($(grep -c . <<<"$DATASETS") * ${#_w[@]} * (2 + 2 * ${#_l[@]})))
+STEPS_TOTAL=$(($(grep -c . <<<"$DATASETS") * ${#_w[@]} * (2 + 2 * ${#_l[@]}) * REPEATS))
 echo "dataset,writers,mode,level,seconds,logical_bytes,disk_bytes" >"$OUT_CSV"
 record() { # CSV row to the file, readable line to the terminal
   echo "$*" >>"$OUT_CSV"
@@ -222,19 +231,21 @@ while IFS='|' read -r ds src cap; do
   idx=0
   for n in $WRITERS; do
     shard "$RAM.list" "$n"
-    echo "-- writers=$n"
-    step_begin "$ds writers=$n read from tmp"
-    secs=$(timed parallel_run cat "$n")
-    record "$ds,$n,read-tmp,,$secs,$LOGICAL,"
-    remount "compress=no"
-    write_run "$ds" "$n" none "" -
-    for level in $LEVELS; do
-      idx=$((idx + 1))
-      opts=("compress=zstd:$level" "compress-force=zstd:$level")
-      modes=(compress compress-force)
-      if ((idx % 2 == 0)); then opts=("${opts[1]}" "${opts[0]}"); modes=("${modes[1]}" "${modes[0]}"); fi
-      write_run "$ds" "$n" "${modes[0]}" "$level" "${opts[0]}"
-      write_run "$ds" "$n" "${modes[1]}" "$level" "${opts[1]}"
+    for rep in $(seq "$REPEATS"); do
+      echo "-- writers=$n run $rep/$REPEATS"
+      step_begin "$ds writers=$n read from tmp"
+      secs=$(timed parallel_run cat "$n")
+      record "$ds,$n,read-tmp,,$secs,$LOGICAL,"
+      remount "compress=no"
+      write_run "$ds" "$n" none "" -
+      for level in $LEVELS; do
+        idx=$((idx + 1))
+        opts=("compress=zstd:$level" "compress-force=zstd:$level")
+        modes=(compress compress-force)
+        if ((idx % 2 == 0)); then opts=("${opts[1]}" "${opts[0]}"); modes=("${modes[1]}" "${modes[0]}"); fi
+        write_run "$ds" "$n" "${modes[0]}" "$level" "${opts[0]}"
+        write_run "$ds" "$n" "${modes[1]}" "$level" "${opts[1]}"
+      done
     done
   done
 done <<<"$DATASETS"
