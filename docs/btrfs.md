@@ -168,13 +168,14 @@ podman `btrfs` storage driver creates one per container layer under `~/.local/sh
 that is skipped, which is fine here; list them with `sudo btrfs subvolume list /`.
 
 `@root` contains `/etc/ssh/ssh_host_ed25519_key`, the only recipient key of the agenix secrets, so the HDD now
-holds it as well: keep `/backup` readable by root only (the snapshots keep the original permissions).
+holds it as well: keep `/backup` readable by root only (`chmod 700 /backup`, the snapshots keep the original
+permissions).
 
 ### What the settings mean
 
 | Setting | Meaning |
 |---|---|
-| `onCalendar = "*:0/10"` | (`home`) systemd timer: every hour at minute 0, 10, 20, ... (`AccuracySec` is forced to 1 min, the module's default of 10 min would blur it); `system` uses `*-*-* 04:05:00` |
+| `onCalendar = "*:0/10"` | (`home`) systemd timer: every 10 minutes (minutes 0, 10, 20, ... of each hour) (`AccuracySec` is forced to 1 min, the module's default of 10 min would blur it); `system` uses `*-*-* 04:05:00` |
 | `snapshot_create = "onchange"` | take a snapshot only if `@home` changed since the last one; an idle machine creates none |
 | `timestamp_format = "long"` | names carry the time (`@home.20261107T1530`); the default is a date only, which would collide every 10 minutes |
 | `snapshot_preserve_min = "2h"` | local snapshots younger than 2 hours are never deleted |
@@ -222,7 +223,8 @@ UUID on a mount point you create. Prepare the disk once (the same commands work 
 sudo mkdir -p /backup
 sudo mount /dev/disk/by-uuid/66a4672a-820c-440c-9f9a-6b7b52c4e434 /backup
 sudo btrfs filesystem usage /backup                           # what is on the disk already, free space
-sudo mkdir /backup/btrbk && sudo chmod 700 /backup/btrbk      # by hand, see "Safety net"; root-only: @root holds the agenix key
+sudo chmod 700 /backup                                        # root-only: @root holds the agenix key
+sudo mkdir /backup/btrbk                                      # by hand, see "Safety net"
 ```
 
 Then, after `switch`:

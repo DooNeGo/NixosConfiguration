@@ -81,7 +81,10 @@ in
   systemd = {
     # Without the HDD there is no target and btrbk would keep every local snapshot, filling the disk: skip the run.
     services = lib.genAttrs [ "btrbk-home" "btrbk-system" ] (_: {
-      unitConfig.ConditionPathIsMountPoint = backupMount;
+      unitConfig = {
+        ConditionPathIsMountPoint = backupMount;
+        RequiresMountsFor = top;
+      };
     });
 
     # The module sets AccuracySec = 10min, which would blur a 10-minute timer.
