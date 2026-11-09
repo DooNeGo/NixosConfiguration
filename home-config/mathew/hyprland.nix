@@ -1,5 +1,4 @@
-_:
-{
+_: {
   wayland.windowManager.hyprland = {
     enable = true;
     package = null;
