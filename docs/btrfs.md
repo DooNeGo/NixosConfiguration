@@ -247,7 +247,6 @@ sudo btrbk -c /etc/btrbk/home.conf list backups   # also system.conf            
 sudo btrfs filesystem du -s /mnt/btrfs-top/.snapshots/*       # "Exclusive" = space a snapshot pins
 sudo ls /backup/btrbk/                                        # browse any backup as plain files (root-only)
 failure-notify list                                           # open failure records, see below
-sudo cp -a --reflink=auto /mnt/btrfs-top/.snapshots/@home.<time>/mathew/<file> /home/mathew/   # quick undo
 sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the next run would do
 ```
 
@@ -255,8 +254,38 @@ A failed `btrbk-home` or `btrbk-system` run (missing HDD included) or a failed s
 in `/var/lib/failure-notify/`: the graphical session shows a critical notification, every zsh lists open records at start and prints a
 new one before the next prompt. The record disappears with the next successful run.
 
-Whole-subvolume restore: `btrfs send` the backup (or local snapshot) and `btrfs receive` it next to the broken
-one, then swap the subvolume in the top-level mount.
+### Restoring
+
+btrbk only makes and prunes copies; restoring is done by hand with `btrfs`, as root. Local snapshots are kept for
+about 2 hours (`snapshot_preserve_min 2h`), so the HDD copy in `/backup/btrbk/` is usually the one to restore from.
+Names are `@home.<YYYYMMDD>T<HHMM>` and `@root.<…>`. The mounts use `subvol=@home` / `subvol=@root` by name, so
+renaming a subvolume in the top-level mount and putting a new one under the old name replaces it after a reboot.
+
+**A file or a directory** needs no mount, a snapshot is plain files:
+
+```sh
+sudo ls /mnt/btrfs-top/.snapshots/ /backup/btrbk/            # find the time
+sudo cp -a --reflink=auto /backup/btrbk/@home.<time>/mathew/<path> /home/mathew/<path>
+```
+
+**The whole `@home`.** Log `mathew` out first (work from ssh or a tty), nothing may write to `/home` meanwhile.
+
+```sh
+cd /mnt/btrfs-top
+# only if the snapshot is no longer on the NVMe; the copy arrives read-only
+sudo btrfs send /backup/btrbk/@home.<time> | sudo btrfs receive /mnt/btrfs-top/.snapshots/
+sudo mv @home @home.broken                                    # kept as a way back
+sudo btrfs subvolume snapshot .snapshots/@home.<time> @home   # a writable copy under the original name
+sudo reboot
+sudo btrfs subvolume delete /mnt/btrfs-top/@home.broken       # after checking the result
+```
+
+**The whole `@root`.** The running system cannot replace its own root, so boot a NixOS installer or live image, mount
+the NVMe top level (`mount -o subvolid=5 /dev/disk/by-uuid/<NVMe UUID> /mnt`), then run the same `mv` and `snapshot`
+with `@root`, taking the copy from `/backup/btrbk/` (mount the HDD there too) and receiving it into
+`/mnt/.snapshots/` first.
+
+`@home` and `@root` are copied by separate runs at different times; restoring both, pick the closest times.
 
 ## 4. Measurements after recompressing (2026-11-07/08)
 
