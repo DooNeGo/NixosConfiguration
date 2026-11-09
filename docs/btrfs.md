@@ -8,10 +8,13 @@ agent user has no root.
 | What | Where | Why |
 |---|---|---|
 | `compress-force=zstd:-1,noatime` | `system-config/file-systems.nix` | -1 keeps NVMe speed (owner's benchmarks: ~4x faster than zstd:1 in a ramdisk); `-force` because the plain-compress heuristic leaves compressible data uncompressed, see section 4. Only NEW writes are affected. |
-| `periodic_reclaim` + `dynamic_reclaim` | tmpfiles in `file-systems.nix` | returns half-empty data chunks to unallocated space automatically (kernel >= 6.11) |
+| `periodic_reclaim` + `dynamic_reclaim` | `file-systems.nix`: `boot.kernel.sysfs` for the NVMe, `btrfs-reclaim-backup.service` at mount time for the HDD | returns half-empty data chunks to unallocated space automatically (kernel >= 6.11) |
 | `services.fstrim` off | `file-systems.nix` | `discard=async` already trims freed extents |
 | bees dedup | `system-config/bees.nix` (import commented out) | expected gain small and the cost permanent, see section 2 |
 | btrbk snapshots + backup to the HDD | `system-config/backup.nix` | see "Backups" |
+| `compress-force=zstd:5` on `/backup`, monthly scrub | `file-systems.nix` | the HDD is the bottleneck, so a higher level is free; see section 5 |
+| `nofail,x-systemd.device-timeout=10s` on `/games`, `/var/lib/nocow`, `/backup`; `x-systemd.automount` on `/backup` only | `file-systems.nix` | mounts the system can run without: a missing disk does not stop the boot and is given up on after 10 s. Only the HDD is an automount (mounted on first access, so a disk that shows up later needs no manual mount); for subvolumes of the system disk that buys nothing and tmpfiles rules would stop applying |
+| `mountDirs` | `file-systems.nix`, `backup.nix` | directories and permissions applied by a service each time a mount comes up (`/backup` 0700, `/backup/btrbk`): tmpfiles skips automount points and must never create these paths on the NVMe root |
 
 Watch reclaim: `grep . /sys/fs/btrfs/*/allocation/data/{reclaim_count,reclaim_bytes,reclaim_errors}`.
 Undo: write `0` into `periodic_reclaim` and `dynamic_reclaim` there.
@@ -120,6 +123,141 @@ Hash table: 1024 MB, see the comment in `bees.nix` (upstream: 2-4x the plain-fil
 data, counted on uncompressed volume: 1.7 TB here). A full `btrfs balance` invalidates the table (stop bees, delete
 `.beeshome/beeshash.dat` on the top-level subvolume). `@nocow` files have no checksums and are skipped.
 
+## 3. Backups (btrbk to the HDD)
+
+Implemented in `system-config/backup.nix` (the `/backup` mount itself is in `file-systems.nix`). Backed up: `@home` (instance `home`) and `@root` (instance
+`system`). The NVMe top-level subvolume is mounted at
+`/mnt/btrfs-top` (btrbk's working volume, `.snapshots` lives there); the backup disk is `sda4` (btrfs, label
+`games_arch`, UUID `66a4672a-...`, HDD) mounted at `/backup`.
+
+### Where the backups live
+
+`/backup`, next to `/games`: both are permanent data mounts of this machine. `/mnt` is the FHS place for
+temporary mounts, which is why only the technical top-level mount (`/mnt/btrfs-top`) is there. Games stay on the
+NVMe: `sda4` is a 7200 rpm disk (slow loading) and only 800 GB, and mixing games into the backup filesystem would
+let them compete for the space retention needs.
+
+### How the data is backed up
+
+1. **Snapshot.** btrbk takes a read-only snapshot of `@home` into `/mnt/btrfs-top/.snapshots/@home.<time>`. It is
+   instant and takes no space at first: it shares all blocks with the live `@home`. Later, every block you
+   overwrite or delete stays pinned by the snapshot, so a snapshot costs exactly what changed since it was taken.
+2. **Incremental send.** `btrfs send` compares the new snapshot with the previous one that is on the HDD and
+   streams only the difference to `btrfs receive` on `/backup/btrbk`. The first transfer is a full copy; after
+   that a run moves only what changed. The result on the HDD is again a read-only subvolume you can browse as
+   plain files, compressed with the HDD's own `compress-force=zstd:5` (section 5).
+3. **Retention.** btrbk deletes snapshots that no longer fit the policy, locally and on the HDD. It always keeps the
+   newest snapshot that exists on both sides (the "latest pair"), because the next incremental send needs it as
+   the parent.
+
+Example, a Tuesday around noon: 10-minute snapshots from 10:00 to 12:00 exist locally; the HDD has about one snapshot per hour for the last day, then one per day for 14 days, one per week for
+8 weeks and one per month for 6 months. A file deleted by mistake at 11:40 is in a local snapshot (copy it back); one deleted three weeks ago is
+only on the HDD.
+
+### What is backed up
+
+| Subvolume | Instance | Snapshot | Local keep | HDD keep |
+|---|---|---|---|---|
+| `@home` | `home` | every 10 min if changed | 2 h | 24h 14d 8w 6m |
+| `@root` | `system` | daily 04:05 if changed | 2 days | 14d 8w 6m |
+
+Not backed up: `@games`, `@nix` (reproducible), `@log`, `@nocow`. Two instances because `@home` is snapshotted
+often and `@root` (little changes there) once a day.
+
+Nested subvolumes are **not** part of a snapshot of their parent (they show up as empty directories). Inside `@root`
+there are `/var/lib/machines`, `/var/lib/portables`, `/var/tmp` and `/srv` (created by systemd-tmpfiles), and the
+podman `btrfs` storage driver creates one per container layer under `~/.local/share/containers/storage`. All of
+that is skipped, which is fine here; list them with `sudo btrfs subvolume list /`.
+
+`@root` contains `/etc/ssh/ssh_host_ed25519_key`, the only recipient key of the agenix secrets, so the HDD now
+holds it as well: `/backup` is kept readable by root only (`mountDirs`, mode 0700; the snapshots keep the original
+permissions).
+
+### What the settings mean
+
+| Setting | Meaning |
+|---|---|
+| `onCalendar = "*:0/10"` | (`home`) systemd timer: every 10 minutes (minutes 0, 10, 20, ... of each hour) (`AccuracySec` is forced to 1 min, the module's default of 10 min would blur it); `system` uses `*-*-* 04:05:00` |
+| `snapshot_create = "onchange"` | take a snapshot only if `@home` changed since the last one; an idle machine creates none |
+| `timestamp_format = "long"` | names carry the time (`@home.20261107T1530`); the default is a date only, which would collide every 10 minutes |
+| `snapshot_preserve_min = "2h"` | local snapshots younger than 2 hours are never deleted |
+| `snapshot_preserve = "no"` | after those 2 hours nothing more is kept locally (long history lives on the HDD) |
+| `target_preserve_min = "no"` | on the HDD only what `target_preserve` selects is kept |
+| `target_preserve = "24h 14d 8w 6m"` | `<n>h` hourly, `<n>d` daily, `<n>w` weekly, `<n>m` monthly: the last 24 hourly backups, then one per day for 14 days, one per week for 8 weeks, one per month for 6 months; which snapshot represents a day/week/month is decided by btrbk from the timestamps (`preserve_day_of_week`, default Sunday, anchors weekly and longer; `preserve_hour_of_day`, default 0, anchors daily) |
+| `incremental = "yes"` | send only differences against the common parent; if there is no parent a full copy is made |
+| `ExecStartPre=+<check that /backup/btrbk exists>` + `x-systemd.automount` | the check mounts `/backup` on first access, so no manual `mount`; if the HDD or the target directory is missing the unit fails before btrbk starts: nothing is created and nothing piles up. `RequiresMountsFor=/backup` would not do, a device that times out cancels the job without marking the unit failed |
+
+btrbk sends only what the target's retention needs, so of the six snapshots per hour about one reaches the HDD.
+
+### Scenarios
+
+| | Snapshots | Local keep | HDD keep | Cost |
+|---|---|---|---|---|
+| A. conservative | daily | 2 days | 14d 8w 6m | minimal; up to a day of work can be lost |
+| **B. implemented** | every 10 min, only if changed | 2 h | 24h 14d 8w 6m | few snapshots alive at once, so little pinned space and little bees interference |
+| C. aggressive | every 10 min | 24 h | as B | ~144 snapshots; pins every overwritten block on a nearly full disk and multiplies bees' metadata cost |
+
+On a nearly full disk the retention window matters more than the frequency, which is why the local window is short.
+
+### Tool choice
+
+| Tool | Verdict |
+|---|---|
+| **btrbk** | chosen: snapshots + incremental send/receive + tiered retention in one tool, NixOS module, browsable backups |
+| snapper | local timeline snapshots only, no send/receive |
+| restic / borg | file-level, encrypted, independent of btrfs; slower, needs the tool to restore. Worth adding later as a second copy of the most important data |
+| rsync | no snapshots, no history |
+
+### Safety net and limits
+
+- `/backup/btrbk` is created by the `mount-dirs-backup` service when the HDD is mounted, never by tmpfiles: if the
+  HDD is missing, a tmpfiles path on the NVMe root would receive the backups onto the full disk.
+- A full or read-only HDD passes the target check: btrbk keeps snapshotting `@home` every 10 minutes and skips its
+  cleanup while the send fails, so react to the failure notification before the snapshots pin too much of the NVMe.
+- Restoring `@root` from the HDD brings back the SSH host key, so the agenix secrets stay decryptable.
+- `@home` includes caches; if the first transfer is too big, move big caches to their own subvolume.
+
+### First start (after any defrag, see section 1)
+
+After `nixos-rebuild switch` and a reboot nothing has to be prepared by hand: the first access mounts the disk,
+`mount-dirs-backup` makes `/backup` root-only (the `@root` backups hold the agenix key) and creates
+`/backup/btrbk`. Look at the disk first:
+
+```sh
+sudo ls -la /backup                                           # triggers the automount; expect drwx------ and btrbk/
+sudo btrfs filesystem usage /backup                           # what is on the disk already, free space
+```
+
+Then:
+
+```sh
+sudo umount ~/mnt                                             # a top-level mount under /home inflates the size
+sudo btrfs filesystem du -s /home                             # size of the first full send
+sudo btrbk -c /etc/btrbk/home.conf dryrun                     # what the first run would do (also system.conf)
+sudo systemctl start btrbk-system btrbk-home && journalctl -fu btrbk-home
+systemctl list-timers 'btrbk-*'
+```
+
+The first run copies everything (hours for hundreds of GB over the HDD); later runs are incremental.
+
+### Watching and restoring
+
+```sh
+sudo btrbk -c /etc/btrbk/home.conf list backups   # also system.conf              # what exists locally and on the HDD
+sudo btrfs filesystem du -s /mnt/btrfs-top/.snapshots/*       # "Exclusive" = space a snapshot pins
+sudo ls /backup/btrbk/                                        # browse any backup as plain files (root-only)
+failure-notify list                                           # open failure records, see below
+sudo cp -a --reflink=auto /mnt/btrfs-top/.snapshots/@home.<time>/mathew/<file> /home/mathew/   # quick undo
+sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the next run would do
+```
+
+A failed `btrbk-home` or `btrbk-system` run (missing HDD included) or a failed scrub is recorded by `system-config/failure-notify.nix`
+in `/var/lib/failure-notify/`: the graphical session shows a critical notification, every zsh lists open records at start and prints a
+new one before the next prompt. The record disappears with the next successful run.
+
+Whole-subvolume restore: `btrfs send` the backup (or local snapshot) and `btrfs receive` it next to the broken
+one, then swap the subvolume in the top-level mount.
+
 ## 4. Measurements after recompressing (2026-11-07/08)
 
 All with `sudo compsize -x`; "Disk" is what is stored, "Uncomp." the same data without compression.
@@ -167,3 +305,26 @@ RAM, reads and decompression were not measured.
   workers (`thread_pool`, default min(CPUs+2, 8)) busy.
 
 Decision: `compress-force=zstd:-1`.
+
+## 5. Compression on the backup HDD (2026-11-08)
+
+Same script as in section 4 with `MNT=/backup`, 8 GiB of Phasmophobia (compressible) and of World of Tanks Blitz
+(incompressible), one writer, one run per variant (speeds are noisy, sizes repeat). The HDD writes ~0.10 GiB/s.
+
+| Phasmophobia, 8.0 GiB | Disk | Write |
+|---|---|---|
+| no compression | 100% | 0.10 GiB/s |
+| `compress` zstd:1 .. 12 | 65-68% | 0.13 GiB/s |
+| `compress-force` zstd:1 / 3 | 51% / 49% | 0.20 GiB/s |
+| `compress-force` zstd:5 .. 10 | 46-47% | 0.20 GiB/s |
+| `compress-force` zstd:12 / 13 | 46% | 0.16 / 0.13 GiB/s |
+| `compress-force` zstd:14 / 15 | 45% | 0.09 / 0.08 GiB/s |
+
+- Blitz: `compress` stays at 100%, `compress-force` gives 95-96% at every level and the speed of the uncompressed
+  write (0.09-0.10 GiB/s), so forcing costs nothing here.
+- Unlike the NVMe, compression makes the write about twice as fast: the disk is the limit and less data reaches it.
+  Above zstd:10 the CPU becomes the limit and the write slows down, for a 1 point gain.
+- Levels 5 to 10 are the same within noise. Games are already on the plateau; `@home` and `@root` hold more text
+  and may gain from a higher level, which was not measured.
+
+Decision: `compress-force=zstd:5` (the lowest level on the plateau, least CPU).

@@ -14,6 +14,7 @@ DRY="${DRY:-0}"
 LEVELS="${LEVELS:--2 -1 1 2}"
 WRITERS="${WRITERS:-1 3 6}"
 REPEATS="${REPEATS:-1}"
+MODES="${MODES:-compress compress-force}" # subset of: compress compress-force
 COMMON="${COMMON:-/games/SteamLibrary/steamapps/common}"
 # one per line: name|source|size cap in GiB
 DATASETS="${DATASETS:-phasmophobia|$COMMON/Phasmophobia|20
@@ -52,8 +53,8 @@ report() {
         printf "\n"
         row(ds, "none", "none", "")
         for (j = 1; j <= nl; j++) {
-          row(ds, "compress zstd:" ll[j], "compress", ll[j])
-          row(ds, "compress-force zstd:" ll[j], "compress-force", ll[j])
+          if ((ds, "compress", ll[j], wl[1]) in cnt) row(ds, "compress zstd:" ll[j], "compress", ll[j])
+          if ((ds, "compress-force", ll[j], wl[1]) in cnt) row(ds, "compress-force zstd:" ll[j], "compress-force", ll[j])
         }
         printf "\nDisk size is taken from the run with %s writer(s); speeds and sizes are means over %d run(s).\n\n", wl[1], cnt[ds, "none", "", wl[1]]
       }
@@ -177,7 +178,11 @@ step_begin() { # <label>: overall bar on stderr, then the label is shown by the 
 
 read -ra _w <<<"$WRITERS"
 read -ra _l <<<"$LEVELS"
-STEPS_TOTAL=$(($(grep -c . <<<"$DATASETS") * ${#_w[@]} * (2 + 2 * ${#_l[@]}) * REPEATS))
+read -ra _m <<<"$MODES"
+for m in "${_m[@]}"; do
+  [[ $m == compress || $m == compress-force ]] || { echo "MODES: unknown mode '$m'" >&2; exit 1; }
+done
+STEPS_TOTAL=$(($(grep -c . <<<"$DATASETS") * ${#_w[@]} * (2 + ${#_m[@]} * ${#_l[@]}) * REPEATS))
 echo "dataset,writers,mode,level,seconds,logical_bytes,disk_bytes" >"$OUT_CSV"
 record() { # CSV row to the file, readable line to the terminal
   echo "$*" >>"$OUT_CSV"
@@ -240,11 +245,12 @@ while IFS='|' read -r ds src cap; do
       write_run "$ds" "$n" none "" -
       for level in $LEVELS; do
         idx=$((idx + 1))
-        opts=("compress=zstd:$level" "compress-force=zstd:$level")
-        modes=(compress compress-force)
-        if ((idx % 2 == 0)); then opts=("${opts[1]}" "${opts[0]}"); modes=("${modes[1]}" "${modes[0]}"); fi
-        write_run "$ds" "$n" "${modes[0]}" "$level" "${opts[0]}"
-        write_run "$ds" "$n" "${modes[1]}" "$level" "${opts[1]}"
+        modes=("${_m[@]}")
+        # alternate the order between levels so neither mode always runs first
+        if ((idx % 2 == 0 && ${#modes[@]} == 2)); then modes=("${modes[1]}" "${modes[0]}"); fi
+        for mode in "${modes[@]}"; do
+          write_run "$ds" "$n" "$mode" "$level" "$mode=zstd:$level"
+        done
       done
     done
   done

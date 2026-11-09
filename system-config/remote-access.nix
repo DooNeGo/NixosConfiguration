@@ -47,4 +47,9 @@
     "TS_DEBUG_FIREWALL_MODE=nftables"
   ];
 
+  # tailscaled counts as started before it has joined the tailnet, and `serve set-config` then fails with NoState.
+  systemd.services.tailscale-serve.serviceConfig = {
+    Restart = "on-failure";
+    RestartSec = "10s";
+  };
 }
