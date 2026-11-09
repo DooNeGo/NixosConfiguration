@@ -108,6 +108,11 @@ in
         environment. The core does not know where they deliver.
       '';
     };
+    package = lib.mkOption {
+      type = lib.types.package;
+      readOnly = true;
+      description = "The failure-notify command, for other modules that report through it.";
+    };
     renotifySec = lib.mkOption {
       type = lib.types.ints.positive;
       default = 86400;
@@ -116,7 +121,10 @@ in
   };
 
   config = {
-    services.failure-notify.sinks = [ systembusSink ];
+    services.failure-notify = {
+      package = failureNotify;
+      sinks = [ systembusSink ];
+    };
     services.systembus-notify.enable = true;
 
     environment.systemPackages = [ failureNotify ];
