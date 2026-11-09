@@ -22,7 +22,13 @@ let
         echo "usage: failure-notify report [--ttl SECONDS] <id> <message...> | clear <id> | list" >&2
         exit 2
       }
-      sanitize() { printf '%s' "$1" | tr -c 'A-Za-z0-9_.@:-' '_'; }
+      # A leading dot would hide the record from the globs, ".." would escape the directory.
+      sanitize() {
+        local id
+        id=$(printf '%s' "$1" | tr -c 'A-Za-z0-9_.@:-' '_')
+        [[ -n $id ]] || usage
+        printf '%s' "''${id/#./_}"
+      }
       prune() {
         local f expires now
         now=$(date +%s)
@@ -45,7 +51,8 @@ let
           [[ $# -ge 2 ]] || usage
           id=$(sanitize "$1")
           shift
-          message=$(printf '%s' "$*" | tr '\n' ' ')
+          # Shown raw in terminals: no control characters.
+          message=$(printf '%s' "$*" | tr '\n\t' '  ' | tr -d '\000-\037\177')
           prune
           now=$(date +%s)
           since=$now
@@ -78,7 +85,7 @@ let
           prune 2>/dev/null || true
           for f in "$dir"/*; do
             [[ -f $f ]] || continue
-            { read -r since && read -r _ && read -r _ && read -r message; } <"$f" || continue
+            { read -r since && read -r _ && read -r _ && IFS= read -r message; } <"$f" || continue
             printf '%s  %s  %s\n' "$(date -d "@$since" '+%F %R')" "''${f##*/}" "$message"
           done
           ;;
@@ -131,8 +138,11 @@ in
           path = [ config.systemd.package ];
           scriptArgs = "%i";
           script = ''
-            last=$(journalctl -u "$1" -n 1 -o cat --no-pager 2>/dev/null || true)
-            exec ${lib.getExe failureNotify} report "$1" "''${last:-failed}; see: journalctl -u $1"
+            # The unit's own last output, not systemd's "Failed to start" line that follows it.
+            invocation=$(systemctl show -p InvocationID --value "$1")
+            last=$(journalctl -n 1 -o cat --no-pager _SYSTEMD_UNIT="$1" _SYSTEMD_INVOCATION_ID="$invocation" 2>/dev/null || true)
+            result=$(systemctl show -p Result --value "$1")
+            exec ${lib.getExe failureNotify} report "$1" "''${last:-failed ($result)}; see: journalctl -u $1"
           '';
         };
       }
@@ -151,39 +161,54 @@ in
         wantedBy = [ "graphical-session.target" ];
         pathConfig.PathChanged = stateDir;
       };
-      services.failure-notify = {
-        description = "Desktop notifications for failure-notify records";
-        wantedBy = [ "graphical-session.target" ];
-        after = [ "graphical-session.target" ];
-        # Retried while the notification daemon is not up yet.
-        unitConfig = {
-          StartLimitIntervalSec = 300;
-          StartLimitBurst = 5;
+      services = {
+        # The runtime directory outlives a graphical session (an ssh login keeps it), the notifications do not.
+        failure-notify-session = {
+          description = "Forget which failure records this session has shown";
+          wantedBy = [ "graphical-session.target" ];
+          partOf = [ "graphical-session.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.coreutils}/bin/rm -f %t/failure-notify-seen";
+          };
         };
-        serviceConfig = {
-          Type = "oneshot";
-          Restart = "on-failure";
-          RestartSec = 15;
+        failure-notify = {
+          description = "Desktop notifications for failure-notify records";
+          wantedBy = [ "graphical-session.target" ];
+          after = [
+            "graphical-session.target"
+            "failure-notify-session.service"
+          ];
+          # Started by the path unit on every change of the directory, which must never trip the start limit.
+          unitConfig.StartLimitIntervalSec = 0;
+          serviceConfig.Type = "oneshot";
+          path = [
+            pkgs.coreutils
+            pkgs.gnugrep
+            pkgs.libnotify
+          ];
+          script = ''
+            seen=$XDG_RUNTIME_DIR/failure-notify-seen
+            touch "$seen"
+            now=$(date +%s)
+            for f in ${stateDir}/*; do
+              [[ -f $f ]] || continue
+              { read -r since && read -r expires && read -r _ && IFS= read -r message; } <"$f" || continue
+              if ((expires != 0 && expires <= now)); then continue; fi
+              key="''${f##*/} $since"
+              if grep -qxF -- "$key" "$seen"; then continue; fi
+              # The notification daemon may still be starting right after login.
+              for attempt in 1 2 3 4 5 6; do
+                if notify-send -u critical -a failure-notify "Failure: ''${f##*/}" "$message"; then
+                  echo "$key" >>"$seen"
+                  break
+                fi
+                if ((attempt < 6)); then sleep 5; fi
+              done
+            done
+          '';
         };
-        path = [
-          pkgs.coreutils
-          pkgs.gnugrep
-          pkgs.libnotify
-        ];
-        script = ''
-          seen=$XDG_RUNTIME_DIR/failure-notify-seen
-          touch "$seen"
-          now=$(date +%s)
-          for f in ${stateDir}/*; do
-            [[ -f $f ]] || continue
-            { read -r since && read -r expires && read -r _ && IFS= read -r message; } <"$f" || continue
-            if ((expires != 0 && expires <= now)); then continue; fi
-            key="''${f##*/} $since"
-            if grep -qxF -- "$key" "$seen"; then continue; fi
-            notify-send -u critical -a failure-notify "Failure: ''${f##*/}" "$message"
-            echo "$key" >>"$seen"
-          done
-        '';
       };
     };
 

@@ -10,8 +10,9 @@ let
 
   # smartd repeats a warning daily while the problem lasts and never reports a recovery, so the record expires when
   # one repeat (plus one check of slack) was missed.
+  recordTtlSec = repeatSec + 2 * checkIntervalSec;
   handler = pkgs.writeShellScript "smartd-failure-notify" ''
-    exec ${lib.getExe config.services.failure-notify.package} report --ttl ${toString (repeatSec + 2 * checkIntervalSec)} \
+    exec ${lib.getExe config.services.failure-notify.package} report --ttl ${toString recordTtlSec} \
       "smartd-''${SMARTD_DEVICE##*/}-$SMARTD_FAILTYPE" "$SMARTD_MESSAGE"
   '';
 in
