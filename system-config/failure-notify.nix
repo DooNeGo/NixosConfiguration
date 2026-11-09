@@ -86,12 +86,6 @@ let
       esac
     '';
   };
-
-  # Relayed to the desktop notification daemon by the systembus-notify user service of whoever has a session.
-  systembusSink = pkgs.writeShellScript "failure-notify-systembus" ''
-    exec ${pkgs.dbus}/bin/dbus-send --system / net.nuetzlich.SystemNotifications.Notify \
-      "string:Failure: $FAILED_UNIT" "string:$FAILED_MESSAGE"
-  '';
 in
 {
   options.services.failure-notify = {
@@ -103,9 +97,11 @@ in
     };
     sinks = lib.mkOption {
       type = lib.types.listOf lib.types.path;
+      default = [ ];
       description = ''
         Executables called for a new record with FAILED_UNIT, FAILED_MESSAGE and FAILED_TIME (epoch) in the
-        environment. The core does not know where they deliver.
+        environment, as root. The core does not know where they deliver. Desktop notifications do not need one:
+        a user service in each graphical session watches the records itself.
       '';
     };
     package = lib.mkOption {
@@ -121,11 +117,7 @@ in
   };
 
   config = {
-    services.failure-notify = {
-      package = failureNotify;
-      sinks = [ systembusSink ];
-    };
-    services.systembus-notify.enable = true;
+    services.failure-notify.package = failureNotify;
 
     environment.systemPackages = [ failureNotify ];
 
@@ -149,6 +141,50 @@ in
         # "+": the record directory is root's, the unit may run as another user.
         serviceConfig.ExecStartPost = "+${lib.getExe failureNotify} clear %n";
       });
+    };
+
+    # Desktop notifications come from the session itself, so nothing privileged has to reach into a user's session
+    # bus: the records are world-readable and each graphical session notifies about the ones it has not shown yet,
+    # including those that were written before it started.
+    systemd.user = {
+      paths.failure-notify = {
+        wantedBy = [ "graphical-session.target" ];
+        pathConfig.PathChanged = stateDir;
+      };
+      services.failure-notify = {
+        description = "Desktop notifications for failure-notify records";
+        wantedBy = [ "graphical-session.target" ];
+        after = [ "graphical-session.target" ];
+        # Retried while the notification daemon is not up yet.
+        unitConfig = {
+          StartLimitIntervalSec = 300;
+          StartLimitBurst = 5;
+        };
+        serviceConfig = {
+          Type = "oneshot";
+          Restart = "on-failure";
+          RestartSec = 15;
+        };
+        path = [
+          pkgs.coreutils
+          pkgs.gnugrep
+          pkgs.libnotify
+        ];
+        script = ''
+          seen=$XDG_RUNTIME_DIR/failure-notify-seen
+          touch "$seen"
+          now=$(date +%s)
+          for f in ${stateDir}/*; do
+            [[ -f $f ]] || continue
+            { read -r since && read -r expires && read -r _ && IFS= read -r message; } <"$f" || continue
+            if ((expires != 0 && expires <= now)); then continue; fi
+            key="''${f##*/} $since"
+            if grep -qxF -- "$key" "$seen"; then continue; fi
+            notify-send -u critical -a failure-notify "Failure: ''${f##*/}" "$message"
+            echo "$key" >>"$seen"
+          done
+        '';
+      };
     };
 
     # Open records are listed when a shell starts (not in every tmux pane) and a new one is printed before the next

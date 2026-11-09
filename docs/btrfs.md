@@ -256,7 +256,7 @@ sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the
 ```
 
 A failed `btrbk-home` or `btrbk-system` run (missing HDD included) is recorded by `system-config/failure-notify.nix`
-in `/var/lib/failure-notify/`: a desktop notification is sent, every zsh lists open records at start and prints a
+in `/var/lib/failure-notify/`: the graphical session shows a critical notification, every zsh lists open records at start and prints a
 new one before the next prompt. The record disappears with the next successful run.
 
 Whole-subvolume restore: `btrfs send` the backup (or local snapshot) and `btrfs receive` it next to the broken
