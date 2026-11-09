@@ -10,8 +10,8 @@
       #text-color = "#${palette.base05}";
       #border-color = "#${palette.base03}";
 
-      # System failures relayed by systembus-notify (system-config/failure-notify.nix) stay until dismissed.
-      "app-name=system-notify" = {
+      # Critical notifications (system failures from system-config/failure-notify.nix) stay until dismissed.
+      "urgency=critical" = {
         default-timeout = 0;
         border-color = "#ff5555";
       };
