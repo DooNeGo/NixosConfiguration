@@ -8,7 +8,7 @@ agent user has no root.
 | What | Where | Why |
 |---|---|---|
 | `compress-force=zstd:-1,noatime` | `system-config/file-systems.nix` | -1 keeps NVMe speed (owner's benchmarks: ~4x faster than zstd:1 in a ramdisk); `-force` because the plain-compress heuristic leaves compressible data uncompressed, see section 4. Only NEW writes are affected. |
-| `periodic_reclaim` + `dynamic_reclaim` | `boot.kernel.sysfs` in `file-systems.nix` (NVMe and HDD) | returns half-empty data chunks to unallocated space automatically (kernel >= 6.11) |
+| `periodic_reclaim` + `dynamic_reclaim` | `file-systems.nix`: `boot.kernel.sysfs` for the NVMe, `btrfs-reclaim-backup.service` at mount time for the HDD | returns half-empty data chunks to unallocated space automatically (kernel >= 6.11) |
 | `services.fstrim` off | `file-systems.nix` | `discard=async` already trims freed extents |
 | bees dedup | `system-config/bees.nix` (import commented out) | expected gain small and the cost permanent, see section 2 |
 | btrbk snapshots + backup to the HDD | `system-config/backup.nix` | see "Backups" |
