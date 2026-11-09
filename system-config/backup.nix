@@ -60,6 +60,11 @@ in
       };
     };
 
+  services.failure-notify.units = [
+    "btrbk-home"
+    "btrbk-system"
+  ];
+
   systemd = {
     # Without the HDD there is no target and btrbk would keep every local snapshot, filling the disk, so the run
     # must fail before btrbk starts. The check triggers the automount. RequiresMountsFor would not do: a device that

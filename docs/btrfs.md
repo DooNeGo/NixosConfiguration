@@ -249,10 +249,15 @@ The first run copies everything (hours for hundreds of GB over the HDD); later r
 ```sh
 sudo btrbk -c /etc/btrbk/home.conf list backups   # also system.conf              # what exists locally and on the HDD
 sudo btrfs filesystem du -s /mnt/btrfs-top/.snapshots/*       # "Exclusive" = space a snapshot pins
-ls /backup/btrbk/                                             # browse any backup as plain files
+sudo ls /backup/btrbk/                                        # browse any backup as plain files (root-only)
+failure-notify list                                           # open failure records, see below
 sudo cp -a --reflink=auto /mnt/btrfs-top/.snapshots/@home.<time>/mathew/<file> /home/mathew/   # quick undo
 sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the next run would do
 ```
+
+A failed `btrbk-home` or `btrbk-system` run (missing HDD included) is recorded by `system-config/failure-notify.nix`
+in `/var/lib/failure-notify/`: a desktop notification is sent, every zsh lists open records at start and prints a
+new one before the next prompt. The record disappears with the next successful run.
 
 Whole-subvolume restore: `btrfs send` the backup (or local snapshot) and `btrfs receive` it next to the broken
 one, then swap the subvolume in the top-level mount.

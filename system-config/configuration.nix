@@ -25,6 +25,7 @@
     ./file-systems.nix
     #./bees.nix
     ./backup.nix
+    ./failure-notify.nix
     ./throne.nix
     ./android.nix
     ./usbmux.nix
