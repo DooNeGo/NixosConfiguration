@@ -2,14 +2,20 @@
   config,
   lib,
   pkgs,
+  utils,
   ...
 }:
 let
   top = "/mnt/btrfs-top"; # top-level subvolume of the NVMe filesystem, see file-systems.nix
   backupMount = "/backup"; # HDD, see file-systems.nix
-  # Created by hand on the HDD, NOT by tmpfiles: with the HDD missing the path would land on the NVMe root and
-  # btrbk would receive backups onto the full disk.
   targetDir = "${backupMount}/btrbk";
+  mountDirsUnit = "mount-dirs-${utils.escapeSystemdPath backupMount}.service";
+
+  checkTarget = pkgs.writeShellScript "btrbk-check-target" ''
+    [ -d ${targetDir} ] && exit 0
+    echo "backup target ${targetDir} is missing: is the backup disk connected?" >&2
+    exit 1
+  '';
 in
 {
   # @home often, @root once a day; /games, /nix, @log and /var/lib/nocow are not backed up. Details: docs/btrfs.md.
@@ -60,6 +66,10 @@ in
       };
     };
 
+  # Created when the HDD is mounted, NOT by tmpfiles: with the HDD missing a tmpfiles rule would create the path on
+  # the NVMe root and btrbk would receive backups onto the full disk.
+  mountDirs.${backupMount} = [ "0700 root root btrbk" ];
+
   services.failure-notify.units = [
     "btrbk-home"
     "btrbk-system"
@@ -72,7 +82,10 @@ in
     # check as root, the btrbk user cannot look into the root-only ${backupMount}.
     services = lib.genAttrs [ "btrbk-home" "btrbk-system" ] (_: {
       unitConfig.RequiresMountsFor = top;
-      serviceConfig.ExecStartPre = "+${pkgs.coreutils}/bin/test -d ${targetDir}";
+      # Lets the first run after the disk appears see the target directory already created.
+      wants = [ mountDirsUnit ];
+      after = [ mountDirsUnit ];
+      serviceConfig.ExecStartPre = "+${checkTarget}";
     });
 
     # The module sets AccuracySec = 10min, which would blur a 10-minute timer.

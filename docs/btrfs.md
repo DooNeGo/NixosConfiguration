@@ -13,11 +13,8 @@ agent user has no root.
 | bees dedup | `system-config/bees.nix` (import commented out) | expected gain small and the cost permanent, see section 2 |
 | btrbk snapshots + backup to the HDD | `system-config/backup.nix` | see "Backups" |
 | `compress-force=zstd:5` on `/backup`, monthly scrub | `file-systems.nix` | the HDD is the bottleneck, so a higher level is free; see section 5 |
-| `nofail,x-systemd.automount,x-systemd.device-timeout=10s` on `/games`, `/var/lib/nocow`, `/backup` | `file-systems.nix` | mounts the system can run without: a missing disk does not stop the boot, the mount happens on first access, access to a missing disk fails after 10 s |
-
-systemd-tmpfiles skips automount points, so the owner and mode of `/games` and `/var/lib/nocow` are not managed by
-the configuration: they are stored in the subvolume itself. On a fresh filesystem set them once:
-`sudo chown root:users /games /var/lib/nocow && sudo chmod 2775 /games && sudo chmod 775 /var/lib/nocow`.
+| `nofail,x-systemd.device-timeout=10s` on `/games`, `/var/lib/nocow`, `/backup`; `x-systemd.automount` on `/backup` only | `file-systems.nix` | mounts the system can run without: a missing disk does not stop the boot and is given up on after 10 s. Only the HDD is an automount (mounted on first access, so a disk that shows up later needs no manual mount); for subvolumes of the system disk that buys nothing and tmpfiles rules would stop applying |
+| `mountDirs` | `file-systems.nix`, `backup.nix` | directories and permissions applied by a service each time a mount comes up (`/backup` 0700, `/backup/btrbk`): tmpfiles skips automount points and must never create these paths on the NVMe root |
 
 Watch reclaim: `grep . /sys/fs/btrfs/*/allocation/data/{reclaim_count,reclaim_bytes,reclaim_errors}`.
 Undo: write `0` into `periodic_reclaim` and `dynamic_reclaim` there.
@@ -173,7 +170,7 @@ podman `btrfs` storage driver creates one per container layer under `~/.local/sh
 that is skipped, which is fine here; list them with `sudo btrfs subvolume list /`.
 
 `@root` contains `/etc/ssh/ssh_host_ed25519_key`, the only recipient key of the agenix secrets, so the HDD now
-holds it as well: keep `/backup` readable by root only (`chmod 700 /backup`, the snapshots keep the original
+holds it as well: `/backup` is kept readable by root only (`mountDirs`, mode 0700; the snapshots keep the original
 permissions).
 
 ### What the settings mean
@@ -188,7 +185,7 @@ permissions).
 | `target_preserve_min = "no"` | on the HDD only what `target_preserve` selects is kept |
 | `target_preserve = "24h 14d 8w 6m"` | `<n>h` hourly, `<n>d` daily, `<n>w` weekly, `<n>m` monthly: the last 24 hourly backups, then one per day for 14 days, one per week for 8 weeks, one per month for 6 months; which snapshot represents a day/week/month is decided by btrbk from the timestamps (`preserve_day_of_week`, default Sunday, anchors weekly and longer; `preserve_hour_of_day`, default 0, anchors daily) |
 | `incremental = "yes"` | send only differences against the common parent; if there is no parent a full copy is made |
-| `ExecStartPre=+test -d /backup/btrbk` + `x-systemd.automount` | the check mounts `/backup` on first access, so no manual `mount`; if the HDD or the target directory is missing the unit fails before btrbk starts: nothing is created and nothing piles up. `RequiresMountsFor=/backup` would not do, a device that times out cancels the job without marking the unit failed |
+| `ExecStartPre=+<check that /backup/btrbk exists>` + `x-systemd.automount` | the check mounts `/backup` on first access, so no manual `mount`; if the HDD or the target directory is missing the unit fails before btrbk starts: nothing is created and nothing piles up. `RequiresMountsFor=/backup` would not do, a device that times out cancels the job without marking the unit failed |
 
 btrbk sends only what the target's retention needs, so of the six snapshots per hour about one reaches the HDD.
 
@@ -213,26 +210,25 @@ On a nearly full disk the retention window matters more than the frequency, whic
 
 ### Safety net and limits
 
-- `/backup/btrbk` is created by hand, never by tmpfiles: if the HDD is missing, a path on the NVMe root would
-  receive the backups onto the full disk.
+- `/backup/btrbk` is created by the `mount-dirs-backup` service when the HDD is mounted, never by tmpfiles: if the
+  HDD is missing, a tmpfiles path on the NVMe root would receive the backups onto the full disk.
+- A full or read-only HDD passes the target check: btrbk keeps snapshotting `@home` every 10 minutes and skips its
+  cleanup while the send fails, so react to the failure notification before the snapshots pin too much of the NVMe.
 - Restoring `@root` from the HDD brings back the SSH host key, so the agenix secrets stay decryptable.
 - `@home` includes caches; if the first transfer is too big, move big caches to their own subvolume.
 
 ### First start (after any defrag, see section 1)
 
-The `/backup` entry in `fstab` exists only after `nixos-rebuild switch`, so before that the disk has to be mounted by
-UUID on a mount point you create. Prepare the disk once (the same commands work after `switch`; then the plain
-`ls /backup` as root is enough: the automount mounts the disk and systemd creates the mount point itself):
+After `nixos-rebuild switch` and a reboot nothing has to be prepared by hand: the first access mounts the disk,
+`mount-dirs-backup` makes `/backup` root-only (the `@root` backups hold the agenix key) and creates
+`/backup/btrbk`. Look at the disk first:
 
 ```sh
-sudo mkdir -p /backup
-sudo mount /dev/disk/by-uuid/66a4672a-820c-440c-9f9a-6b7b52c4e434 /backup
+sudo ls -la /backup                                           # triggers the automount; expect drwx------ and btrbk/
 sudo btrfs filesystem usage /backup                           # what is on the disk already, free space
-sudo chmod 700 /backup                                        # root-only: @root holds the agenix key
-sudo mkdir /backup/btrbk                                      # by hand, see "Safety net"
 ```
 
-Then, after `switch`:
+Then:
 
 ```sh
 sudo umount ~/mnt                                             # a top-level mount under /home inflates the size
@@ -255,7 +251,7 @@ sudo cp -a --reflink=auto /mnt/btrfs-top/.snapshots/@home.<time>/mathew/<file> /
 sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the next run would do
 ```
 
-A failed `btrbk-home` or `btrbk-system` run (missing HDD included) is recorded by `system-config/failure-notify.nix`
+A failed `btrbk-home` or `btrbk-system` run (missing HDD included) or a failed scrub is recorded by `system-config/failure-notify.nix`
 in `/var/lib/failure-notify/`: the graphical session shows a critical notification, every zsh lists open records at start and prints a
 new one before the next prompt. The record disappears with the next successful run.
 
