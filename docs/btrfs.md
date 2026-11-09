@@ -8,11 +8,16 @@ agent user has no root.
 | What | Where | Why |
 |---|---|---|
 | `compress-force=zstd:-1,noatime` | `system-config/file-systems.nix` | -1 keeps NVMe speed (owner's benchmarks: ~4x faster than zstd:1 in a ramdisk); `-force` because the plain-compress heuristic leaves compressible data uncompressed, see section 4. Only NEW writes are affected. |
-| `periodic_reclaim` + `dynamic_reclaim` | tmpfiles in `file-systems.nix` | returns half-empty data chunks to unallocated space automatically (kernel >= 6.11) |
+| `periodic_reclaim` + `dynamic_reclaim` | `boot.kernel.sysfs` in `file-systems.nix` (NVMe and HDD) | returns half-empty data chunks to unallocated space automatically (kernel >= 6.11) |
 | `services.fstrim` off | `file-systems.nix` | `discard=async` already trims freed extents |
 | bees dedup | `system-config/bees.nix` (import commented out) | expected gain small and the cost permanent, see section 2 |
 | btrbk snapshots + backup to the HDD | `system-config/backup.nix` | see "Backups" |
-| `compress-force=zstd:5` on `/backup`, scrub and reclaim | `system-config/backup.nix` | the HDD is the bottleneck, so a higher level is free; see section 5 |
+| `compress-force=zstd:5` on `/backup`, monthly scrub | `file-systems.nix` | the HDD is the bottleneck, so a higher level is free; see section 5 |
+| `nofail,x-systemd.automount,x-systemd.device-timeout=10s` on `/games`, `/var/lib/nocow`, `/backup` | `file-systems.nix` | mounts the system can run without: a missing disk does not stop the boot, the mount happens on first access, access to a missing disk fails after 10 s |
+
+systemd-tmpfiles skips automount points, so the owner and mode of `/games` and `/var/lib/nocow` are not managed by
+the configuration: they are stored in the subvolume itself. On a fresh filesystem set them once:
+`sudo chown root:users /games /var/lib/nocow && sudo chmod 2775 /games && sudo chmod 775 /var/lib/nocow`.
 
 Watch reclaim: `grep . /sys/fs/btrfs/*/allocation/data/{reclaim_count,reclaim_bytes,reclaim_errors}`.
 Undo: write `0` into `periodic_reclaim` and `dynamic_reclaim` there.
@@ -123,7 +128,7 @@ data, counted on uncompressed volume: 1.7 TB here). A full `btrfs balance` inval
 
 ## 3. Backups (btrbk to the HDD)
 
-Implemented in `system-config/backup.nix`. Backed up: `@home` (instance `home`) and `@root` (instance
+Implemented in `system-config/backup.nix` (the `/backup` mount itself is in `file-systems.nix`). Backed up: `@home` (instance `home`) and `@root` (instance
 `system`). The NVMe top-level subvolume is mounted at
 `/mnt/btrfs-top` (btrbk's working volume, `.snapshots` lives there); the backup disk is `sda4` (btrfs, label
 `games_arch`, UUID `66a4672a-...`, HDD) mounted at `/backup`.
@@ -183,7 +188,7 @@ permissions).
 | `target_preserve_min = "no"` | on the HDD only what `target_preserve` selects is kept |
 | `target_preserve = "24h 14d 8w 6m"` | `<n>h` hourly, `<n>d` daily, `<n>w` weekly, `<n>m` monthly: the last 24 hourly backups, then one per day for 14 days, one per week for 8 weeks, one per month for 6 months; which snapshot represents a day/week/month is decided by btrbk from the timestamps (`preserve_day_of_week`, default Sunday, anchors weekly and longer; `preserve_hour_of_day`, default 0, anchors daily) |
 | `incremental = "yes"` | send only differences against the common parent; if there is no parent a full copy is made |
-| `RequiresMountsFor=/mnt/btrfs-top /backup` + `x-systemd.automount` | `/backup` is mounted on first access, so no manual `mount`; if the HDD is missing the run fails before btrbk starts (`systemctl --failed`): nothing is created and nothing piles up |
+| `ExecStartPre=+test -d /backup/btrbk` + `x-systemd.automount` | the check mounts `/backup` on first access, so no manual `mount`; if the HDD or the target directory is missing the unit fails before btrbk starts: nothing is created and nothing piles up. `RequiresMountsFor=/backup` would not do, a device that times out cancels the job without marking the unit failed |
 
 btrbk sends only what the target's retention needs, so of the six snapshots per hour about one reaches the HDD.
 
@@ -217,7 +222,7 @@ On a nearly full disk the retention window matters more than the frequency, whic
 
 The `/backup` entry in `fstab` exists only after `nixos-rebuild switch`, so before that the disk has to be mounted by
 UUID on a mount point you create. Prepare the disk once (the same commands work after `switch`; then the plain
-`sudo mount /backup` is enough and systemd creates the mount point itself):
+`ls /backup` as root is enough: the automount mounts the disk and systemd creates the mount point itself):
 
 ```sh
 sudo mkdir -p /backup

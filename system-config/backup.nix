@@ -1,36 +1,17 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   top = "/mnt/btrfs-top"; # top-level subvolume of the NVMe filesystem, see file-systems.nix
-  backupMount = "/backup"; # HDD (sda4, label games_arch)
-  backupUuid = "66a4672a-820c-440c-9f9a-6b7b52c4e434";
+  backupMount = "/backup"; # HDD, see file-systems.nix
   # Created by hand on the HDD, NOT by tmpfiles: with the HDD missing the path would land on the NVMe root and
   # btrbk would receive backups onto the full disk.
   targetDir = "${backupMount}/btrbk";
 in
 {
-  fileSystems.${backupMount} = {
-    device = "/dev/disk/by-uuid/${backupUuid}";
-    fsType = "btrfs";
-    # nofail + automount: a missing or slow HDD does not hold up boot, and /backup is mounted on first access (the
-    # btrbk and scrub units require it), so nobody has to mount it by hand. The HDD (~100 MiB/s) is the bottleneck, not the CPU, so compress-force at zstd:5 writes ~2x faster than
-    # uncompressed on compressible data and costs nothing on incompressible data (measured, docs/btrfs.md).
-    options = [
-      "defaults"
-      "compress-force=zstd:5"
-      "noatime"
-      "nofail"
-      "x-systemd.automount"
-      "x-systemd.device-timeout=10s"
-    ];
-  };
-
-  # Applied through the mount dependency / a path watcher on the filesystem's sysfs directory.
-  services.btrfs.autoScrub.fileSystems = [ backupMount ];
-  boot.kernel.sysfs.fs.btrfs.${backupUuid}.allocation.data = {
-    periodic_reclaim = true;
-    dynamic_reclaim = true;
-  };
-
   # @home often, @root once a day; /games, /nix, @log and /var/lib/nocow are not backed up. Details: docs/btrfs.md.
   services.btrbk.instances =
     let
@@ -80,11 +61,13 @@ in
     };
 
   systemd = {
-    # Without the HDD there is no target and btrbk would keep every local snapshot, filling the disk. Requiring the
-    # mounts makes the run fail before btrbk starts (visible in `systemctl --failed`) instead of being skipped silently;
-    # ConditionPathIsMountPoint would not work here, an automount point counts as a mount point even when unmounted.
+    # Without the HDD there is no target and btrbk would keep every local snapshot, filling the disk, so the run
+    # must fail before btrbk starts. The check triggers the automount. RequiresMountsFor would not do: a device that
+    # times out cancels the job without putting the unit into "failed", so nothing would report it. "+" runs the
+    # check as root, the btrbk user cannot look into the root-only ${backupMount}.
     services = lib.genAttrs [ "btrbk-home" "btrbk-system" ] (_: {
-      unitConfig.RequiresMountsFor = [ top backupMount ];
+      unitConfig.RequiresMountsFor = top;
+      serviceConfig.ExecStartPre = "+${pkgs.coreutils}/bin/test -d ${targetDir}";
     });
 
     # The module sets AccuracySec = 10min, which would blur a 10-minute timer.
@@ -95,8 +78,8 @@ in
 
   assertions = [
     {
-      assertion = config.fileSystems ? ${top};
-      message = "backup.nix needs the top-level btrfs mount ${top} (file-systems.nix).";
+      assertion = config.fileSystems ? ${top} && config.fileSystems ? ${backupMount};
+      message = "backup.nix needs the mounts ${top} and ${backupMount} (file-systems.nix).";
     }
   ];
 }
