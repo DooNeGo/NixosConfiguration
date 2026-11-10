@@ -3,7 +3,7 @@
 { inputs }:
 rec {
   # Base nixpkgs config of the repo. cudaSupport is NOT here: it belongs to one host's main package set only,
-  # otherwise pkgs.stable/pkgs.unstable would build CUDA packages that no cache has.
+  # otherwise pkgs.stable would build CUDA packages that no cache has.
   config = {
     allowUnfree = true;
     android_sdk.accept_license = true;
@@ -16,7 +16,6 @@ rec {
     in
     {
       stable = import inputs.nixpkgs-stable { inherit system config; };
-      unstable = import inputs.nixpkgs-unstable { inherit system config; };
     };
 
   riderOverlay = import ../overlays/rider.nix;

@@ -46,12 +46,12 @@
 
     npm = {
       enable = true;
-      package = pkgs.unstable.nodejs_latest;
+      package = pkgs.nodejs_latest;
     };
 
     claude-code = {
       enable = true;
-      package = pkgs.unstable.claude-code;
+      package = pkgs.claude-code;
     };
 
     zsh.initContent = ''
