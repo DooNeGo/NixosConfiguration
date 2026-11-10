@@ -21,10 +21,17 @@ in
         "hyprpaper.service"
         "graphical-session.target"
       ];
+      # hyprctl needs a running Hyprland; skip quietly in any other session instead of failing.
+      ConditionEnvironment = "HYPRLAND_INSTANCE_SIGNATURE";
+      # hyprpaper may not listen on its socket yet right after start: a few spaced retries, not a burst.
+      StartLimitIntervalSec = 60;
+      StartLimitBurst = 5;
     };
     Service = {
+      Type = "oneshot";
       ExecStart = "${config.home.homeDirectory}/${scriptPath}";
       Restart = "on-failure";
+      RestartSec = 2;
     };
     Install = {
       WantedBy = [

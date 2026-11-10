@@ -28,7 +28,10 @@ in
       "systemd-logind.service"
     ];
     # Both start a Steam client for the same user.
-    conflicts = [ "hyprland-mathew.service" ];
+    conflicts = [
+      "hyprland-mathew.service"
+      "hyprland-headless-mathew.service"
+    ];
     serviceConfig = {
       # zsh -c reads ~/.zshenv, where Home Manager sources hm-session-vars.sh (NVIDIA env), as in the UWSM session.
       ExecStart = ''

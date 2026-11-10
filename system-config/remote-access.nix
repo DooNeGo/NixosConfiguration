@@ -21,7 +21,6 @@
     sunshine = {
       enable = true;
       autoStart = true;
-      capSysAdmin = true;
       openFirewall = true;
       settings = {
         capture = "wlr";
@@ -35,6 +34,10 @@
     };
   };
 
+  # The logind ACL on /dev/uinput goes to the active seat0 session, which is the SDDM greeter next to the headless
+  # session, so Sunshine's virtual keyboard and mouse need the group.
+  users.users.mathew.extraGroups = [ "uinput" ];
+
   networking = {
     nftables.enable = true;
     firewall = {
@@ -43,13 +46,20 @@
     };
   };
 
-  systemd.services.tailscaled.serviceConfig.Environment = [
-    "TS_DEBUG_FIREWALL_MODE=nftables"
-  ];
+  systemd = {
+    # The SDDM greeter session also reaches graphical-session.target; a Sunshine started as sddm holds the ports.
+    user.services.sunshine.unitConfig.ConditionUser = "mathew";
 
-  # tailscaled counts as started before it has joined the tailnet, and `serve set-config` then fails with NoState.
-  systemd.services.tailscale-serve.serviceConfig = {
-    Restart = "on-failure";
-    RestartSec = "10s";
+    services = {
+      tailscaled.serviceConfig.Environment = [
+        "TS_DEBUG_FIREWALL_MODE=nftables"
+      ];
+
+      # tailscaled counts as started before it has joined the tailnet, and `serve set-config` then fails with NoState.
+      tailscale-serve.serviceConfig = {
+        Restart = "on-failure";
+        RestartSec = "10s";
+      };
+    };
   };
 }
