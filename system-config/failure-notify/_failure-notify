@@ -19,6 +19,7 @@ _failure-notify() {
   )
 
   _arguments -C \
+    '(- *)'{-h,--help}'[show help and exit]' \
     '1: :->command' \
     '*:: :->args' && return
 
@@ -29,8 +30,9 @@ _failure-notify() {
     args)
       case $words[1] in
         report)
-          _arguments \
-            '--ttl[drop the record after this many seconds]:seconds' \
+          _arguments -S \
+            '(- *)'{-h,--help}'[show help and exit]' \
+            '--ttl=[drop the record after this many seconds]:seconds' \
             ':id' \
             '*:message'
           ;;

@@ -8,6 +8,35 @@ let
   cfg = config.services.failure-notify;
   stateDir = "/var/lib/failure-notify";
 
+  helpText = pkgs.writeText "failure-notify-help" ''
+    Usage: failure-notify report [--ttl SECONDS] [--] ID MESSAGE...
+           failure-notify clear ID
+           failure-notify list
+           failure-notify -h | --help
+
+    Keep a record of a failure that shells and desktop sessions then show to the users.
+
+    Commands:
+      report   Create or renew the record ID. A repeated report keeps the time of the first one and calls the
+               sinks again only after ${toString cfg.renotifySec} seconds. Needs write access to the record directory.
+      clear    Remove the record ID. Needs write access to the record directory.
+      list     Print the open records, one per line: time, ID, message.
+
+    Options:
+      --ttl SECONDS  Drop the record after SECONDS (default: keep it until it is cleared).
+      -h, --help     Show this help and exit.
+
+    Environment:
+      FAILURE_NOTIFY_DIR  Record directory (default: ${stateDir}).
+
+    Exit status: 0 on success, 1 on a runtime error (e.g. the directory cannot be locked), 2 on a usage error.
+
+    Examples:
+      failure-notify report backup-disk "backup disk is not connected"
+      failure-notify report --ttl 3600 smartd-sda "SMART: reallocated sectors"
+      failure-notify clear backup-disk
+  '';
+
   # One file per open problem: first seen, expiry (0 = never), last sink call, message; one value per line.
   # A repeated report of the same id keeps "first seen", so shells show an incident once, and calls the sinks again
   # only after renotifySec, so a unit that fails every 10 minutes does not flood them.
@@ -21,10 +50,14 @@ let
       dir=''${FAILURE_NOTIFY_DIR:-${stateDir}}
       sinks=(${lib.escapeShellArgs cfg.sinks})
 
+      help() { cat ${helpText}; }
+      # Usage errors go to stderr with a pointer to the help, not the whole help.
       usage() {
-        echo "usage: failure-notify report [--ttl SECONDS] <id> <message...> | clear <id> | list" >&2
+        [[ $# -eq 0 ]] || echo "failure-notify: $*" >&2
+        echo "Try 'failure-notify --help' for more information." >&2
         exit 2
       }
+      is_help() { [[ ''${1:-} == -h || ''${1:-} == --help ]]; }
       # A leading dot would hide the record from the globs, ".." would escape the directory.
       sanitize() {
         local id
@@ -60,11 +93,30 @@ let
       case $cmd in
         report)
           ttl=0
-          if [[ ''${1:-} == --ttl ]]; then
-            ttl=$2
-            shift 2
-          fi
-          [[ $# -ge 2 ]] || usage
+          while [[ ''${1:-} == -* ]]; do
+            case $1 in
+              -h | --help)
+                help
+                exit 0
+                ;;
+              --ttl)
+                [[ $# -ge 2 ]] || usage "option '--ttl' requires an argument"
+                ttl=$2
+                shift 2
+                ;;
+              --ttl=*)
+                ttl=''${1#--ttl=}
+                shift
+                ;;
+              --)
+                shift
+                break
+                ;;
+              *) usage "unknown option '$1'" ;;
+            esac
+          done
+          [[ $ttl =~ ^[0-9]+$ ]] || usage "--ttl needs a number of seconds, got '$ttl'"
+          [[ $# -ge 2 ]] || usage "report needs an ID and a message"
           id=$(sanitize "$1")
           shift
           # Shown raw in terminals: no control characters.
@@ -99,7 +151,11 @@ let
           fi
           ;;
         clear)
-          [[ $# -eq 1 ]] || usage
+          if is_help "$@"; then
+            help
+            exit 0
+          fi
+          [[ $# -eq 1 ]] || usage "clear needs exactly one ID"
           id=$(sanitize "$1")
           lock || {
             echo "failure-notify: could not lock $dir" >&2
@@ -108,6 +164,11 @@ let
           rm -f "$dir/$id"
           ;;
         list)
+          if is_help "$@"; then
+            help
+            exit 0
+          fi
+          [[ $# -eq 0 ]] || usage "list takes no arguments"
           prune 2>/dev/null || true
           for f in "$dir"/*; do
             [[ -f $f ]] || continue
@@ -115,7 +176,11 @@ let
             printf '%s  %s  %s\n' "$(date -d "@$since" '+%F %R')" "''${f##*/}" "$message"
           done
           ;;
-        *) usage ;;
+        -h | --help)
+          help
+          ;;
+        "") usage "missing command" ;;
+        *) usage "unknown command '$cmd'" ;;
       esac
     '';
   };
