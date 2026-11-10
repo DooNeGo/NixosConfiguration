@@ -2,23 +2,108 @@
 # btrfs write benchmark: compress vs compress-force at several zstd levels and writer counts.
 # Run as a normal user (sudo is called inside). Source data is staged in tmpfs, so only the write is timed.
 # The remount changes compression for the WHOLE filesystem while the test runs; the original option is restored on exit.
-# DRY=1 skips remount/compsize/drop_caches (to test the script's own logic).
+#
+# Usage: scripts/btrfs-compress-force-test.sh [OPTIONS]
+#   --levels LIST    zstd levels to test, comma or space separated (default: -2,-1,1,2)
+#   --writers LIST   parallel writer counts (default: 1,3,6)
+#   --modes LIST     compress and/or compress-force (default: both)
+#   --repeats N      runs per combination (default: 1)
+#   --dataset SPEC   NAME|SOURCE|MAX_GIB, repeatable (default: Phasmophobia, 20 GiB, and World of Tanks Blitz)
+#   --common DIR     directory of the default datasets (default: /games/SteamLibrary/steamapps/common)
+#   --mount PATH     filesystem to remount and write to (default: /home)
+#   --dest DIR       where the data is written (default: ~/compress-test)
+#   --ram DIR        tmpfs staging area (default: /tmp/compress-test-src)
+#   --csv FILE       raw results (default: ~/compress-test.csv)
+#   --md FILE        markdown tables (default: ~/compress-test.md)
+#   --report         rebuild the markdown tables from the CSV and exit
+#   --dry            skip remount, compsize and drop_caches (tests the script's own logic)
+#   -h, --help       show this text; --opt=VALUE works too
 set -euo pipefail
 
-MNT="${MNT:-/home}"
-DEST="${DEST:-$HOME/compress-test}"
-RAM="${RAM:-/tmp/compress-test-src}"
-OUT_CSV="${OUT_CSV:-$HOME/compress-test.csv}"
-OUT_MD="${OUT_MD:-$HOME/compress-test.md}"
-DRY="${DRY:-0}"
-LEVELS="${LEVELS:--2 -1 1 2}"
-WRITERS="${WRITERS:-1 3 6}"
-REPEATS="${REPEATS:-1}"
-MODES="${MODES:-compress compress-force}" # subset of: compress compress-force
-COMMON="${COMMON:-/games/SteamLibrary/steamapps/common}"
-# one per line: name|source|size cap in GiB
-DATASETS="${DATASETS:-phasmophobia|$COMMON/Phasmophobia|20
-blitz|$COMMON/World of Tanks Blitz|1024}"
+prog=${0##*/}
+usage() {
+  [[ $# -eq 0 ]] || echo "$prog: $*" >&2
+  echo "Try '$prog --help' for more information." >&2
+  exit 2
+}
+# The leading comment block without the shebang and the "# " prefix.
+help() { sed -n '2,/^[^#]/{/^[^#]/!s/^# \{0,1\}//p}' "$0"; }
+need_arg() { [[ $# -ge 2 ]] || usage "option '$1' requires an argument"; }
+is_uint() { [[ $1 =~ ^[0-9]+$ ]]; }
+is_int() { [[ $1 =~ ^-?[0-9]+$ ]]; }
+words() { tr ',' ' ' <<<"$1"; } # list options take commas or spaces
+
+# --opt=value becomes --opt value, up to a "--".
+args=()
+for a in "$@"; do
+  if [[ $a == -- ]]; then args+=("$@"); break; fi
+  case $a in
+    --*=*) args+=("${a%%=*}" "${a#*=}") ;;
+    *) args+=("$a") ;;
+  esac
+  shift
+done
+set -- "${args[@]}"
+
+MNT=/home
+DEST=
+RAM=/tmp/compress-test-src
+OUT_CSV=$HOME/compress-test.csv
+OUT_MD=$HOME/compress-test.md
+DRY=0
+REPORT=0
+LEVELS="-2 -1 1 2"
+WRITERS="1 3 6"
+REPEATS=1
+MODES="compress compress-force"
+COMMON=/games/SteamLibrary/steamapps/common
+DATASETS=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --levels) need_arg "$@"; LEVELS=$(words "$2"); shift ;;
+    --writers) need_arg "$@"; WRITERS=$(words "$2"); shift ;;
+    --modes) need_arg "$@"; MODES=$(words "$2"); shift ;;
+    --repeats) need_arg "$@"; REPEATS=$2; shift ;;
+    --dataset) need_arg "$@"; DATASETS+="${DATASETS:+$'\n'}$2"; shift ;;
+    --common) need_arg "$@"; COMMON=$2; shift ;;
+    --mount) need_arg "$@"; MNT=$2; shift ;;
+    --dest) need_arg "$@"; DEST=$2; shift ;;
+    --ram) need_arg "$@"; RAM=$2; shift ;;
+    --csv) need_arg "$@"; OUT_CSV=$2; shift ;;
+    --md) need_arg "$@"; OUT_MD=$2; shift ;;
+    --report) REPORT=1 ;;
+    --dry) DRY=1 ;;
+    -h | --help) help; exit 0 ;;
+    -*) usage "unknown option '$1'" ;;
+    *) usage "unexpected argument '$1'" ;;
+  esac
+  shift
+done
+
+# Checked before anything is remounted.
+is_uint "$REPEATS" && [[ $REPEATS -gt 0 ]] || usage "--repeats needs a positive whole number, got '$REPEATS'"
+read -ra _w <<<"$WRITERS"
+read -ra _l <<<"$LEVELS"
+read -ra _m <<<"$MODES"
+[[ ${#_w[@]} -gt 0 ]] || usage "--writers is empty"
+[[ ${#_l[@]} -gt 0 ]] || usage "--levels is empty"
+[[ ${#_m[@]} -gt 0 ]] || usage "--modes is empty"
+for v in "${_w[@]}"; do is_uint "$v" && [[ $v -gt 0 ]] || usage "--writers needs positive whole numbers, got '$v'"; done
+for v in "${_l[@]}"; do is_int "$v" || usage "--levels needs whole numbers, got '$v'"; done
+for v in "${_m[@]}"; do
+  [[ $v == compress || $v == compress-force ]] || usage "--modes takes compress and compress-force, got '$v'"
+done
+if [[ -z $DATASETS ]]; then
+  DATASETS="phasmophobia|$COMMON/Phasmophobia|20
+blitz|$COMMON/World of Tanks Blitz|1024"
+fi
+while IFS='|' read -r _ds _src _cap _extra; do
+  [[ -n $_ds && -n $_src && -z $_extra ]] && is_uint "$_cap" && [[ $_cap -gt 0 ]] ||
+    usage "--dataset needs NAME|SOURCE|MAX_GIB, got '$_ds|$_src|$_cap${_extra:+|$_extra}'"
+done <<<"$DATASETS"
+if [[ -z $DEST ]]; then
+  if ((DRY)); then DEST=/dev/shm/compress-test-dest; else DEST=$HOME/compress-test; fi
+fi
 
 # Markdown tables from the CSV (awk only: the benchmark user has no python in PATH)
 report() {
@@ -61,7 +146,7 @@ report() {
     }' "$OUT_CSV"
 }
 
-if [[ ${1:-} == --report ]]; then
+if ((REPORT)); then
   report | tee "$OUT_MD"
   exit 0
 fi
@@ -74,10 +159,6 @@ else
   ORIG="${ORIG:-compress=no}"
 fi
 echo "mount option to restore on exit: $ORIG"
-
-if [[ $DRY == 1 ]]; then
-  DEST="${DEST_DRY:-/dev/shm/compress-test-dest}"
-fi
 
 sudo_keepalive_pid=""
 restore() {
@@ -176,12 +257,6 @@ step_begin() { # <label>: overall bar on stderr, then the label is shown by the 
     "$STEP" "$STEPS_TOTAL" "$(fmt_dur "$elapsed")" "$(fmt_dur "$eta")" >&2
 }
 
-read -ra _w <<<"$WRITERS"
-read -ra _l <<<"$LEVELS"
-read -ra _m <<<"$MODES"
-for m in "${_m[@]}"; do
-  [[ $m == compress || $m == compress-force ]] || { echo "MODES: unknown mode '$m'" >&2; exit 1; }
-done
 STEPS_TOTAL=$(($(grep -c . <<<"$DATASETS") * ${#_w[@]} * (2 + ${#_m[@]} * ${#_l[@]}) * REPEATS))
 echo "dataset,writers,mode,level,seconds,logical_bytes,disk_bytes" >"$OUT_CSV"
 record() { # CSV row to the file, readable line to the terminal

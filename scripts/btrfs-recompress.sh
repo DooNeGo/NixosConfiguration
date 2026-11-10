@@ -11,10 +11,32 @@
 #     space can GROW. Run it BEFORE the btrbk backups are enabled (a snapshot would keep the old copies).
 #   * the disk is close to full; every file is rewritten, so keep --min-free-gib generous.
 #
-# Usage: sudo scripts/btrfs-recompress.sh [--run] [--min-free-gib N] [--max-unit-gib N] [--state FILE] PATH...
-#   default is a dry run that only prints the work units.
+# Usage: sudo scripts/btrfs-recompress.sh [--run] [--min-free-gib N] [--max-unit-gib N] [--state FILE] [--] PATH...
+#   default is a dry run that only prints the work units; -h, --help shows this text; --opt=VALUE works too.
 #   whole disk (everything worth it): sudo scripts/btrfs-recompress.sh --run --min-free-gib 100 /games /home
 set -euo pipefail
+
+prog=${0##*/}
+usage() {
+  [ $# -eq 0 ] || echo "$prog: $*" >&2
+  echo "Try '$prog --help' for more information." >&2
+  exit 2
+}
+# The leading comment block without the shebang and the "# " prefix.
+help() { sed -n '2,/^[^#]/{/^[^#]/!s/^# \{0,1\}//p}' "$0"; }
+need_arg() { [ $# -ge 2 ] || usage "option '$1' requires an argument"; }
+is_uint() { [[ $1 =~ ^[0-9]+$ ]]; }
+# --opt=value becomes --opt value, up to a "--".
+args=()
+for a in "$@"; do
+  if [ "${a:-}" = -- ]; then args+=("$@"); break; fi
+  case $a in
+    --*=*) args+=("${a%%=*}" "${a#*=}") ;;
+    *) args+=("$a") ;;
+  esac
+  shift
+done
+set -- "${args[@]}"
 
 run=0
 min_free_gib=60
@@ -25,16 +47,19 @@ paths=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --run) run=1 ;;
-    --min-free-gib) min_free_gib="${2:?}"; shift ;;
-    --max-unit-gib) max_unit_gib="${2:?}"; shift ;;
-    --state) state="${2:?}"; shift ;;
-    -h | --help) sed -n '2,17p' "$0"; exit 0 ;;
-    -*) echo "unknown option: $1" >&2; exit 2 ;;
+    --min-free-gib) need_arg "$@"; min_free_gib=$2; shift ;;
+    --max-unit-gib) need_arg "$@"; max_unit_gib=$2; shift ;;
+    --state) need_arg "$@"; state=$2; shift ;;
+    -h | --help) help; exit 0 ;;
+    --) shift; paths+=("$@"); break ;;
+    -*) usage "unknown option '$1'" ;;
     *) paths+=("$1") ;;
   esac
   shift
 done
-[ ${#paths[@]} -gt 0 ] || { echo "no PATH given (see --help)" >&2; exit 2; }
+[ ${#paths[@]} -gt 0 ] || usage "no PATH given"
+is_uint "$min_free_gib" || usage "--min-free-gib needs a whole number, got '$min_free_gib'"
+is_uint "$max_unit_gib" && [ "$max_unit_gib" -gt 0 ] || usage "--max-unit-gib needs a positive whole number, got '$max_unit_gib'"
 
 if [ "$run" = 1 ] && [ "$(id -u)" -ne 0 ]; then
   echo "--run needs root" >&2

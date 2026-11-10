@@ -3,24 +3,48 @@
 # Use it to pick the directories worth recompressing (scripts/btrfs-recompress.sh): the interesting ones are
 # those that are stored uncompressed now (compare with `sudo compsize -x <dir>`) but compress well here.
 #
-# Usage: scripts/btrfs-compress-estimate.sh [--depth N] PATH...
+# Usage: scripts/btrfs-compress-estimate.sh [--depth N] [--] PATH...   (-h, --help shows this text; --depth=N works too)
 #   --depth N  report the entries N levels below each PATH (default 1), e.g.
 #              scripts/btrfs-compress-estimate.sh /games/SteamLibrary/steamapps/common
 # Reads every file once at idle IO priority (about as long as copying the data); needs zstd and tar in PATH.
 set -euo pipefail
 
+prog=${0##*/}
+usage() {
+  [ $# -eq 0 ] || echo "$prog: $*" >&2
+  echo "Try '$prog --help' for more information." >&2
+  exit 2
+}
+# The leading comment block without the shebang and the "# " prefix.
+help() { sed -n '2,/^[^#]/{/^[^#]/!s/^# \{0,1\}//p}' "$0"; }
+need_arg() { [ $# -ge 2 ] || usage "option '$1' requires an argument"; }
+is_uint() { [[ $1 =~ ^[0-9]+$ ]]; }
+# --opt=value becomes --opt value, up to a "--".
+args=()
+for a in "$@"; do
+  if [ "${a:-}" = -- ]; then args+=("$@"); break; fi
+  case $a in
+    --*=*) args+=("${a%%=*}" "${a#*=}") ;;
+    *) args+=("$a") ;;
+  esac
+  shift
+done
+set -- "${args[@]}"
+
 depth=1
 paths=()
 while [ $# -gt 0 ]; do
   case "$1" in
-    --depth) depth="${2:?}"; shift ;;
-    -h | --help) sed -n '2,10p' "$0"; exit 0 ;;
-    -*) echo "unknown option: $1" >&2; exit 2 ;;
+    --depth) need_arg "$@"; depth=$2; shift ;;
+    -h | --help) help; exit 0 ;;
+    --) shift; paths+=("$@"); break ;;
+    -*) usage "unknown option '$1'" ;;
     *) paths+=("$1") ;;
   esac
   shift
 done
-[ ${#paths[@]} -gt 0 ] || { echo "no PATH given (see --help)" >&2; exit 2; }
+[ ${#paths[@]} -gt 0 ] || usage "no PATH given"
+is_uint "$depth" && [ "$depth" -gt 0 ] || usage "--depth needs a positive whole number, got '$depth'"
 command -v zstd > /dev/null || { echo "zstd not found" >&2; exit 1; }
 
 rows=$(mktemp)
