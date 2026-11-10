@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Built by system-config/failure-notify.nix, which sets FAILURE_NOTIFY_STATE_DIR, FAILURE_NOTIFY_RENOTIFY_SEC
+# Built by system-config/nixos/failure-notify.nix, which sets FAILURE_NOTIFY_STATE_DIR, FAILURE_NOTIFY_RENOTIFY_SEC
 # (seconds) and FAILURE_NOTIFY_SINKS (one executable per line); FAILURE_NOTIFY_DIR overrides the directory.
 #
 # One file per open problem: first seen, expiry (0 = never), last sink call, message; one value per line.
@@ -7,8 +7,8 @@
 # only after FAILURE_NOTIFY_RENOTIFY_SEC, so a unit that fails every 10 minutes does not flood them.
 
 set -euo pipefail
-: "${FAILURE_NOTIFY_STATE_DIR:?set by system-config/failure-notify.nix}"
-: "${FAILURE_NOTIFY_RENOTIFY_SEC:?set by system-config/failure-notify.nix}"
+: "${FAILURE_NOTIFY_STATE_DIR:?set by system-config/nixos/failure-notify.nix}"
+: "${FAILURE_NOTIFY_RENOTIFY_SEC:?set by system-config/nixos/failure-notify.nix}"
 : "${FAILURE_NOTIFY_SINKS=}"
 
 dir=${FAILURE_NOTIFY_DIR:-$FAILURE_NOTIFY_STATE_DIR}

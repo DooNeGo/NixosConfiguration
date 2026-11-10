@@ -16,7 +16,7 @@
     inputs:
     let
       system = "x86_64-linux";
-      pkgsLib = import ./lib/pkgs.nix { inherit inputs; };
+      pkgsLib = import ../../lib/pkgs.nix { inherit inputs; };
     in
     {
       formatter.${system} = inputs.nixpkgs.legacyPackages.${system}.nixfmt-tree;
@@ -24,7 +24,7 @@
       nixosConfigurations.nixos = inputs.nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
-          ./system-config/configuration.nix
+          ./configuration.nix
           {
             nixpkgs.overlays = [
               pkgsLib.channelsOverlay

@@ -1,6 +1,6 @@
 { config, pkgs, ... }: {
   # agenix decrypts it before users are created, so hashedPasswordFile can use it.
-  age.secrets.mathew-password.file = ../secrets/mathew-password.age;
+  age.secrets.mathew-password.file = ../../secrets/mathew-password.age;
 
   users.users.mathew = {
     isNormalUser = true;

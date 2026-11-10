@@ -186,7 +186,7 @@ assert lib.all (i: lib.hasPrefix "/etc/" i.runtimeKey) (lib.attrValues instances
     lib.nameValuePair "vless-${name}" {
       enable = true;
       mode = "0600";
-      file = ../secrets/vless-${name}.age;
+      file = ../../secrets/vless-${name}.age;
       path = inst.credentialFile;
     }
   ) instances;

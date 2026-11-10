@@ -1,4 +1,4 @@
-# Pinned Rider version, shared by every home-config flake.
+# Pinned Rider version, shared by every flake through lib/pkgs.nix.
 # Update: version + buildNumber from data.services.jetbrains.com/products/releases?code=RD,
 # hash from the .tar.gz.sha256 file next to the download.
 final: prev: {

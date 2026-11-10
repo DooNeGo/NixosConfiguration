@@ -1,4 +1,4 @@
-# Shared pkgs construction for the root flake and the home-config flakes. A plain function, not a flake: every
+# Shared pkgs construction for the system flake and the home-config flakes. A plain function, not a flake: every
 # flake keeps its own inputs and lock, and passes them in. kokoro/ is standalone and deliberately does not use it.
 { inputs }:
 rec {
@@ -19,7 +19,7 @@ rec {
       unstable = import inputs.nixpkgs-unstable { inherit system config; };
     };
 
-  riderOverlay = import ../home-config/shared/overlays/rider.nix;
+  riderOverlay = import ../overlays/rider.nix;
 
   mkPkgs =
     {

@@ -7,16 +7,16 @@ agent user has no root.
 
 | What | Where | Why |
 |---|---|---|
-| `compress-force=zstd:-1,noatime` | `system-config/file-systems.nix` | -1 keeps NVMe speed (owner's benchmarks: ~4x faster than zstd:1 in a ramdisk); `-force` because the plain-compress heuristic leaves compressible data uncompressed, see section 4. Only NEW writes are affected. |
+| `compress-force=zstd:-1,noatime` | `system-config/nixos/file-systems.nix` | -1 keeps NVMe speed (owner's benchmarks: ~4x faster than zstd:1 in a ramdisk); `-force` because the plain-compress heuristic leaves compressible data uncompressed, see section 4. Only NEW writes are affected. |
 | `periodic_reclaim` + `dynamic_reclaim` | `file-systems.nix`: `boot.kernel.sysfs` for the NVMe, `btrfs-reclaim-backup.service` at mount time for the HDD | returns half-empty data chunks to unallocated space automatically (kernel >= 6.11) |
 | `services.fstrim` off | `file-systems.nix` | `discard=async` already trims freed extents |
-| bees dedup | `system-config/bees.nix` (import commented out) | expected gain small and the cost permanent, see section 2 |
-| btrbk snapshots + backup to the HDD | `system-config/backup.nix` | see "Backups" |
+| bees dedup | `system-config/nixos/bees.nix` (import commented out) | expected gain small and the cost permanent, see section 2 |
+| btrbk snapshots + backup to the HDD | `system-config/nixos/backup.nix` | see "Backups" |
 | `compress-force=zstd:5` on `/backup`, monthly scrub | `file-systems.nix` | the HDD is the bottleneck, so a higher level is free; see section 5 |
 | `nofail,x-systemd.device-timeout=10s` on `/games`, `/var/lib/nocow`, `/backup`; `x-systemd.automount` on `/backup` only | `file-systems.nix` | mounts the system can run without: a missing disk does not stop the boot and is given up on after 10 s. Only the HDD is an automount (mounted on first access, so a disk that shows up later needs no manual mount); for subvolumes of the system disk that buys nothing and tmpfiles rules would stop applying |
 | `mountDirs` | `file-systems.nix`, `backup.nix` | directories and permissions applied by a service each time a mount comes up (`/backup` 0700, `/backup/btrbk`): tmpfiles skips automount points and must never create these paths on the NVMe root |
 
-After regenerating `system-config/hardware-configuration.nix` (`nixos-generate-config`), check its `fileSystems` entries:
+After regenerating `system-config/nixos/hardware-configuration.nix` (`nixos-generate-config`), check its `fileSystems` entries:
 `/backup`, `/mnt/btrfs-top` and the other mounts keep their `device` and `fsType` there and their options in
 `file-systems.nix`. The generator writes what is mounted at that moment, and with `/backup` automounted that is an
 extra `fileSystems."/backup"` with `device = "systemd-1"; fsType = "autofs"` next to the real one. Delete the `autofs`
@@ -104,7 +104,7 @@ sudo scripts/btrfs-recompress.sh --run --min-free-gib 100 "/games/SteamLibrary/s
 
 ## 2. bees (deduplication) - disabled
 
-`system-config/bees.nix` is written but its import in `configuration.nix` is commented out. Reasons (measured
+`system-config/nixos/bees.nix` is written but its import in `configuration.nix` is commented out. Reasons (measured
 2026-11-07):
 
 - `jdupes -r -m -X size+:1M /games` found 3003 duplicate files in 1227 sets occupying ~15 GB, i.e. about 1% of
@@ -132,7 +132,7 @@ data, counted on uncompressed volume: 1.7 TB here). A full `btrfs balance` inval
 
 ## 3. Backups (btrbk to the HDD)
 
-Implemented in `system-config/backup.nix` (the `/backup` mount itself is in `file-systems.nix`). Backed up: `@home` (instance `home`) and `@root` (instance
+Implemented in `system-config/nixos/backup.nix` (the `/backup` mount itself is in `file-systems.nix`). Backed up: `@home` (instance `home`) and `@root` (instance
 `system`). The NVMe top-level subvolume is mounted at
 `/mnt/btrfs-top` (btrbk's working volume, `.snapshots` lives there); the backup disk is `sda4` (btrfs, label
 `games_arch`, UUID `66a4672a-...`, HDD) mounted at `/backup`.
@@ -257,7 +257,7 @@ failure-notify list                                           # open failure rec
 sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the next run would do
 ```
 
-A failed `btrbk-home` or `btrbk-system` run (missing HDD included) or a failed scrub is recorded by `system-config/failure-notify.nix`
+A failed `btrbk-home` or `btrbk-system` run (missing HDD included) or a failed scrub is recorded by `system-config/nixos/failure-notify.nix`
 in `/var/lib/failure-notify/`: the graphical session shows a critical notification, every zsh lists open records at start and prints a
 new one before the next prompt. The record disappears with the next successful run.
 

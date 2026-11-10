@@ -10,7 +10,7 @@
       #text-color = "#${palette.base05}";
       #border-color = "#${palette.base03}";
 
-      # Critical notifications (system failures from system-config/failure-notify.nix) stay until dismissed.
+      # Critical notifications (system failures from system-config/nixos/failure-notify.nix) stay until dismissed.
       "urgency=critical" = {
         default-timeout = 0;
         border-color = "#ff5555";

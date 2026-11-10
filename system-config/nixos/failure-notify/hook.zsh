@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# Open failure-notify records in an interactive zsh (system-config/failure-notify.nix defines _failure_notify_dir).
+# Open failure-notify records in an interactive zsh (system-config/nixos/failure-notify.nix defines _failure_notify_dir).
 # Open records are listed when a shell starts (not in every tmux pane) and a new one is printed before the next
 # prompt, once per shell. Only builtins: this runs before every prompt.
 

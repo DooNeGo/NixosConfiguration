@@ -1,7 +1,7 @@
 { config, ... }:
 {
   # KEY=value file (SEARX_SECRET_KEY=...), read by systemd as root.
-  age.secrets.searx-env.file = ../secrets/searx-env.age;
+  age.secrets.searx-env.file = ../../secrets/searx-env.age;
 
   services.searx = {
     enable = true;
