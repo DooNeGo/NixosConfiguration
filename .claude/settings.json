@@ -4,7 +4,14 @@
       "Bash(git rebase:*)",
       "Bash(git push:*)",
       "Bash(git branch -D:*)",
-      "Bash(git reset --hard:*)"
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(git checkout .:*)",
+      "Bash(git restore .:*)"
+    ],
+    "deny": [
+      "Bash(git push*--force*)",
+      "Bash(git push* -f*)"
     ]
   },
   "hooks": {
