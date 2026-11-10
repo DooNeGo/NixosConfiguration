@@ -4,6 +4,15 @@
   networking = {
     useNetworkd = true;
     useDHCP = false;
+
+    firewall = {
+      allowedTCPPorts = [
+        57621
+        8080
+        18789
+      ];
+      allowedUDPPorts = [ 5353 ];
+    };
   };
 
   systemd.network = {
