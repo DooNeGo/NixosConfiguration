@@ -1,0 +1,45 @@
+#compdef failure-notify
+# zsh completion for failure-notify (system-config/failure-notify.nix).
+
+# Ids of the open records, offered for `clear`.
+_failure-notify_ids() {
+  local dir=${FAILURE_NOTIFY_DIR:-/var/lib/failure-notify}
+  local -a ids
+  ids=(${dir}/*(N.:t))
+  _describe -t ids 'open failure record' ids
+}
+
+_failure-notify() {
+  local curcontext="$curcontext" state line
+  local -a commands
+  commands=(
+    'report:record a failure and notify the sinks'
+    'clear:remove a record'
+    'list:show the open records'
+  )
+
+  _arguments -C \
+    '1: :->command' \
+    '*:: :->args' && return
+
+  case $state in
+    command)
+      _describe -t commands 'failure-notify command' commands
+      ;;
+    args)
+      case $words[1] in
+        report)
+          _arguments \
+            '--ttl[drop the record after this many seconds]:seconds' \
+            ':id' \
+            '*:message'
+          ;;
+        clear)
+          _arguments ':id:_failure-notify_ids'
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_failure-notify "$@"

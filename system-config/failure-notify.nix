@@ -11,7 +11,7 @@ let
   # One file per open problem: first seen, expiry (0 = never), last sink call, message; one value per line.
   # A repeated report of the same id keeps "first seen", so shells show an incident once, and calls the sinks again
   # only after renotifySec, so a unit that fails every 10 minutes does not flood them.
-  failureNotify = pkgs.writeShellApplication {
+  command = pkgs.writeShellApplication {
     name = "failure-notify";
     runtimeInputs = [
       pkgs.coreutils
@@ -118,6 +118,18 @@ let
         *) usage ;;
       esac
     '';
+  };
+
+  # The completion rides in the same package, so every profile that installs the command gets it.
+  failureNotify = pkgs.symlinkJoin {
+    name = "failure-notify";
+    paths = [
+      command
+      (pkgs.runCommand "failure-notify-zsh-completion" { } ''
+        install -Dm644 ${./failure-notify/_failure-notify} $out/share/zsh/site-functions/_failure-notify
+      '')
+    ];
+    meta.mainProgram = "failure-notify";
   };
 in
 {
