@@ -7,8 +7,10 @@ zmodload zsh/datetime
 typeset -gA _failure_notify_seen
 _failure_notify_check() {
   local quiet=$1 f lines key stamp
+  [[ -n $_failure_notify_dir ]] || return
   for f in $_failure_notify_dir/*(N.); do
     lines=("${(@f)$(<$f)}")
+    (( $#lines >= 4 )) || continue   # a record is always four lines
     (( lines[2] == 0 || lines[2] > EPOCHSECONDS )) || continue
     key="$f ${lines[1]}"
     [[ -z ${_failure_notify_seen[$key]} ]] || continue

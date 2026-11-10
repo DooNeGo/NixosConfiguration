@@ -7,6 +7,11 @@
 # A repeated report of the same id keeps "first seen", so shells show an incident once, and calls the sinks again
 # only after FAILURE_NOTIFY_RENOTIFY_SEC, so a unit that fails every 10 minutes does not flood them.
 
+set -euo pipefail
+: "${FAILURE_NOTIFY_STATE_DIR:?set by system-config/failure-notify.nix}"
+: "${FAILURE_NOTIFY_RENOTIFY_SEC:?set by system-config/failure-notify.nix}"
+: "${FAILURE_NOTIFY_SINKS=}"
+
 dir=${FAILURE_NOTIFY_DIR:-$FAILURE_NOTIFY_STATE_DIR}
 sinks=()
 while IFS= read -r sink; do
@@ -14,6 +19,7 @@ while IFS= read -r sink; do
 done <<<"$FAILURE_NOTIFY_SINKS"
 
 help() {
+  # Unquoted on purpose: it expands the two variables named in the text. Write any other dollar sign in the text as \$.
   cat <<EOF
 Usage: failure-notify report [--ttl SECONDS] [--] ID MESSAGE...
        failure-notify clear ID
