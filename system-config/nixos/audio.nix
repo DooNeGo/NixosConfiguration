@@ -38,7 +38,8 @@ _: {
             flags = [ "nofail" ];
             args =
               let
-                sofaPath = ../../H9_48K_24bit_256tap_FIR_SOFA.sofa;
+                # The other HRTF sets are next to it in assets/sofa.
+                sofaPath = ../../assets/sofa/H9_48K_24bit_256tap_FIR_SOFA.sofa;
                 radius = 1.2;
 
                 mkSofa = name: az: el: {
