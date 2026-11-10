@@ -19,14 +19,10 @@
     ./network.nix
     ./sing-box.nix
     ./sshd.nix
-    #./virt-manager.nix
-    #./docker.nix
-    #./podman.nix
     ./nvidia.nix
     ./razer.nix
     ./tmux.nix
     ./xdg.nix
-    #./gtk-theme.nix
     ./file-systems.nix
     #./bees.nix
     ./backup.nix

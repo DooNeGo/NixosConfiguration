@@ -46,7 +46,6 @@ let
 
   androidHome = "${androidComposition.androidsdk}/libexec/android-sdk";
   jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-21;
-  #jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-17;
 
   devEnvironment = {
     JAVA_HOME = "${config.home.homeDirectory}/.android/jdk";
@@ -87,7 +86,6 @@ in
         config.lib.file.mkOutOfStoreSymlink "/var/lib/nocow/${config.home.username}/android-avds";
       ".android/sdk".source = config.lib.file.mkOutOfStoreSymlink androidHome;
       ".android/jdk".source = config.lib.file.mkOutOfStoreSymlink jdk.home;
-      #".android/jdk17".source = config.lib.file.mkOutOfStoreSymlink jdk17.home;
     };
   };
 }

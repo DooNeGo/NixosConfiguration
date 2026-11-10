@@ -19,7 +19,6 @@
     ./wofi.nix
     ./git.nix
     ./fastfetch.nix
-    #./bash.nix
     ./random-wallpaper.nix
     ./hyprpaper.nix
     ../shared/zsh.nix
@@ -71,11 +70,9 @@
     };
 
     flatpak.packages = [
-      #{ appId = "ru.linux_gaming.PortProton"; origin = "flathub";  }
       "ru.linux_gaming.PortProton"
     ];
 
-    #gnome-keyring.enable = true;
     hyprpolkitagent.enable = true;
   };
 

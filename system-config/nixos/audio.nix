@@ -39,8 +39,6 @@ _: {
             args =
               let
                 sofaPath = ../../H9_48K_24bit_256tap_FIR_SOFA.sofa;
-                #sofaPath = ../../EAC_48kHz.sofa;
-                #sofaPath = ../../D2_48K_24bit_256tap_FIR_SOFA.sofa;
                 radius = 1.2;
 
                 mkSofa = name: az: el: {
@@ -116,7 +114,6 @@ _: {
                 bedCount = 7;
                 heightCount = 4;
                 channelGain = 0.17;
-                #channelGain = 1;
 
                 mkMixer =
                   name: gain:

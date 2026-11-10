@@ -20,11 +20,6 @@
   gtk = {
     enable = true;
 
-    # theme = {
-    #   package = contrib.gtkThemeFromScheme { inherit scheme; };
-    #   name = scheme.slug;
-    # };
-
     iconTheme = {
       package = pkgs.paper-icon-theme;
       name = "Paper-Mono-Dark";

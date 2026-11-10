@@ -18,7 +18,6 @@
     stateVersion = "26.05";
 
     packages = with pkgs; [
-      #git
       jq
       curl
       ungoogled-chromium

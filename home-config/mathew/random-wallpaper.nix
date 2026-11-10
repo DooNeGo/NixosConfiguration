@@ -16,7 +16,6 @@ in
   systemd.user.services.random-wallpaper = {
     Unit = {
       Description = "Set random wallpaper on login";
-      # Requires = [ "hyprpaper.service" "graphical-session.target" ];
       After = [
         "hyprpaper.service"
         "graphical-session.target"
