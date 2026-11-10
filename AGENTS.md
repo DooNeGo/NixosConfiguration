@@ -46,6 +46,8 @@ nixfmt <file>.nix                                     # format the files you cha
 
 ## Desktop session and remote access
 
+Reasons, pairing and troubleshooting: `docs/remote-access.md`.
+
 - No autologin. The Hyprland (UWSM) session is started on demand over ssh: `sudo systemctl start hyprland-mathew` (`system-config/hyprland-session.nix`); `stop` ends it. The unit takes tty1 and stops SDDM, which `ExecStopPost` starts again; physical login still goes through SDDM.
 - Steam Remote Play without a desktop session: `sudo systemctl start steam-bigpicture-mathew` (`system-config/steam-bigpicture-session.nix`, headless gamescope, `stop` ends it); do not log in physically as `mathew` meanwhile, one Steam per user.
 - The unit exports `HYPRLAND_START_LOCKED`, and `home-config/mathew/hyprland.lua` then starts `hyprlock`, so a remotely started session is locked.
@@ -53,6 +55,20 @@ nixfmt <file>.nix                                     # format the files you cha
 - Sunshine (`system-config/remote-access.nix`) runs as `mathew` only, captures with `wlr` the virtual `HEADLESS-1` output that `hyprland.lua` creates; `DP-2` is a physical monitor that is normally off. Audio for streaming goes through the system-wide PipeWire virtual sinks in `audio.nix` (`spatializer`, `Null-Sink`).
 - Games run under `mathew` (Steam with `PULSE_SINK` set in `steam.nix`); a separate `games` user is out of scope because headless Steam on NVIDIA and per-account Steam login cost more than the isolation is worth. `openclaw-npm` stays a separate non-wheel user for agents and the Rider backend; keep its name, because renaming moves `/home` state (Nix profiles, `~/.openclaw`) for no isolation gain.
 - Rider is pinned in one place, `home-config/shared/overlays/rider.nix`, used by both `mathew` (Remote Development client) and `openclaw-npm` (backend); versions must match.
+
+## Verifying a change
+
+| Changed path | Build |
+|---|---|
+| `flake.nix`, `system-config/`, `lib/` | the root flake `toplevel` |
+| `home-config/mathew/` | `home-manager build --flake ./home-config/mathew#mathew` |
+| `home-config/openclaw-npm/` | `home-manager build --flake ./home-config/openclaw-npm#openclaw-npm` |
+| `home-config/shared/`, `lib/pkgs.nix` | both home builds and the root build |
+| `kokoro/` | `nix build ./kokoro#kokoro-ru` |
+
+When a build fails, rerun it without output redirection and read `2>&1 | tail -30`. Report to the owner the exact `switch` commands and what could not be verified without running (a service start, a session, a mount).
+
+In a review (`/code-review`), report what causes wrong behaviour, a failing check or a misleading result; leave out pure style and naming.
 
 ## Conventions and gotchas
 
