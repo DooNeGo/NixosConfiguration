@@ -34,6 +34,13 @@
         call winrestview(l:view)
       endfunction
 
+      " Reload files changed outside vim (e.g. by an agent) when the window regains focus; needs tmux `focus-events`.
+      set autoread
+      augroup checktime
+        autocmd!
+        autocmd FocusGained,BufEnter * silent! checktime
+      augroup END
+
       augroup nix_format
         autocmd!
         autocmd BufWritePre *.nix call s:NixFormat()

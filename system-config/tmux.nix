@@ -10,6 +10,7 @@
     extraConfig = ''
       set -g mouse on
       set -g renumber-windows on
+      set -g focus-events on
     '';
   };
 }
