@@ -30,7 +30,7 @@ home-manager build --flake ./home-config/mathew#mathew
 home-manager build --flake ./home-config/openclaw-npm#openclaw-npm
 nix build ./kokoro#kokoro-ru
 nix flake update --flake ./home-config/openclaw-npm  # per-flake lock update ("Update flake" commits)
-scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh
+scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh, zsh -n over *.zsh
 nixfmt <file>.nix                                     # format the files you changed
 ```
 
