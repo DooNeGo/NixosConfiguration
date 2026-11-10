@@ -350,7 +350,7 @@ _: {
               "node.description" = "Mumble as Microphone";
               "capture.props" = {
                 # Mumble's output node name.
-                "node.target" = "Mumble";
+                "target.object" = "Mumble";
                 "node.passive" = true;
               };
               "playback.props" = {
