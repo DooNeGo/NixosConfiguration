@@ -33,6 +33,7 @@
     ./remote-access.nix
     ./searx.nix
     ./whisper-cpp.nix
+    ./shared-repo-acl.nix
   ];
 
   boot = {
