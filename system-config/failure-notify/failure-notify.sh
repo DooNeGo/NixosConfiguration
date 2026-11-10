@@ -68,6 +68,15 @@ sanitize() {
 lock() {
   { exec 9>"$dir/.lock"; } 2>/dev/null && flock -w 30 9
 }
+# Called when lock failed: tell a missing permission (the usual case, the directory belongs to root) from a timeout.
+lock_failed() {
+  if [[ -w $dir ]]; then
+    echo "failure-notify: timed out waiting for the lock on $dir" >&2
+  else
+    echo "failure-notify: no write access to $dir (run it as root, e.g. with sudo)" >&2
+  fi
+  exit 1
+}
 unlock() {
   flock -u 9
 }
@@ -133,10 +142,7 @@ case $cmd in
       notify=1
       notified=$now
     fi
-    lock || {
-      echo "failure-notify: could not lock $dir" >&2
-      exit 1
-    }
+    lock || lock_failed
     printf '%s\n%s\n%s\n%s\n' "$since" "$expires" "$notified" "$message" >"$dir/.tmp.$$"
     chmod 644 "$dir/.tmp.$$"
     mv "$dir/.tmp.$$" "$dir/$id"
@@ -155,10 +161,7 @@ case $cmd in
     fi
     [[ $# -eq 1 ]] || usage "clear needs exactly one ID"
     id=$(sanitize "$1")
-    lock || {
-      echo "failure-notify: could not lock $dir" >&2
-      exit 1
-    }
+    lock || lock_failed
     rm -f "$dir/$id"
     ;;
   list)
