@@ -13,7 +13,10 @@ let
   # only after renotifySec, so a unit that fails every 10 minutes does not flood them.
   failureNotify = pkgs.writeShellApplication {
     name = "failure-notify";
-    runtimeInputs = [ pkgs.coreutils ];
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.util-linux
+    ];
     text = ''
       dir=''${FAILURE_NOTIFY_DIR:-${stateDir}}
       sinks=(${lib.escapeShellArgs cfg.sinks})
@@ -29,13 +32,26 @@ let
         [[ -n $id ]] || usage
         printf '%s' "''${id/#./_}"
       }
+      # Only the changes of the directory are serialised, so that a pruning cannot delete a record that a report has
+      # just renewed. Fails quietly when the lock file cannot be opened (list as an ordinary user).
+      lock() {
+        { exec 9>"$dir/.lock"; } 2>/dev/null && flock -w 30 9
+      }
+      unlock() {
+        flock -u 9
+      }
       prune() {
         local f expires now
         now=$(date +%s)
         for f in "$dir"/*; do
           [[ -f $f ]] || continue
           { read -r _ && read -r expires; } <"$f" || continue
-          if ((expires != 0 && expires <= now)); then rm -f "$f"; fi
+          if ((expires != 0 && expires <= now)); then
+            lock || return 0
+            # The record may have been renewed while waiting for the lock.
+            { read -r _ && read -r expires; } <"$f" && ((expires != 0 && expires <= now)) && rm -f "$f"
+            unlock
+          fi
         done
       }
 
@@ -67,9 +83,14 @@ let
             notify=1
             notified=$now
           fi
+          lock || {
+            echo "failure-notify: could not lock $dir" >&2
+            exit 1
+          }
           printf '%s\n%s\n%s\n%s\n' "$since" "$expires" "$notified" "$message" >"$dir/.tmp.$$"
           chmod 644 "$dir/.tmp.$$"
           mv "$dir/.tmp.$$" "$dir/$id"
+          unlock
           if ((notify)); then
             for sink in "''${sinks[@]}"; do
               FAILED_UNIT=$id FAILED_MESSAGE=$message FAILED_TIME=$since timeout 10 "$sink" ||
@@ -79,7 +100,12 @@ let
           ;;
         clear)
           [[ $# -eq 1 ]] || usage
-          rm -f "$dir/$(sanitize "$1")"
+          id=$(sanitize "$1")
+          lock || {
+            echo "failure-notify: could not lock $dir" >&2
+            exit 1
+          }
+          rm -f "$dir/$id"
           ;;
         list)
           prune 2>/dev/null || true
