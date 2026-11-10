@@ -50,27 +50,19 @@ in
       "/var/lib/nocow".options = defaultBtrfsOptions ++ optionalMount;
 
       # Top-level subvolume (id 5): btrbk reads every subvolume from here and keeps its .snapshots here.
-      "/mnt/btrfs-top" = {
-        device = config.fileSystems."/".device;
-        fsType = "btrfs";
-        options = defaultBtrfsOptions ++ [ "subvolid=5" ];
-      };
+      "/mnt/btrfs-top".options = defaultBtrfsOptions ++ [ "subvolid=5" ];
 
       # Backup HDD (sda4, label games_arch). The HDD (~100 MiB/s) is the bottleneck, not the CPU, so compress-force at
       # zstd:5 writes ~2x faster than uncompressed on compressible data and costs nothing on incompressible data
       # (measured, docs/btrfs.md).
-      "/backup" = {
-        device = "/dev/disk/by-uuid/66a4672a-820c-440c-9f9a-6b7b52c4e434";
-        fsType = "btrfs";
-        options = [
-          "defaults"
-          "compress-force=zstd:5"
-          "noatime"
-        ]
-        # Mounted on first access, so a disk that shows up after boot needs no manual mount.
-        ++ optionalMount
-        ++ [ "x-systemd.automount" ];
-      };
+      "/backup".options = [
+        "defaults"
+        "compress-force=zstd:5"
+        "noatime"
+      ]
+      # Mounted on first access, so a disk that shows up after boot needs no manual mount.
+      ++ optionalMount
+      ++ [ "x-systemd.automount" ];
     };
 
     # Return mostly-empty data block groups to unallocated space (kernel >= 6.11) so the disk cannot hit ENOSPC with

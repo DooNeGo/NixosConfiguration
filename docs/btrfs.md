@@ -16,6 +16,13 @@ agent user has no root.
 | `nofail,x-systemd.device-timeout=10s` on `/games`, `/var/lib/nocow`, `/backup`; `x-systemd.automount` on `/backup` only | `file-systems.nix` | mounts the system can run without: a missing disk does not stop the boot and is given up on after 10 s. Only the HDD is an automount (mounted on first access, so a disk that shows up later needs no manual mount); for subvolumes of the system disk that buys nothing and tmpfiles rules would stop applying |
 | `mountDirs` | `file-systems.nix`, `backup.nix` | directories and permissions applied by a service each time a mount comes up (`/backup` 0700, `/backup/btrbk`): tmpfiles skips automount points and must never create these paths on the NVMe root |
 
+After regenerating `system-config/hardware-configuration.nix` (`nixos-generate-config`), check its `fileSystems` entries:
+`/backup`, `/mnt/btrfs-top` and the other mounts keep their `device` and `fsType` there and their options in
+`file-systems.nix`. The generator writes what is mounted at that moment, and with `/backup` automounted that is an
+extra `fileSystems."/backup"` with `device = "systemd-1"; fsType = "autofs"` next to the real one. Delete the `autofs`
+block (a duplicate attribute stops the build); keep the `btrfs` one. `usbhid` and `usb_storage` in
+`boot.initrd.availableKernelModules` are needed for the USB keyboard and the generator may drop them: put them back.
+
 Watch reclaim: `grep . /sys/fs/btrfs/*/allocation/data/{reclaim_count,reclaim_bytes,reclaim_errors}`.
 Undo: write `0` into `periodic_reclaim` and `dynamic_reclaim` there.
 

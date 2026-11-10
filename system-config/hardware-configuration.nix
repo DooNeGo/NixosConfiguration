@@ -32,10 +32,10 @@
     options = [ "subvol=@root" ];
   };
 
-  fileSystems."/home" = {
+  fileSystems."/var/log" = {
     device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
     fsType = "btrfs";
-    options = [ "subvol=@home" ];
+    options = [ "subvol=@log" ];
   };
 
   fileSystems."/nix" = {
@@ -50,10 +50,15 @@
     options = [ "subvol=@games" ];
   };
 
-  fileSystems."/var/log" = {
+  fileSystems."/home" = {
     device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
     fsType = "btrfs";
-    options = [ "subvol=@log" ];
+    options = [ "subvol=@home" ];
+  };
+
+  fileSystems."/mnt/btrfs-top" = {
+    device = "/dev/disk/by-uuid/6c4d7ccb-654d-4a82-9e5f-737088e0194a";
+    fsType = "btrfs";
   };
 
   fileSystems."/var/lib/nocow" = {
@@ -69,6 +74,11 @@
       "fmask=0077"
       "dmask=0077"
     ];
+  };
+
+  fileSystems."/backup" = {
+    device = "/dev/disk/by-uuid/66a4672a-820c-440c-9f9a-6b7b52c4e434";
+    fsType = "btrfs";
   };
 
   swapDevices = [ ];
