@@ -21,7 +21,8 @@
     ./sshd.nix
     ./nvidia.nix
     ./razer.nix
-    ./tmux.nix
+    ../shared/tmux.nix
+    ../shared/vim.nix
     ./xdg.nix
     ./file-systems.nix
     #./bees.nix

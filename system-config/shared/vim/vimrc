@@ -1,0 +1,36 @@
+" The wrapper starts vim with `-u <this file>`, which skips the built-in defaults
+" (filetype detection, syntax, incsearch, ...): load them explicitly.
+source $VIMRUNTIME/defaults.vim
+
+" nixfmt on :w for Nix files; a nixfmt error leaves the buffer untouched. `:let g:nix_autoformat = 0` disables it.
+" g:nixfmt is defined by vim.nix.
+function! s:NixFormat() abort
+  if !get(g:, 'nix_autoformat', 1)
+    return
+  endif
+  let l:view = winsaveview()
+  silent keepjumps execute '%!' . g:nixfmt
+  if v:shell_error
+    let l:err = getline(1, '$')
+    silent undo
+    echohl ErrorMsg
+    for l:line in l:err
+      echom 'nixfmt: ' . l:line
+    endfor
+    echohl None
+  endif
+  call winrestview(l:view)
+endfunction
+
+" Reload files changed outside vim (e.g. by an agent) when the window regains focus; needs tmux `focus-events`.
+set autoread
+augroup checktime
+  autocmd!
+  autocmd FocusGained,BufEnter * silent! checktime
+augroup END
+
+augroup nix_format
+  autocmd!
+  autocmd BufWritePre *.nix call s:NixFormat()
+  autocmd FileType nix let &l:formatprg = g:nixfmt
+augroup END
