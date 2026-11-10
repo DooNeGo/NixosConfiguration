@@ -7,7 +7,7 @@
 }:
 let
   top = "/mnt/btrfs-top"; # top-level subvolume of the NVMe filesystem, see file-systems.nix
-  backupMount = "/backup"; # HDD, see file-systems.nix
+  backupMount = "/backup";
   targetDir = "${backupMount}/btrbk";
   mountDirsUnit = "mount-dirs-${utils.escapeSystemdPath backupMount}.service";
 
@@ -34,12 +34,12 @@ in
           settings = {
             lockfile = "/var/lib/btrbk/${lock}.lock";
             timestamp_format = "long"; # minute resolution, needed for sub-daily snapshots
-            snapshot_dir = ".snapshots"; # relative to the volume (top-level); created by tmpfiles below
-            snapshot_create = "onchange"; # no new snapshot when the subvolume did not change
+            snapshot_dir = ".snapshots";
+            snapshot_create = "onchange";
             incremental = "yes";
-            snapshot_preserve_min = localMin; # local snapshots younger than this are never deleted
+            snapshot_preserve_min = localMin;
             snapshot_preserve = "no";
-            target_preserve_min = "no"; # the HDD keeps exactly what target_preserve says
+            target_preserve_min = "no";
             target_preserve = targetPreserve;
             volume.${top} = {
               target = targetDir;
@@ -76,10 +76,9 @@ in
   ];
 
   systemd = {
-    # Without the HDD there is no target and btrbk would keep every local snapshot, filling the disk, so the run
-    # must fail before btrbk starts. The check triggers the automount. RequiresMountsFor would not do: a device that
-    # times out cancels the job without putting the unit into "failed", so nothing would report it. "+" runs the
-    # check as root, the btrbk user cannot look into the root-only ${backupMount}.
+    # Without the HDD btrbk would keep every local snapshot and fill the disk, so the run must fail before it starts.
+    # RequiresMountsFor would not do: a device timeout cancels the job without marking the unit failed. "+" runs the
+    # check as root; the btrbk user cannot look into the root-only ${backupMount}.
     services = lib.genAttrs [ "btrbk-home" "btrbk-system" ] (_: {
       unitConfig.RequiresMountsFor = top;
       # Lets the first run after the disk appears see the target directory already created.

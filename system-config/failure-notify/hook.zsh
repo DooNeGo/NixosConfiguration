@@ -10,7 +10,7 @@ _failure_notify_check() {
   [[ -n $_failure_notify_dir ]] || return
   for f in $_failure_notify_dir/*(N.); do
     lines=("${(@f)$(<$f)}")
-    (( $#lines >= 4 )) || continue   # a record is always four lines
+    (( $#lines >= 4 )) || continue
     (( lines[2] == 0 || lines[2] > EPOCHSECONDS )) || continue
     key="$f ${lines[1]}"
     [[ -z ${_failure_notify_seen[$key]} ]] || continue

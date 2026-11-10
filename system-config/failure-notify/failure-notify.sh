@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# failure-notify: records of failures that shells and desktop sessions show to the users.
 # Built by system-config/failure-notify.nix, which sets FAILURE_NOTIFY_STATE_DIR, FAILURE_NOTIFY_RENOTIFY_SEC
 # (seconds) and FAILURE_NOTIFY_SINKS (one executable per line); FAILURE_NOTIFY_DIR overrides the directory.
 #
@@ -49,7 +48,6 @@ Examples:
   failure-notify clear backup-disk
 EOF
 }
-# Usage errors go to stderr with a pointer to the help, not the whole help.
 usage() {
   [[ $# -eq 0 ]] || echo "failure-notify: $*" >&2
   echo "Try 'failure-notify --help' for more information." >&2
@@ -68,7 +66,7 @@ sanitize() {
 lock() {
   { exec 9>"$dir/.lock"; } 2>/dev/null && flock -w 30 9
 }
-# Called when lock failed: tell a missing permission (the usual case, the directory belongs to root) from a timeout.
+# The usual cause is no write access (the directory is root's), not a timeout.
 lock_failed() {
   if [[ -w $dir ]]; then
     echo "failure-notify: timed out waiting for the lock on $dir" >&2

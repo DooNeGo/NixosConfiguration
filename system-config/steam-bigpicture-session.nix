@@ -13,11 +13,8 @@ let
   cursorSize = 12;
 in
 {
-  # Steam Big Picture for Steam Remote Play, started on demand over ssh:
-  #   sudo systemctl start steam-bigpicture-mathew   (stop ends it)
-  # gamescope with the headless backend: no DRM, no monitor, no tty and no Hyprland. Steam runs with
-  # -pipewire-dmabuf, so Remote Play captures through gamescope's PipeWire stream and encodes with NVENC.
-  # Display manager stays on tty1; do not log in physically as mathew while this runs (one Steam per user).
+  # gamescope with the headless backend: no DRM, no monitor, no tty and no Hyprland. Steam runs with -pipewire-dmabuf,
+  # so Remote Play captures through gamescope's PipeWire stream and encodes with NVENC.
   security.pam.services.steam-bigpicture-mathew.startSession = true;
 
   systemd.services.steam-bigpicture-mathew = {

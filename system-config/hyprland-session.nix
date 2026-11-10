@@ -4,10 +4,9 @@ let
   systemctl = "${config.systemd.package}/bin/systemctl";
 in
 {
-  # Without autologin the session is started on demand (ssh in, `sudo systemctl start hyprland-mathew`).
-  # Modelled on nixpkgs services/wayland/cage.nix: a logind session on tty1 is needed for DRM master (DP-2);
-  # the UWSM unit that Hyprland creates is a user unit and cannot create one. Same command as hyprland-uwsm.desktop,
-  # so ~/.config/uwsm/env (NVIDIA env from Home Manager) is applied.
+  # Modelled on nixpkgs services/wayland/cage.nix: a logind session on tty1 is needed for DRM master (DP-2); the UWSM
+  # unit that Hyprland creates is a user unit and cannot create one. Same command as hyprland-uwsm.desktop, so
+  # ~/.config/uwsm/env (NVIDIA env from Home Manager) is applied.
   security.pam.services.hyprland-mathew.startSession = true;
 
   systemd.services.hyprland-mathew = {
@@ -31,7 +30,6 @@ in
     environment.HYPRLAND_START_LOCKED = "1";
     serviceConfig = {
       ExecStart = "${uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop";
-      # Give tty1 back to the display manager for physical login.
       ExecStopPost = "-${systemctl} --no-block start display-manager.service";
       User = "mathew";
       IgnoreSIGPIPE = "no";

@@ -22,7 +22,6 @@ let
     text = builtins.readFile ./failure-notify/failure-notify.sh;
   };
 
-  # The completion rides in the same package, so every profile that installs the command gets it.
   failureNotify = pkgs.symlinkJoin {
     name = "failure-notify";
     paths = [
@@ -93,9 +92,8 @@ in
       });
     };
 
-    # Desktop notifications come from the session itself, so nothing privileged has to reach into a user's session
-    # bus: the records are world-readable and each graphical session notifies about the ones it has not shown yet,
-    # including those that were written before it started.
+    # Each graphical session notifies itself from the world-readable records (also those written before it started),
+    # so nothing privileged has to reach into a user's session bus.
     systemd.user = {
       paths.failure-notify = {
         wantedBy = [ "graphical-session.target" ];

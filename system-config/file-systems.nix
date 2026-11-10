@@ -52,23 +52,18 @@ in
       # Top-level subvolume (id 5): btrbk reads every subvolume from here and keeps its .snapshots here.
       "/mnt/btrfs-top".options = defaultBtrfsOptions ++ [ "subvolid=5" ];
 
-      # Backup HDD (sda4, label games_arch). The HDD (~100 MiB/s) is the bottleneck, not the CPU, so compress-force at
-      # zstd:5 writes ~2x faster than uncompressed on compressible data and costs nothing on incompressible data
-      # (measured, docs/btrfs.md).
+      # HDD-bound: zstd:5 writes faster than uncompressed (docs/btrfs.md, section 5).
       "/backup".options = [
         "defaults"
         "compress-force=zstd:5"
         "noatime"
       ]
-      # Mounted on first access, so a disk that shows up after boot needs no manual mount.
       ++ optionalMount
       ++ [ "x-systemd.automount" ];
     };
 
-    # Return mostly-empty data block groups to unallocated space (kernel >= 6.11) so the disk cannot hit ENOSPC with
-    # free space stuck in half-empty chunks; dynamic_reclaim scales the threshold with the unallocated space left.
-    # This option only reaches filesystems mounted before sysinit: its path units watch sysfs, which sends no inotify
-    # events, so a later mount is never noticed. Automounted filesystems are set by btrfs-reclaim-* below.
+    # Reclaim (kernel >= 6.11) stops free space from getting stuck in half-empty chunks. boot.kernel.sysfs only reaches
+    # filesystems mounted before sysinit (sysfs sends no inotify events), so /backup is set by btrfs-reclaim-* below.
     boot.kernel.sysfs.fs.btrfs.${uuidOf "/"}.allocation.data = reclaim;
 
     services = {
