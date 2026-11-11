@@ -3,9 +3,9 @@
 source $VIMRUNTIME/defaults.vim
 
 " nixfmt on :w for Nix files; a nixfmt error leaves the buffer untouched. `:let g:nix_autoformat = 0` disables it.
-" g:nixfmt is defined by vim.nix.
+" g:nixfmt is defined by vim.nix. hardware-configuration.nix is generated and stays as nixos-generate-config wrote it.
 function! s:NixFormat() abort
-  if !get(g:, 'nix_autoformat', 1)
+  if !get(g:, 'nix_autoformat', 1) || expand('<afile>:t') ==# 'hardware-configuration.nix'
     return
   endif
   let l:view = winsaveview()
@@ -32,5 +32,5 @@ augroup END
 augroup nix_format
   autocmd!
   autocmd BufWritePre *.nix call s:NixFormat()
-  autocmd FileType nix let &l:formatprg = g:nixfmt
+  autocmd FileType nix if expand('<afile>:t') !=# 'hardware-configuration.nix' | let &l:formatprg = g:nixfmt | endif
 augroup END

@@ -4,7 +4,7 @@
 
 Personal NixOS + Home Manager configuration for the host `nixos` (x86_64-linux, Hyprland desktop, NVIDIA), plus nix-darwin + Home Manager for the owner's `macbook-air-m1` (aarch64-darwin). There is no test suite; verification means evaluating/building the Nix outputs. The darwin outputs cannot be built on this machine: evaluate them here, the owner builds and switches on the Mac. Agents run as `openclaw-npm`, which has no sudo: build and verify, then hand `switch` (`nixos-rebuild`, `home-manager`) and any `chown`/`rm` under `/home` or `/games` to the owner. When a command fails for lack of permission, ask the owner instead of looking for a workaround.
 
-Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agent), `reports/` and `research_notes/` (untracked research), the data in `assets/` and `result` in the root.
+Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agent), `reports/` and `research_notes/` (untracked research) and `result` in the root.
 
 ## Git workflow
 
@@ -72,6 +72,8 @@ Reasons, pairing and troubleshooting: `docs/remote-access.md`.
 | `home-config/openclaw-npm/` | `home-manager build --flake ./home-config/openclaw-npm#openclaw-npm` |
 | `home-config/shared/` | both home builds and the `DooNeGo` eval |
 | `lib/`, `overlays/` | both home builds, the system build and the `DooNeGo` eval |
+| `assets/sofa/` | the system `toplevel` |
+| `assets/wallpapers/` | the `mathew` home build |
 | `kokoro/` | `nix build ./kokoro#kokoro-ru` |
 
 When a build fails, rerun it without output redirection and read `2>&1 | tail -30`. Report to the owner the exact `switch` commands and what could not be verified without running (a service start, a session, a mount).
