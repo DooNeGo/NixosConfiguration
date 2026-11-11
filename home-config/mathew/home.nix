@@ -17,11 +17,12 @@
     ./hypridle.nix
     ./hyprsunset.nix
     ./wofi.nix
-    ./git.nix
     ./fastfetch.nix
     ./random-wallpaper.nix
     ./hyprpaper.nix
     ../shared/zsh.nix
+    ../shared/git.nix
+    ../shared/git-identity.nix
     ../shared/maui-dev.nix
     ../shared/ssh.nix
     ./hyprlauncher.nix

@@ -23,27 +23,6 @@ let
 
   dotnet = pkgs.dotnet-sdk_10;
 
-  riderFHS = pkgs.buildFHSEnv {
-    name = "rider";
-    targetPkgs =
-      pkgs: with pkgs; [
-        jetbrains.rider
-        openssl
-      ];
-    profile = ''
-      export _JAVA_OPTIONS="-Dij.load.shell.env=true $_JAVA_OPTIONS"
-    '';
-    runScript = "rider";
-  };
-
-  riderDesktop = pkgs.makeDesktopItem {
-    name = "rider";
-    desktopName = "Rider";
-    exec = "rider";
-    terminal = false;
-    mimeTypes = [ "text/plain" ];
-  };
-
   androidHome = "${androidComposition.androidsdk}/libexec/android-sdk";
   jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-21;
 
@@ -56,6 +35,8 @@ let
   };
 in
 {
+  imports = [ ./rider.nix ];
+
   systemd.user.sessionVariables = devEnvironment;
 
   systemd.user.tmpfiles.rules = [
@@ -63,17 +44,10 @@ in
     "d /var/lib/nocow/${config.home.username}/android-avds 0755 - - -"
   ];
 
-  programs.jetbrains-remote = {
-    enable = true;
-    ides = [ pkgs.jetbrains.rider ];
-  };
-
   home = {
     packages = with pkgs; [
       dotnet
       androidComposition.androidsdk
-      riderDesktop
-      riderFHS
       jdk
     ];
 
