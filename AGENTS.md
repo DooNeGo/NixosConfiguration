@@ -25,7 +25,7 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 
 `lib/pkgs.nix` is a plain function (not a flake) used by the NixOS flake and the home flakes: base nixpkgs `config`, the `pkgs.stable` overlay (`channelsOverlay`), the Rider overlay and `mkPkgs` for Home Manager; each flake passes its own `inputs`, `cudaSupport` stays per host (`extraConfig`). `kokoro/` is standalone and does not use it.
 
-`home-config/shared/*.nix` (git, git-identity, zsh, ssh, rider, maui-dev) are plain modules imported by several user configs; one imported by `DooNeGo` must also evaluate on darwin (guard Linux-only parts with `pkgs.stdenv.hostPlatform.isLinux`). `system-config/nixos/configuration.nix` is the import list for system modules. `system-config/shared/` holds system modules meant for both NixOS and nix-darwin: write them only with options both module systems have (`environment.*`, `programs.tmux.extraConfig`), or the darwin host cannot import them.
+`home-config/shared/*.nix` (git, git-identity, zsh, ssh, rider, dotnet, maui-dev) are plain modules imported by several user configs; one imported by `DooNeGo` must also evaluate on darwin (guard Linux-only parts with `pkgs.stdenv.hostPlatform.isLinux`). `system-config/nixos/configuration.nix` is the import list for system modules. `system-config/shared/` holds system modules meant for both NixOS and nix-darwin: write them only with options both module systems have (`environment.*`, `programs.tmux.extraConfig`), or the darwin host cannot import them.
 
 ## Commands (run from repo root)
 

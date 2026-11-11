@@ -21,21 +21,21 @@ let
     extraLicenses = [ "android-sdk-license" ];
   };
 
-  dotnet = pkgs.dotnet-sdk_10;
-
   androidHome = "${androidComposition.androidsdk}/libexec/android-sdk";
   jdk = pkgs.javaPackages.compiler.temurin-bin.jdk-21;
 
   devEnvironment = {
     JAVA_HOME = "${config.home.homeDirectory}/.android/jdk";
-    DOTNET_ROOT = "${dotnet}/share/dotnet";
     ANDROID_HOME = "${config.home.homeDirectory}/.android/sdk";
     ANDROID_SDK_ROOT = "${config.home.homeDirectory}/.android/sdk";
     ANDROID_AVD_HOME = "${config.home.homeDirectory}/.android/avd";
   };
 in
 {
-  imports = [ ./rider.nix ];
+  imports = [
+    ./dotnet.nix
+    ./rider.nix
+  ];
 
   systemd.user.sessionVariables = devEnvironment;
 
@@ -45,15 +45,12 @@ in
   ];
 
   home = {
-    packages = with pkgs; [
-      dotnet
+    packages = [
       androidComposition.androidsdk
       jdk
     ];
 
-    sessionVariables = devEnvironment // {
-      PATH = "${dotnet}/bin:$PATH";
-    };
+    sessionVariables = devEnvironment;
 
     file = {
       ".android/avd".source =

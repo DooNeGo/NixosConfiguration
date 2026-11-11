@@ -2,6 +2,7 @@
 {
   imports = [
     ../shared/zsh.nix
+    ../shared/dotnet.nix
     ../shared/git-identity.nix
     ../shared/rider.nix
   ];
