@@ -7,7 +7,7 @@ in
     executable = true;
     text = ''
       #!/usr/bin/env sh
-      WALL_DIR="$HOME/Wallpapers"
+      WALL_DIR=${../../assets/wallpapers}
       RANDOM_WALL=$(find "$WALL_DIR" -type f | shuf -n 1)
       exec hyprctl hyprpaper wallpaper ,"$RANDOM_WALL"
     '';
