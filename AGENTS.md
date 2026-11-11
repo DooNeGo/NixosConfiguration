@@ -2,7 +2,7 @@
 
 ## Overview
 
-Personal NixOS + Home Manager configuration for a single host (`nixos`, x86_64-linux, Hyprland desktop, NVIDIA). There is no test suite; verification means evaluating/building the Nix outputs. Agents run as `openclaw-npm`, which has no sudo: build and verify, then hand `switch` (`nixos-rebuild`, `home-manager`) and any `chown`/`rm` under `/home` or `/games` to the owner. When a command fails for lack of permission, ask the owner instead of looking for a workaround.
+Personal NixOS + Home Manager configuration for the host `nixos` (x86_64-linux, Hyprland desktop, NVIDIA), plus nix-darwin + Home Manager for the owner's `macbook-air-m1` (aarch64-darwin). There is no test suite; verification means evaluating/building the Nix outputs. The darwin outputs cannot be built on this machine: evaluate them here, the owner builds and switches on the Mac. Agents run as `openclaw-npm`, which has no sudo: build and verify, then hand `switch` (`nixos-rebuild`, `home-manager`) and any `chown`/`rm` under `/home` or `/games` to the owner. When a command fails for lack of permission, ask the owner instead of looking for a workaround.
 
 Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agent), `reports/` and `research_notes/` (untracked research), the data in `assets/` and `result` in the root.
 
@@ -17,13 +17,15 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 | Flake | Output | Applies to |
 |---|---|---|
 | `system-config/nixos/` | `nixosConfigurations.nixos` | the whole system |
+| `system-config/darwin/` | `darwinConfigurations.macbook-air-m1` (nix-darwin, nix-homebrew) | the MacBook system |
+| `home-config/DooNeGo/` | `homeConfigurations.DooNeGo` | the MacBook user (standalone Home Manager, like the Linux users) |
 | `home-config/mathew/` | `homeConfigurations.mathew` | desktop user `mathew` (Hyprland, waybar, kitty…) |
 | `home-config/openclaw-npm/` | `homeConfigurations.openclaw-npm` | agent/dev user (MAUI/Android SDK, Rider, nix-ld) |
 | `kokoro/` | Russian TTS packages (`kokoro-ru`, `ruaccent`, `pycrfsuite`, pinned data trees) + `cli/kokoro_cli.py` | standalone; pinned to its own nixpkgs rev |
 
-`lib/pkgs.nix` is a plain function (not a flake) used by the system flake and both home flakes: base nixpkgs `config`, the `pkgs.stable` overlay (`channelsOverlay`), the Rider overlay and `mkPkgs` for Home Manager; each flake passes its own `inputs`, `cudaSupport` stays per host (`extraConfig`). `kokoro/` is standalone and does not use it.
+`lib/pkgs.nix` is a plain function (not a flake) used by the NixOS flake and the home flakes: base nixpkgs `config`, the `pkgs.stable` overlay (`channelsOverlay`), the Rider overlay and `mkPkgs` for Home Manager; each flake passes its own `inputs`, `cudaSupport` stays per host (`extraConfig`). `kokoro/` is standalone and does not use it.
 
-`home-config/shared/*.nix` (git, zsh, ssh, maui-dev) are plain modules imported by several user configs. `system-config/nixos/configuration.nix` is the import list for system modules. `system-config/shared/` holds system modules meant for both NixOS and nix-darwin: write them only with options both module systems have (`environment.*`, `programs.tmux.extraConfig`), or the darwin host cannot import them.
+`home-config/shared/*.nix` (git, git-identity, zsh, ssh, rider, maui-dev) are plain modules imported by several user configs; one imported by `DooNeGo` must also evaluate on darwin (guard Linux-only parts with `pkgs.stdenv.hostPlatform.isLinux`). `system-config/nixos/configuration.nix` is the import list for system modules. `system-config/shared/` holds system modules meant for both NixOS and nix-darwin: write them only with options both module systems have (`environment.*`, `programs.tmux.extraConfig`), or the darwin host cannot import them.
 
 ## Commands (run from repo root)
 
@@ -35,12 +37,14 @@ nix eval ./system-config/nixos#nixosConfigurations.nixos.config.<opt>    # inspe
 home-manager build --flake ./home-config/mathew#mathew
 home-manager build --flake ./home-config/openclaw-npm#openclaw-npm
 nix build ./kokoro#kokoro-ru
+nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath   # darwin: evaluation only
+nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath
 nix flake update --flake ./home-config/openclaw-npm  # per-flake lock update ("Update flake" commits)
 scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh, zsh -n over *.zsh
 nixfmt <file>.nix                                     # format the files you changed
 ```
 
-`deadnix --edit` can break flake `outputs`: a closed pattern like `{ self, nixpkgs }:` must keep `...` after `self` is dropped. Rebuild all four flakes after an auto-fix.
+`deadnix --edit` can break flake `outputs`: a closed pattern like `{ self, nixpkgs }:` must keep `...` after `self` is dropped. Rebuild or evaluate every flake after an auto-fix.
 
 `home-config/openclaw-npm/scripts/config-check.sh` validates an OpenClaw config on an isolated temp state dir without touching `~/.openclaw`.
 
@@ -54,17 +58,20 @@ Reasons, pairing and troubleshooting: `docs/remote-access.md`.
 - The session must be the UWSM one (`defaultSession = "hyprland-uwsm"`, same command in the unit): Home Manager session variables (NVIDIA env) reach the compositor only through `~/.config/uwsm/env`.
 - Sunshine (`system-config/nixos/remote-access.nix`) runs as `mathew` only, captures with `wlr` the virtual `HEADLESS-1` output that `hyprland.lua` creates; `DP-2` is a physical monitor that is normally off. Audio for streaming goes through the system-wide PipeWire virtual sinks in `audio.nix` (`spatializer`, `Null-Sink`).
 - Games run under `mathew` (Steam with `PULSE_SINK` set in `steam.nix`); a separate `games` user is out of scope because headless Steam on NVIDIA and per-account Steam login cost more than the isolation is worth. `openclaw-npm` stays a separate non-wheel user for agents and the Rider backend; keep its name, because renaming moves `/home` state (Nix profiles, `~/.openclaw`) for no isolation gain.
-- Rider is pinned in one place, `overlays/rider.nix`, used by both `mathew` (Remote Development client) and `openclaw-npm` (backend); versions must match.
+- Rider is pinned in one place, `overlays/rider.nix`, used by `mathew` and `DooNeGo` (Remote Development clients) and `openclaw-npm` (backend); versions must match, so a version bump updates the hash of every system in that file.
 
 ## Verifying a change
 
 | Changed path | Build |
 |---|---|
-| `system-config/` | the system `toplevel` |
+| `system-config/nixos/` | the system `toplevel` |
+| `system-config/darwin/` | the darwin `drvPath` eval |
+| `system-config/shared/` | the system `toplevel` and the darwin eval |
+| `home-config/DooNeGo/` | the `DooNeGo` `drvPath` eval |
 | `home-config/mathew/` | `home-manager build --flake ./home-config/mathew#mathew` |
 | `home-config/openclaw-npm/` | `home-manager build --flake ./home-config/openclaw-npm#openclaw-npm` |
-| `home-config/shared/` | both home builds |
-| `lib/`, `overlays/` | both home builds and the system build |
+| `home-config/shared/` | both home builds and the `DooNeGo` eval |
+| `lib/`, `overlays/` | both home builds, the system build and the `DooNeGo` eval |
 | `kokoro/` | `nix build ./kokoro#kokoro-ru` |
 
 When a build fails, rerun it without output redirection and read `2>&1 | tail -30`. Report to the owner the exact `switch` commands and what could not be verified without running (a service start, a session, a mount).
