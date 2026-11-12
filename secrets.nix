@@ -20,4 +20,7 @@ in
   "secrets/vless-main.age".publicKeys = [
     host
   ];
+  "secrets/vless-credits-stage.age".publicKeys = [
+    host
+  ];
 }
