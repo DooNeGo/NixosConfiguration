@@ -87,6 +87,7 @@ In a review (`/code-review`), report what causes wrong behaviour, a failing chec
 
 ## Conventions and gotchas
 
+- Garbage collection (`nh`), generation count, journal limits, nix-daemon `TMPDIR`: `docs/nix-maintenance.md`.
 - Btrfs mounts, backups and settled decisions: `.claude/rules/btrfs.md` (loads with those files); measurements and the runbook: `docs/btrfs.md`.
 - Report failures through `system-config/nixos/failure-notify.nix`: add the service to `services.failure-notify.units`, or call `failure-notify report` from a handler. It already delivers to shells and desktop sessions without root touching a session bus, so a unit needs no `OnFailure` or `notify-send` of its own.
 - Keep logic out of `.nix` files: a shell script over ~20 lines, or with functions, option parsing, `flock` or `trap`, goes into a `.sh` (zsh: `.zsh`) next to its module, read with `builtins.readFile`; values from Nix reach it through `runtimeEnv`. A short, plain script may stay inline. Writing such a file: `.claude/rules/shell-tools.md`.
