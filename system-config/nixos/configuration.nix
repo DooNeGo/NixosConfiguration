@@ -18,6 +18,7 @@
     ./printing.nix
     ./network.nix
     ./sing-box.nix
+    ./awg-exit-node.nix
     ./sshd.nix
     ./nvidia.nix
     ./razer.nix
