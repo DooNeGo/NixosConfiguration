@@ -7,6 +7,7 @@
 {
   imports = [
     ../shared/nix-settings.nix
+    ../shared/nh.nix
     ../shared/tmux.nix
     ../shared/vim.nix
   ];

@@ -22,6 +22,7 @@
     ./sshd.nix
     ./nvidia.nix
     ./razer.nix
+    ../shared/nh.nix
     ../shared/tmux.nix
     ../shared/vim.nix
     ./xdg.nix

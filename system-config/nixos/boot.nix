@@ -1,7 +1,10 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   boot = {
-    loader.systemd-boot.enable = true;
+    loader.systemd-boot = {
+      enable = true;
+      configurationLimit = config.generationsKeep;
+    };
 
     loader.efi.canTouchEfiVariables = true;
 
