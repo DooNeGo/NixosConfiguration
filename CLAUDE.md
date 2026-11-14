@@ -1,4 +1,4 @@
-# AGENTS.md
+# CLAUDE.md
 
 ## Overview
 
@@ -8,7 +8,7 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, build-verify, and commit only when asked. Merge into `main`, rebase a branch, push and delete a branch only when asked, and rebase only the branch the owner names. The usual sequence is: commit on the branch, then merge, then delete the branch, then rebase the next branch in the queue. `.claude/settings.json` asks before `rebase`, `push`, `branch -D` and `reset --hard`.
+Work on a branch, build-verify, and commit only when asked. Merge into `main`, rebase a branch, push and delete a branch only when asked, and rebase only the branch the owner names. The usual sequence is: commit on the branch, then merge, then delete the branch, then rebase the next branch in the queue. `.claude/settings.json` asks before `rebase`, `push`, `branch -D`, `reset --hard`, `clean`, `checkout .` and `restore .`, and denies a force push.
 
 ## Multiple independent flakes
 
@@ -39,7 +39,8 @@ home-manager build --flake ./home-config/openclaw-npm#openclaw-npm
 nix build ./kokoro#kokoro-ru
 nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath   # darwin: evaluation only
 nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath
-nix flake update --flake ./home-config/openclaw-npm  # per-flake lock update ("Update flake" commits)
+scripts/flake-update.sh                               # `nix flake update` for every flake, then build each; --check builds only
+scripts/rider-bump.sh                                 # set the Rider/Gateway pin in overlays/rider.nix to the latest release
 scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh, zsh -n over *.zsh
 nixfmt <file>.nix                                     # format the files you changed
 ```
@@ -53,12 +54,13 @@ nixfmt <file>.nix                                     # format the files you cha
 Reasons, pairing and troubleshooting: `docs/remote-access.md`.
 
 - No autologin. The Hyprland (UWSM) session is started on demand over ssh: `sudo systemctl start hyprland-mathew` (`system-config/nixos/hyprland-session.nix`); `stop` ends it. The unit takes tty1 and stops SDDM, which `ExecStopPost` starts again; physical login still goes through SDDM.
+- A session for Sunshine that leaves tty1 and SDDM alone: `sudo systemctl start hyprland-headless-mathew` (same module; only `HEADLESS-1` exists). It conflicts with `hyprland-mathew` and `steam-bigpicture-mathew`.
 - Steam Remote Play without a desktop session: `sudo systemctl start steam-bigpicture-mathew` (`system-config/nixos/steam-bigpicture-session.nix`, headless gamescope, `stop` ends it); do not log in physically as `mathew` meanwhile, one Steam per user.
 - The unit exports `HYPRLAND_START_LOCKED`, and `home-config/mathew/hyprland.lua` then starts `hyprlock`, so a remotely started session is locked.
 - The session must be the UWSM one (`defaultSession = "hyprland-uwsm"`, same command in the unit): Home Manager session variables (NVIDIA env) reach the compositor only through `~/.config/uwsm/env`.
 - Sunshine (`system-config/nixos/remote-access.nix`) runs as `mathew` only, captures with `wlr` the virtual `HEADLESS-1` output that `hyprland.lua` creates; `DP-2` is a physical monitor that is normally off. Audio for streaming goes through the system-wide PipeWire virtual sinks in `audio.nix` (`spatializer`, `Null-Sink`).
 - Games run under `mathew` (Steam with `PULSE_SINK` set in `steam.nix`); a separate `games` user is out of scope because headless Steam on NVIDIA and per-account Steam login cost more than the isolation is worth. `openclaw-npm` stays a separate non-wheel user for agents and the Rider backend; keep its name, because renaming moves `/home` state (Nix profiles, `~/.openclaw`) for no isolation gain.
-- Rider is pinned in one place, `overlays/rider.nix`, used by `mathew` and `DooNeGo` (Remote Development clients) and `openclaw-npm` (backend); versions must match, so a version bump updates the hash of every system in that file.
+- Rider is pinned in one place, `overlays/rider.nix`, used by `mathew` and `DooNeGo` (Remote Development clients) and `openclaw-npm` (backend); versions must match; bump them with `scripts/rider-bump.sh`, which rewrites the hash of every system in that file.
 
 ## Verifying a change
 
