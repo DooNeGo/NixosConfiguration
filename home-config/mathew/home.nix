@@ -21,6 +21,7 @@
     ./random-wallpaper.nix
     ./hyprpaper.nix
     ../shared/zsh.nix
+    ../shared/auto-expire.nix
     ../shared/git.nix
     ../shared/git-identity.nix
     ../shared/maui-dev.nix

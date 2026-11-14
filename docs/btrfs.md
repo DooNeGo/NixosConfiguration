@@ -166,7 +166,7 @@ only on the HDD.
 | Subvolume | Instance | Snapshot | Local keep | HDD keep |
 |---|---|---|---|---|
 | `@home` | `home` | every 10 min if changed | 2 h | 24h 14d 8w 6m |
-| `@root` | `system` | daily 04:05 if changed | 2 days | 14d 8w 6m |
+| `@root` | `system` | daily 01:05 if changed | 2 days | 14d 8w 6m |
 
 Not backed up: `@games`, `@nix` (reproducible), `@log`, `@nocow`. Two instances because `@home` is snapshotted
 often and `@root` (little changes there) once a day.
@@ -184,7 +184,7 @@ permissions).
 
 | Setting | Meaning |
 |---|---|
-| `onCalendar = "*:0/10"` | (`home`) systemd timer: every 10 minutes (minutes 0, 10, 20, ... of each hour) (`AccuracySec` is forced to 1 min, the module's default of 10 min would blur it); `system` uses `*-*-* 04:05:00` |
+| `onCalendar = "*:0/10"` | (`home`) systemd timer: every 10 minutes (minutes 0, 10, 20, ... of each hour) (`AccuracySec` is forced to 1 min, the module's default of 10 min would blur it); `system` uses `*-*-* 01:05:00` |
 | `snapshot_create = "onchange"` | take a snapshot only if `@home` changed since the last one; an idle machine creates none |
 | `timestamp_format = "long"` | names carry the time (`@home.20261107T1530`); the default is a date only, which would collide every 10 minutes |
 | `snapshot_preserve_min = "2h"` | local snapshots younger than 2 hours are never deleted |

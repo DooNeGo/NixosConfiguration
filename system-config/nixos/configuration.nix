@@ -2,6 +2,7 @@
   imports = [
     ./hardware-configuration.nix
     ./boot.nix
+    ./journald.nix
     ./locale.nix
     ./nix.nix
     ./programs.nix
@@ -22,6 +23,7 @@
     ./sshd.nix
     ./nvidia.nix
     ./razer.nix
+    ../shared/nh.nix
     ../shared/tmux.nix
     ../shared/vim.nix
     ./xdg.nix
@@ -34,7 +36,7 @@
     ./android.nix
     ./usbmux.nix
     ./remote-access.nix
-    ./searx.nix
+    #./searx.nix
     ./whisper-cpp.nix
     ./shared-repo-acl.nix
   ];

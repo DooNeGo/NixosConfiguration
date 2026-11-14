@@ -1,9 +1,14 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   boot = {
-    loader.systemd-boot.enable = true;
-
-    loader.efi.canTouchEfiVariables = true;
+    loader = {
+      systemd-boot = {
+        enable = true;
+        configurationLimit = config.generationsKeep;
+      };
+      timeout = 1;
+      efi.canTouchEfiVariables = true;
+    };
 
     supportedFilesystems = [ "btrfs" ];
 

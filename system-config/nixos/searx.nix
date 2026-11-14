@@ -25,7 +25,7 @@
         secret_key = "$SEARX_SECRET_KEY";
         limiter = false;
         outgoing = {
-          proxies."all://" = [ "http://127.0.0.1:2080" ];
+          proxies."all://" = [ config.environment.variables.HTTP_PROXY ];
         };
       };
 
