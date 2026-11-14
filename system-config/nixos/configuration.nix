@@ -2,6 +2,7 @@
   imports = [
     ./hardware-configuration.nix
     ./boot.nix
+    ./journald.nix
     ./locale.nix
     ./nix.nix
     ./programs.nix
