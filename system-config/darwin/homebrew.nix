@@ -22,10 +22,6 @@
     inherit user;
     onActivation.cleanup = "uninstall";
     taps = builtins.attrNames config.nix-homebrew.taps;
-    casks = [
-      "xcodes-app"
-      "microsoft-teams"
-      "finetune"
-    ];
+    casks = [ ];
   };
 }
