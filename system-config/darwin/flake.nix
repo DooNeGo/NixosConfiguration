@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixpkgs-26.05-darwin";
 
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin";
@@ -21,12 +22,14 @@
     inputs:
     let
       user = "DooNeGo";
+      pkgsLib = import ../../lib/pkgs.nix { inherit inputs; };
     in
     {
       darwinConfigurations."macbook-air-m1" = inputs.nix-darwin.lib.darwinSystem {
         modules = [
           ./configuration.nix
           ./homebrew.nix
+          { nixpkgs.overlays = [ pkgsLib.channelsOverlay ]; }
         ];
         specialArgs = { inherit inputs user; };
       };
