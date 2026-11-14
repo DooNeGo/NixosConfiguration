@@ -7,6 +7,7 @@
 {
   imports = [
     ../shared/zsh.nix
+    ../shared/auto-expire.nix
     ../shared/git.nix
     ../shared/ssh.nix
     ../shared/maui-dev.nix
