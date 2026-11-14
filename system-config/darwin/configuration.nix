@@ -34,6 +34,14 @@
     tailscale-gui
   ];
 
+  launchd.user.agents.autoraise = {
+    command = "${pkgs.autoraise}/bin/autoraise -delay 2 -pollMillis 50";
+    serviceConfig = {
+      KeepAlive = true;
+      RunAtLoad = true;
+    };
+  };
+
   nix.settings.auto-optimise-store = true;
 
   nixpkgs.hostPlatform = "aarch64-darwin";
