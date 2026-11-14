@@ -6,11 +6,7 @@
     useDHCP = false;
 
     firewall = {
-      allowedTCPPorts = [
-        57621
-        8080
-        18789
-      ];
+      allowedTCPPorts = [ 57621 ];
       allowedUDPPorts = [ 5353 ];
     };
   };
