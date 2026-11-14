@@ -17,10 +17,10 @@ in
   "secrets/vless-credits-git.age".publicKeys = [
     host
   ];
-  "secrets/vless-main.age".publicKeys = [
+  "secrets/vless-credits-stage.age".publicKeys = [
     host
   ];
-  "secrets/vless-credits-stage.age".publicKeys = [
+  "secrets/awg-main.age".publicKeys = [
     host
   ];
 }

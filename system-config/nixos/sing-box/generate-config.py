@@ -15,6 +15,13 @@ LISTEN_ADDRESS = os.environ.get("SING_BOX_LISTEN_ADDRESS", "127.0.0.1")
 LISTEN_PORT = int(os.environ.get("SING_BOX_LISTEN_PORT", "2080"))
 ROUTE_MATCH = os.environ.get("SING_BOX_ROUTE_MATCH", "domain_suffix")
 TRANSPORT_OVERRIDE = os.environ.get("SING_BOX_TRANSPORT_OVERRIDE", "")
+# kind = "vless" (default): outbound built from the vless:// runtime key.
+# kind = "awg": traffic leaves through a system AmneziaWG interface that the
+# NixOS module brings up; sing-box only binds its sockets to it.
+KIND = os.environ.get("SING_BOX_KIND", "vless")
+AWG_INTERFACE = os.environ.get("SING_BOX_AWG_INTERFACE", "")
+AWG_ADDR_FILE = os.environ.get("SING_BOX_AWG_ADDR_FILE", "")
+TUNNEL_DNS = os.environ.get("SING_BOX_TUNNEL_DNS", "1.1.1.1")
 
 
 def _unquote(s):
@@ -157,8 +164,71 @@ def build_outbound(vless):
     return outbound
 
 
+def read_awg_address():
+    """Tunnel IPv4 published by the -awg-prepare oneshot (not a secret)."""
+    if not AWG_INTERFACE or not AWG_ADDR_FILE:
+        raise SystemExit(
+            "kind=awg needs SING_BOX_AWG_INTERFACE and SING_BOX_AWG_ADDR_FILE"
+        )
+    try:
+        with open(AWG_ADDR_FILE, "r", encoding="utf-8") as fh:
+            addr = fh.read().strip()
+    except OSError as exc:
+        raise SystemExit(
+            f"cannot read {AWG_ADDR_FILE} ({exc}); the -awg-prepare oneshot "
+            "has not run"
+        )
+    if not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", addr):
+        raise SystemExit(f"{AWG_ADDR_FILE} does not hold an IPv4 address")
+    return addr
+
+
+def build_awg_outbound():
+    # bind_interface: fail closed (ENODEV) when the tunnel is down.
+    # inet4_bind_address: makes the `from <addr> lookup <table>` rule match.
+    # domain_resolver: proxied domains resolve through the tunnel, IPv4 only.
+    return {
+        "type": "direct",
+        "tag": "proxy",
+        "bind_interface": AWG_INTERFACE,
+        "inet4_bind_address": read_awg_address(),
+        "domain_resolver": {"server": "dns-tunnel", "strategy": "ipv4_only"},
+    }
+
+
+def build_awg_dns():
+    return {
+        "servers": [
+            {
+                "type": "udp",
+                "tag": "dns-tunnel",
+                "server": TUNNEL_DNS,
+                "detour": "proxy",
+            },
+            {"type": "local", "tag": "dns-local"},
+        ],
+        "final": "dns-local",
+    }
+
+
 def build_config(domains):
-    vless = read_vless()
+    if KIND == "awg":
+        proxy = build_awg_outbound()
+    elif KIND == "vless":
+        proxy = build_outbound(read_vless())
+    else:
+        raise SystemExit(f"unknown SING_BOX_KIND {KIND!r}")
+    config = build_base_config(domains, proxy)
+    if KIND == "awg":
+        config["dns"] = build_awg_dns()
+        # everything that is not the proxy outbound keeps the system resolver
+        config["route"]["default_domain_resolver"] = "dns-local"
+    return config
+
+
+def build_base_config(domains, proxy):
+    # Fail closed for every kind: matched domains have exactly one way out
+    # ("proxy"); there is no fallback outbound if it is down.
     return {
         "log": {"level": "warn", "timestamp": True},
         "inbounds": [
@@ -170,7 +240,7 @@ def build_config(domains):
             }
         ],
         "outbounds": [
-            build_outbound(vless),
+            proxy,
             {"type": "direct", "tag": "direct"},
         ],
         "route": {
