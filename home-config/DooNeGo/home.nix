@@ -23,6 +23,6 @@
     home-manager.enable = true;
     fastfetch.enable = true;
     htop.enable = true;
-    vscode.enable = true;
+    #vscode.enable = true;
   };
 }

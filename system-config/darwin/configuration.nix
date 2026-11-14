@@ -28,10 +28,10 @@
 
   services.tailscale.enable = true;
 
-  # The user's Home Manager configuration is a separate flake (home-config/DooNeGo), applied with this CLI.
-  environment.systemPackages = [
-    pkgs.home-manager
-    pkgs.watch
+  environment.systemPackages = with pkgs; [
+    home-manager
+    watch
+    tailscale-gui
   ];
 
   nix.settings.auto-optimise-store = true;

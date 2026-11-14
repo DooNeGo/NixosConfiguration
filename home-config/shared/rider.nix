@@ -36,5 +36,5 @@ in
         riderFHS
       ]
     else
-      [ pkgs.jetbrains.rider ];
+      [ pkgs.jetbrains.gateway ];
 }
