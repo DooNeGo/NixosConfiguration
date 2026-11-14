@@ -36,7 +36,7 @@
     ./android.nix
     ./usbmux.nix
     ./remote-access.nix
-    ./searx.nix
+    #./searx.nix
     ./whisper-cpp.nix
     ./shared-repo-acl.nix
   ];
