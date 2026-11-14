@@ -58,7 +58,7 @@ in
       };
 
       system = mkInstance {
-        onCalendar = "*-*-* 04:05:00";
+        onCalendar = "*-*-* 01:05:00";
         lock = "system";
         localMin = "2d";
         targetPreserve = "14d 8w 6m";
