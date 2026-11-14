@@ -27,12 +27,11 @@
 
   networking.hostName = "macbook-air-m1";
 
-  services.tailscale.enable = true;
+  services.tailscale.enable = false;
 
   environment.systemPackages = with pkgs; [
     home-manager
     watch
-    tailscale-gui
   ];
 
   launchd.user.agents.autoraise = {
