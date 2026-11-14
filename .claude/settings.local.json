@@ -1,6 +1,0 @@
-{
-  "skillOverrides": {
-    "anthropic-skills:computer-use": "off",
-    "anthropic-skills:morning": "off"
-  }
-}
