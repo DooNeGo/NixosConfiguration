@@ -8,7 +8,7 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/settings.json` asks before `merge`, `rebase`, `push`, `branch -D` (and `-d` with force), `reset --hard`, `clean`, `checkout .` and `restore .` (also with `--`), and denies a force push.
+Work on a branch, build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/hooks/guard-git.sh` asks, in any spelling, before the commands below; `.claude/settings.json` keeps prefix rules for them as a fallback and asks before `merge`, `rebase`, `push`, `branch -D` (and `-d` with force), `reset --hard`, `clean`, `checkout .` and `restore .` (also with `--`), and denies a force push.
 
 Merging a branch into `main` (review, squash, fast-forward or merge commit, deleting the branch): the `merge-branch` skill.
 
