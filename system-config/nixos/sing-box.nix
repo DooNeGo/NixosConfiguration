@@ -322,6 +322,9 @@ assert allUnique awgTables;
     no_proxy = noProxy;
   };
 
+  # A tunnel that fails to come up would otherwise only reach the journal.
+  services.failure-notify.units = map (iface: "wg-quick-${iface}") awgIfaces;
+
   # type = "amneziawg" pulls in the kernel module and amneziawg-tools.
   networking.wg-quick.interfaces = lib.mapAttrs' (
     _: inst:
