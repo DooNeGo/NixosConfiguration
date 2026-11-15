@@ -16,17 +16,17 @@
     ./hyprlock.nix
     ./hypridle.nix
     ./wlsunset.nix
-    ./wofi.nix
     ./fastfetch.nix
-    ./random-wallpaper.nix
+    ./wallpaper
     ./hyprpaper.nix
     ../shared/zsh.nix
+    ./zsh-theme.nix
     ../shared/auto-expire.nix
     ../shared/git.nix
     ../shared/git-identity.nix
     ../shared/maui-dev.nix
     ../shared/ssh.nix
-    ./hyprlauncher.nix
+    ./rofi.nix
     ./xdg.nix
     ./obs-studio.nix
     ./podman.nix
@@ -43,6 +43,7 @@
       compsize
       osu-lazer-bin
       hyprpicker
+      wl-clipboard
       hyprpwcenter
       discord
       spotify
@@ -75,6 +76,7 @@
     ];
 
     hyprpolkitagent.enable = true;
+    cliphist.enable = true;
   };
 
   programs = {

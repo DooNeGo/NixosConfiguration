@@ -1,7 +1,13 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
-  # Written by the wallpaper script; the unit seeds the default so the first start finds the import.
-  colorsFile = "${config.home.homeDirectory}/.local/state/waybar/colors.css";
+  glass = import ./glass.nix lib;
+  # Written by the wallpaper script (wallpaper/), which also seeds it at activation.
+  colorsFile = "${config.home.homeDirectory}/.local/state/wallpaper-palette/waybar.css";
   # Waybar reads the config under the full name "custom/sep#N", with no fallback to "custom/sep".
   # A custom module without exec renders only once a worker is started; interval starts it.
   separator = {
@@ -51,9 +57,6 @@ let
     fi
     n=$(printf '%s\n' "$list" | wc -l)
     ${pkgs.jq}/bin/jq -cn --arg text "${icon "󰀦"} ${text "$n"}" --arg tip "$list" '{text: $text, tooltip: $tip, class: "failed"}'
-  '';
-  seedColors = pkgs.writeShellScript "waybar-seed-colors" ''
-    [ -e ${colorsFile} ] || ${pkgs.coreutils}/bin/install -D -m 644 ${./waybar-colors-default.css} ${colorsFile}
   '';
 in
 {
@@ -179,11 +182,13 @@ in
         };
       };
     };
-    style = builtins.replaceStrings [ "@colors@" ] [ colorsFile ] (builtins.readFile ./waybar.css);
+    style =
+      builtins.replaceStrings
+        [ "@colors@" "@glass_alpha@" "@glass_border_alpha@" ]
+        [ colorsFile (toString glass.alpha) (toString glass.borderAlpha) ]
+        (builtins.readFile ./waybar.css);
   };
 
-  # Also provides the playerctl binary that the media keys in hyprland.lua call.
+  # Also provides the playerctl binary that the media keys in hyprland/binds.lua call.
   services.playerctld.enable = true;
-
-  systemd.user.services.waybar.Service.ExecStartPre = "${seedColors}";
 }

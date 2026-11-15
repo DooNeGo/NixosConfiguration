@@ -1,4 +1,4 @@
-{
+{ config, ... }: {
   services.mako = {
     enable = true;
     settings = {
@@ -6,9 +6,9 @@
       default-timeout = 5000;
       margin = 5;
       padding = "10,5";
-      #background-color = "#${palette.base00}";
-      #text-color = "#${palette.base05}";
-      #border-color = "#${palette.base03}";
+      border-size = 1;
+      # Colours of the wallpaper palette (wallpaper/).
+      include = "${config.home.homeDirectory}/.local/state/wallpaper-palette/mako";
 
       # Critical notifications (system failures from system-config/nixos/failure-notify.nix) stay until dismissed.
       "urgency=critical" = {
