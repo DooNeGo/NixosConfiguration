@@ -2,6 +2,7 @@
   fonts.packages = with pkgs; [
     noto-fonts
     font-awesome
+    nerd-fonts.jetbrains-mono
   ];
 
   security.polkit.enable = true;

@@ -1,0 +1,130 @@
+@import url("file://@colors@");
+
+* {
+  font-family: "JetBrainsMono Nerd Font", "Noto Sans", sans-serif;
+  font-size: 13px;
+  min-height: 0;
+}
+
+window#waybar {
+  background: transparent;
+  color: @on_surface;
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+  background: alpha(@surface_container_high, 0.25);
+  border: 1px solid alpha(@on_surface, 0.12);
+  border-radius: 20px;
+  padding: 0 2px;
+}
+
+#workspaces button {
+  padding: 0 8px;
+  margin: 4px 2px;
+  background: transparent;
+  color: @on_surface_variant;
+  border-radius: 15px;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+#workspaces button:hover {
+  background: alpha(@primary, 0.25);
+  color: @on_surface;
+}
+
+#workspaces button.active {
+  background: @primary;
+  color: @on_primary;
+}
+
+#workspaces .taskbar-window {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.modules-center,
+.modules-right {
+  padding: 0 7px;
+}
+
+#clock,
+#language,
+#network,
+#wireplumber,
+#custom-failed,
+#custom-mic,
+#custom-media,
+#idle_inhibitor,
+#tray {
+  padding: 0 5px;
+  color: @on_surface;
+}
+
+#custom-sep,
+#custom-failed-dot {
+  padding: 0;
+  color: @on_surface_variant;
+}
+
+#idle_inhibitor.activated {
+  color: @primary;
+}
+
+#custom-failed {
+  color: @error;
+}
+
+#custom-mic.muted,
+#custom-media.paused {
+  color: @on_surface_variant;
+}
+
+.image-button {
+  margin-right: 6px;
+}
+
+#wireplumber.muted {
+  color: @on_surface_variant;
+}
+
+#network.disconnected {
+  color: @on_surface_variant;
+}
+
+#idle_inhibitor,
+#tray button {
+  min-width: 0;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Measured on a screenshot: the coffee glyph leaves 5px less on its right than the other modules, and the
+   tray sat 1px close on the left and 3px close to the island edge on the right. */
+#idle_inhibitor {
+  padding: 0 10px 0 5px;
+}
+
+#tray {
+  padding: 0 6px 0 4px;
+}
+
+#tray button {
+  padding: 0 2px;
+}
+
+#tray > .passive {
+  -gtk-icon-effect: dim;
+}
+
+tooltip {
+  background: @surface;
+  color: @on_surface;
+  border-radius: 10px;
+}

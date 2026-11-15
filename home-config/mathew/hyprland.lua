@@ -115,6 +115,14 @@ hl.window_rule({
     immediate = true,
 })
 
+-- The islands are translucent; ignore_alpha keeps the transparent gaps between them unblurred.
+hl.layer_rule({
+    name = "waybar-blur",
+    match = { namespace = "^waybar$" },
+    blur = true,
+    ignore_alpha = 0.1,
+})
+
 hl.bind(mod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mod .. " + Q", hl.dsp.window.close())
 hl.bind(mod .. " + M", hl.dsp.exit())
