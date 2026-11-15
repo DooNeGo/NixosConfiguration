@@ -3,6 +3,8 @@
 State of the filesystem and the reasoning behind each knob. Commands marked `sudo` are for the owner; the
 agent user has no root.
 
+Contents: Settings in this repo · 0. Baseline · 1. Recompress existing data · 2. bees (deduplication) · 3. Backups (btrbk to the HDD) · 4. Measurements after recompressing · 5. Compression on the backup HDD
+
 ## Settings in this repo
 
 | What | Where | Why |
