@@ -15,7 +15,7 @@
     ./waybar.nix
     ./hyprlock.nix
     ./hypridle.nix
-    ./hyprsunset.nix
+    ./wlsunset.nix
     ./wofi.nix
     ./fastfetch.nix
     ./random-wallpaper.nix
