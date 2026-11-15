@@ -8,9 +8,9 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, build-verify, and commit only when asked. Merge into `main`, rebase a branch, push and delete a branch only when asked, and rebase only the branch the owner names. The usual sequence is: commit on the branch, then merge, then delete the branch, then rebase the next branch in the queue. `.claude/settings.json` asks before `rebase`, `push`, `branch -D`, `reset --hard`, `clean`, `checkout .` and `restore .`, and denies a force push.
+Work on a branch, build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/settings.json` asks before `merge`, `rebase`, `push`, `branch -D`, `reset --hard`, `clean`, `checkout .` and `restore .`, and denies a force push.
 
-Before a merge into `main` run `/code-review` on the branch and report the findings; merge only on the owner's explicit command ("applied the config" is not one). Squash the branch to its logical commits first (`git rebase -i` does not work here: `git reset --soft $(git merge-base main HEAD)`, then commit again); one concern per commit, documentation as its own commit.
+Merging a branch into `main` (review, squash, fast-forward or merge commit, deleting the branch): the `merge-branch` skill.
 
 ## Where things go
 
