@@ -1,7 +1,6 @@
 ---
 name: flake-update
 description: Update the lock of every flake in the repo and get all of them building again. Use for "update flakes", "обнови флейки".
-disable-model-invocation: true
 ---
 
 # Update all flakes

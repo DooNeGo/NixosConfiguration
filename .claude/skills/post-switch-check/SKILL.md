@@ -1,7 +1,6 @@
 ---
 name: post-switch-check
-description: Check what the owner applied with a switch: the running system, failed units and the journal of changed services. Use for "я применил конфигурацию, проверяй".
-disable-model-invocation: true
+description: "Check what the owner applied with a switch: the running system, failed units and the journal of changed services. Use for 'я применил конфигурацию, проверяй'."
 ---
 
 # Check after the owner's switch

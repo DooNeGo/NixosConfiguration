@@ -1,7 +1,6 @@
 ---
 name: rider-bump
 description: Bump the pinned Rider and JetBrains Gateway versions in overlays/rider.nix and verify every flake that uses them. Use for "bump Rider", "обнови Rider".
-disable-model-invocation: true
 argument-hint: "[--rider VERSION] [--gateway VERSION]"
 ---
 

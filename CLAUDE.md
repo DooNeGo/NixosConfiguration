@@ -8,7 +8,7 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/settings.json` asks before `merge`, `rebase`, `push`, `branch -D`, `reset --hard`, `clean`, `checkout .` and `restore .`, and denies a force push.
+Work on a branch, build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/settings.json` asks before `merge`, `rebase`, `push`, `branch -D` (and `-d` with force), `reset --hard`, `clean`, `checkout .` and `restore .` (also with `--`), and denies a force push.
 
 Merging a branch into `main` (review, squash, fast-forward or merge commit, deleting the branch): the `merge-branch` skill.
 
@@ -34,7 +34,7 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 
 `lib/pkgs.nix` is a plain function (not a flake) used by the NixOS flake and the home flakes: base nixpkgs `config`, the `pkgs.stable` overlay (`channelsOverlay`), the Rider overlay and `mkPkgs` for Home Manager; each flake passes its own `inputs`, `cudaSupport` stays per host (`extraConfig`). `kokoro/` is standalone and does not use it.
 
-`home-config/shared/*.nix` (git, git-identity, zsh, ssh, rider, dotnet, maui-dev) are plain modules imported by several user configs; one imported by `DooNeGo` must also evaluate on darwin (guard Linux-only parts with `pkgs.stdenv.hostPlatform.isLinux`). `system-config/nixos/configuration.nix` is the import list for system modules. `system-config/shared/` holds system modules meant for both NixOS and nix-darwin: write them only with options both module systems have (`environment.*`, `programs.tmux.extraConfig`), or the darwin host cannot import them.
+`home-config/shared/*.nix` are plain modules imported by several user configs; one imported by `DooNeGo` must also evaluate on darwin (guard Linux-only parts with `pkgs.stdenv.hostPlatform.isLinux`). `system-config/nixos/configuration.nix` is the import list for system modules. `system-config/shared/` holds system modules meant for both NixOS and nix-darwin: write them only with options both module systems have (`environment.*`, `programs.tmux.extraConfig`), or the darwin host cannot import them.
 
 ## Commands (run from repo root)
 
@@ -51,7 +51,6 @@ nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackag
 scripts/flake-update.sh                               # `nix flake update` for every flake, then build each; --check builds only
 scripts/rider-bump.sh                                 # set the Rider/Gateway pin in overlays/rider.nix to the latest release
 scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh, zsh -n over *.zsh
-nixfmt <file>.nix                                     # format the files you changed
 ```
 
 `deadnix --edit` can break flake `outputs`: a closed pattern like `{ self, nixpkgs }:` must keep `...` after `self` is dropped. Rebuild or evaluate every flake after an auto-fix.
