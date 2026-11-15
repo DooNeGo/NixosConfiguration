@@ -12,6 +12,7 @@ How to write a script or CLI tool kept in a `.sh` or `.zsh` file. The Nix module
 
 - Build it with `pkgs.writeShellApplication { text = builtins.readFile ./x.sh; runtimeInputs = [ … ]; }`: shellcheck runs on the real file at build time, and `errexit nounset pipefail` are set.
 - Pass values from Nix as environment variables with `runtimeEnv`, named `<TOOL>_<NAME>`; the script reads them like any other variable. Do not substitute text into the file (`replaceVars`, `${…}`): shellcheck would stop seeing real code.
+- A script that has to report a failure calls `failure-notify report`; the convention is in `.claude/rules/nix.md`.
 - Zsh code (a prompt hook) is read with `builtins.readFile`; the module may prepend a one-line variable definition. shellcheck does not parse zsh, so `scripts/lint.sh` runs `zsh -n` on it.
 - Done when `scripts/lint.sh` exits 0 and the package builds with `nix build`.
 
