@@ -39,7 +39,7 @@ in
       "display-manager.service"
     ];
     unitConfig.ConditionPathExists = "/dev/tty1";
-    # hyprland.lua starts hyprlock when this is set: a remotely started session must not show an unlocked desktop.
+    # hyprland/session.lua starts hyprlock when this is set: a remotely started session must not show an unlocked desktop.
     environment.HYPRLAND_START_LOCKED = "1";
     serviceConfig = {
       ExecStart = "${uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop";
