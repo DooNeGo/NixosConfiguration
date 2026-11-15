@@ -3,7 +3,7 @@
 State of the filesystem and the reasoning behind each knob. Commands marked `sudo` are for the owner; the
 agent user has no root.
 
-Contents: Settings in this repo · 0. Baseline · 1. Recompress existing data · 2. bees (deduplication) · 3. Backups (btrbk to the HDD) · 4. Measurements after recompressing · 5. Compression on the backup HDD
+Contents: Settings in this repo · 1. Recompressing existing data · 2. bees (deduplication) · 3. Backups (btrbk to the HDD) · 4. Compression level on the NVMe · 5. Compression on the backup HDD
 
 ## Settings in this repo
 
@@ -28,81 +28,22 @@ block (a duplicate attribute stops the build); keep the `btrfs` one. `usbhid` an
 Watch reclaim: `grep . /sys/fs/btrfs/*/allocation/data/{reclaim_count,reclaim_bytes,reclaim_errors}`.
 Undo: write `0` into `periodic_reclaim` and `dynamic_reclaim` there.
 
-## 0. Baseline
+## 1. Recompressing existing data
 
-Measured 2026-11-07 on the whole filesystem (top-level mounted):
-
-| compsize | Disk usage | Uncompressed | Referenced |
-|---|---|---|---|
-| TOTAL | 1.5T (91%) | 1.7T | 2.1T |
-| none | 1.4T | 1.4T | 1.7T |
-| zstd | 93G (39%) | 238G | 388G |
-
-`btrfs filesystem usage`: 1.86 TiB device, 1.58 TiB used, 281 GiB free, 102 GiB unallocated, data chunks 90% full.
-
-- The NVMe has **1.7 TB of unique data uncompressed**; this is the number bees' hash table is sized from.
-- `Referenced` (2.1T) > `Uncompressed` (1.7T): about 0.4 TB of data is already referenced more than once
-  (reflinks or an earlier dedup). Whoever rewrites those files copies them.
-- 1.4 TB is stored without compression: games (already-compressed archives, which the btrfs heuristic skips).
-
-Re-measure (the agent has no root):
+`balance` does not compress or deduplicate anything, it only moves chunks. Compression of data written before the mount option needs `btrfs filesystem defragment -czstd -L -1`, wrapped by `scripts/btrfs-recompress.sh`. Check where it pays first: `compsize` shows what is stored uncompressed (here almost all of it is game data, and most games gain little: the archives are already compressed), and `scripts/btrfs-compress-estimate.sh` estimates a `zstd -1` result without writing.
 
 ```sh
-sudo compsize -x / /home /nix /games
-sudo btrfs filesystem usage /
-```
-
-`btrfs filesystem du -s /home` also walks everything mounted below it: with the top-level subvolume mounted at
-`~/mnt` it counts the whole filesystem (this is why `/home` showed 1.77 TiB). Unmount it first or give explicit
-paths: `sudo btrfs filesystem du -s /home/mathew/Documents ...`.
-
-## 1. Recompress existing data (defrag)
-
-`balance` does not compress or deduplicate anything, it only moves chunks. Recompressing old data needs
-`btrfs filesystem defragment -czstd -L -1`, wrapped by `scripts/btrfs-recompress.sh`.
-
-What to expect on this machine: 1.4 TB are stored uncompressed, almost all of it game data. A `zstd -1` estimate of
-`/games/SteamLibrary/steamapps/common` (`scripts/btrfs-compress-estimate.sh`, no writes) says 1146 GiB would become
-981 GiB, and 102 of the 165 GiB saved come from four games (The Finals, World of Tanks, Phasmophobia, Control);
-most others compress to 90-99%. Part of the data is already stored compressed, so the real saving is smaller;
-compare with `sudo compsize -x <dir>`.
-
-### Whole disk
-
-```sh
-scripts/btrfs-recompress.sh /games /home            # dry run: prints the work units (~200 for /games)
+sudo compsize -x / /home /nix /games                 # stored vs uncompressed, per compression type
+scripts/btrfs-recompress.sh /games /home            # dry run: prints the work units
 sudo scripts/btrfs-recompress.sh --run --min-free-gib 100 /games /home
 ```
 
-- Every PATH is cut into units of at most `--max-unit-gib` (default 25 GiB): a bigger directory becomes its own
-  files plus its subdirectories, recursively. Free space is checked before every unit (before every file for the
-  files of a big directory); below `--min-free-gib` the run stops and can be repeated: finished units are listed in
-  `/var/tmp/btrfs-recompress.done`.
-- Nested subvolumes and other mounts are never entered, so `~/mnt` (top-level mount), `/var/lib/nocow`, the
-  podman layers, `/nix` and `/var/log` stay as they are. Leave `/nix` (read-only store, hard-linked by
-  `nix.optimise`), `@nocow` (NOCOW files are not compressed) and `@log` (NOCOW journals) out; `/` (`@root`) is small
-  and can be added as one more PATH.
-- Cost: it reads and rewrites ~1.7 TB at idle IO priority, so expect several hours and about 1.7 TB of NVMe
-  writes (check `sudo smartctl -a /dev/nvme0n1` for the wear indicator before and after).
+- Every PATH is cut into units of at most `--max-unit-gib` (default 25 GiB); free space is checked before every unit and below `--min-free-gib` the run stops and can be repeated: finished units are listed in `/var/tmp/btrfs-recompress.done`.
+- Nested subvolumes and other mounts are never entered. Leave `/nix` (read-only store, hard-linked by `nix.optimise`; it can be defragmented through the top-level mount, which keeps the hard links but doubles the extent count, and the gain erodes as the store turns over), `@nocow` (NOCOW files are not compressed) and `@log` (NOCOW journals) out.
+- defragment **breaks reflinks**: shared data (reflinked copies, container layers) is copied. Run it **before the backups are enabled**, because an existing snapshot keeps the old copies and every rewritten file would be stored twice until the snapshots expire.
+- It reads and rewrites everything it touches at idle IO priority: expect hours and as many bytes of NVMe writes (`sudo smartctl -a /dev/nvme0n1` shows the wear indicator).
+- `btrfs filesystem du -s /home` also walks everything mounted below it: with the top-level subvolume mounted at `~/mnt` it counts the whole filesystem. Unmount it first.
 - A failed defragment (ENOSPC) leaves the data intact.
-
-### Space
-
-defragment **breaks reflinks**: shared data (reflinked copies, container layers, dedup) is copied. What is shared
-inside the paths to be processed is what can grow: `btrfs filesystem du` reports 15.8 GiB shared in `/games` and
-5.2 GiB in `/nix`; the ~0.4 TB gap between `Referenced` and `Uncompressed` in `compsize` most likely sits in nested
-subvolumes (podman layers), which defragment does not enter. `/home` is not measured yet: unmount `~/mnt` (it makes
-`btrfs filesystem du -s /home` count the whole filesystem) and run `sudo btrfs filesystem du -s /home` first.
-
-- run it **before the backups are enabled**: an existing snapshot keeps the old copies, so every rewritten file
-  would be stored twice until the snapshots expire.
-- re-run `sudo compsize -x /games /home` afterwards and compare with the baseline.
-
-To process only the worthwhile games instead of everything, pass their directories:
-
-```sh
-sudo scripts/btrfs-recompress.sh --run --min-free-gib 100 "/games/SteamLibrary/steamapps/common/The Finals"
-```
 
 ## 2. bees (deduplication) - disabled
 
@@ -159,9 +100,7 @@ let them compete for the space retention needs.
    newest snapshot that exists on both sides (the "latest pair"), because the next incremental send needs it as
    the parent.
 
-Example, a Tuesday around noon: 10-minute snapshots from 10:00 to 12:00 exist locally; the HDD has about one snapshot per hour for the last day, then one per day for 14 days, one per week for
-8 weeks and one per month for 6 months. A file deleted by mistake at 11:40 is in a local snapshot (copy it back); one deleted three weeks ago is
-only on the HDD.
+A file deleted by mistake 20 minutes ago is in a local snapshot (copy it back); one deleted three weeks ago is only on the HDD.
 
 ### What is backed up
 
@@ -198,24 +137,9 @@ permissions).
 
 btrbk sends only what the target's retention needs, so of the six snapshots per hour about one reaches the HDD.
 
-### Scenarios
+### Why these intervals
 
-| | Snapshots | Local keep | HDD keep | Cost |
-|---|---|---|---|---|
-| A. conservative | daily | 2 days | 14d 8w 6m | minimal; up to a day of work can be lost |
-| **B. implemented** | every 10 min, only if changed | 2 h | 24h 14d 8w 6m | few snapshots alive at once, so little pinned space and little bees interference |
-| C. aggressive | every 10 min | 24 h | as B | ~144 snapshots; pins every overwritten block on a nearly full disk and multiplies bees' metadata cost |
-
-On a nearly full disk the retention window matters more than the frequency, which is why the local window is short.
-
-### Tool choice
-
-| Tool | Verdict |
-|---|---|
-| **btrbk** | chosen: snapshots + incremental send/receive + tiered retention in one tool, NixOS module, browsable backups |
-| snapper | local timeline snapshots only, no send/receive |
-| restic / borg | file-level, encrypted, independent of btrfs; slower, needs the tool to restore. Worth adding later as a second copy of the most important data |
-| rsync | no snapshots, no history |
+A snapshot pins every block that is overwritten or deleted after it, so on a nearly full disk the retention window matters more than the frequency: snapshots every 10 minutes (only when something changed) with a 2 h local window keep few snapshots alive, while a 24 h window would hold ~144 and multiply bees' metadata cost. The long history lives on the HDD. btrbk was chosen over snapper (no send/receive) and rsync (no snapshots) because it snapshots, sends incrementally and prunes in tiers in one tool; restic or borg would add a file-level second copy of the most important data.
 
 ### Safety net and limits
 
@@ -226,28 +150,15 @@ On a nearly full disk the retention window matters more than the frequency, whic
 - Restoring `@root` from the HDD brings back the SSH host key, so the agenix secrets stay decryptable.
 - `@home` includes caches; if the first transfer is too big, move big caches to their own subvolume.
 
-### First start (after any defrag, see section 1)
+### First run
 
-After `nixos-rebuild switch` and a reboot nothing has to be prepared by hand: the first access mounts the disk,
-`mount-dirs-backup` makes `/backup` root-only (the `@root` backups hold the agenix key) and creates
-`/backup/btrbk`. Look at the disk first:
-
-```sh
-sudo ls -la /backup                                           # triggers the automount; expect drwx------ and btrbk/
-sudo btrfs filesystem usage /backup                           # what is on the disk already, free space
-```
-
-Then:
+Run the recompression (section 1) before the first backup. The first access of `/backup` mounts the disk, `mount-dirs-backup` makes it root-only and creates `/backup/btrbk`. The first run copies everything (hours for hundreds of GB over the HDD); later runs are incremental. Check beforehand:
 
 ```sh
 sudo umount ~/mnt                                             # a top-level mount under /home inflates the size
 sudo btrfs filesystem du -s /home                             # size of the first full send
 sudo btrbk -c /etc/btrbk/home.conf dryrun                     # what the first run would do (also system.conf)
-sudo systemctl start btrbk-system btrbk-home && journalctl -fu btrbk-home
-systemctl list-timers 'btrbk-*'
 ```
-
-The first run copies everything (hours for hundreds of GB over the HDD); later runs are incremental.
 
 ### Watching and restoring
 
@@ -296,25 +207,9 @@ with `@root`, taking the copy from `/backup/btrbk/` (mount the HDD there too) an
 
 `@home` and `@root` are copied by separate runs at different times; restoring both, pick the closest times.
 
-## 4. Measurements after recompressing (2026-11-07/08)
+## 4. Compression level on the NVMe
 
-All with `sudo compsize -x`; "Disk" is what is stored, "Uncomp." the same data without compression.
-
-| Scope | Disk | Uncomp. | Not compressed | Note |
-|---|---|---|---|---|
-| `/games /home /` (after the defrag of section 1) | 1.1T (86%) | 1.3T | 971G | zstd part: 215G from 396G |
-| `/home` | 112G (68%) | 164G | 79G | zstd part: 32G from 84G (38%) |
-| `/nix` before | 213G (83%) | 254G | 188G | |
-| `/nix` after | 158G (62%) | 254G | 92G | extents 893k -> 1.79M |
-
-- `/nix/store` is mounted read-only, so defragment reached it through the top-level subvolume:
-  `sudo btrfs filesystem defragment -r -czstd -L -1 -t 128M ~/mnt/@nix/store`. It saved 55G (estimate: 65-80G);
-  `Uncompressed` and `Referenced` did not change, so hard links stayed shared. The extent count doubles because a
-  compressed extent holds at most 128K. The gain erodes as the store turns over: new paths are written by the
-  mount option, not by defragment.
-- Per game (already compressed by the defrag): Proton and SteamLinuxRuntime ~47%, Phasmophobia 52%, Subnautica 64%,
-  The Finals 68%, Control 70%; Forza, Sea of Thieves, Hogwarts Legacy, Kingdom Come, R6 Siege, World of Tanks Blitz
-  stay at 96-99%. Little is left to gain in `/games`.
+Measured with `sudo compsize -x` on 2026-11-07/08. Games are already compressed archives and gain little: the best cases are Proton and the Steam runtime (~47%), Phasmophobia (52%) and The Finals (68%); most others stay at 96-99%.
 
 ### compress vs compress-force
 
