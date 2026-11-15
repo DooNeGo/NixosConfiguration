@@ -16,9 +16,13 @@ let
   };
 
   riderDesktop = pkgs.makeDesktopItem {
-    name = "rider";
+    # Waybar finds the entry of a window by file name, so it is named after the window class; a search by
+    # Name or Exec would not match "jetbrains-rider". A PNG, because Waybar loads an icon path with gdk-pixbuf.
+    name = "jetbrains-rider";
     desktopName = "Rider";
     exec = "rider";
+    icon = "${pkgs.jetbrains.rider}/share/icons/hicolor/128x128/apps/rider.png";
+    startupWMClass = "jetbrains-rider";
     terminal = false;
     mimeTypes = [ "text/plain" ];
   };
