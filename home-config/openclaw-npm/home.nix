@@ -26,6 +26,7 @@
       psmisc
       yt-dlp
       python3
+      shellcheck
     ];
 
     sessionVariables = {
