@@ -1,24 +1,24 @@
 # Remote access: Hyprland, Sunshine, Steam Remote Play
 
-What was decided and why. The units and settings themselves are in the modules named below; this file holds what the code does not show.
+How the remote sessions work and why they are built this way. The units and settings themselves are in the modules named below; this file holds what the code does not show.
 
 ## Session model
 
 - No autologin: with autologin Xwayland does not start in the `mathew` session (Steam and other X11 apps fail, and Sunshine needs a `DISPLAY` workaround). The session is chosen with `defaultSession = "hyprland-uwsm"` instead.
 - The owner starts the session over ssh: `systemctl start hyprland-mathew` (`hyprland-session.nix`). The unit runs the same UWSM command as SDDM, because Home Manager session variables (NVIDIA env) reach the compositor only through `~/.config/uwsm/env`.
-- The session starts locked (`HYPRLAND_START_LOCKED` → `hyprlock` in `hyprland.lua`), so nobody at the physical keyboard sees a remotely opened desktop.
+- The session starts locked (`HYPRLAND_START_LOCKED` → `hyprlock` in `hyprland/session.lua`), so nobody at the physical keyboard sees a remotely opened desktop.
 
 ## Sunshine (`remote-access.nix`)
 
-- Runs as `mathew` only. `capture = "wlr"` captures the virtual `HEADLESS-1` output created in `hyprland.lua` (1680x1050@60, the aspect ratio of the owner's client, a 16:10 laptop; a mismatch letterboxes the picture). `DP-2` is a physical monitor that is normally off.
-- KMS capture is not used: it needs the remote access re-confirmed in front of the machine. NvFBC is X11-only and is not used; NVENC only encodes.
+- Runs as `mathew` only. `capture = "wlr"` captures the virtual `HEADLESS-1` output created in `hyprland/session.lua` (1680x1050@60, the aspect ratio of the owner's client, a 16:10 laptop; a mismatch letterboxes the picture). `DP-2` is a physical monitor that is normally off.
+- Capture is `wlr`, not KMS (KMS needs the remote access re-confirmed in front of the machine) and not NvFBC (X11 only); NVENC only encodes.
 - `lan_encryption_mode = 0`, `wan_encryption_mode = 1`: encryption off on the LAN, on over WAN. Tailscale traffic is already encrypted.
 - `csrf_allowed_origins` lists the host names the web UI is opened under (`https://nixos`, the Tailscale address); without them the web UI rejects the requests.
 
 ## Pairing
 
 - The web UI is `https://<host>:47990` (https, self-signed certificate); `http` shows nothing.
-- Moonlight "client is not authorized / certificate verification failed" came from leftover clients of failed pairing attempts. Fix: remove all clients in the web UI (Troubleshooting → Unpair all), remove the host in Moonlight, add it again, and enter the PIN while the Moonlight dialog is still open.
+- Moonlight "client is not authorized / certificate verification failed": leftover clients of failed pairing attempts. Fix: remove all clients in the web UI (Troubleshooting → Unpair all), remove the host in Moonlight, add it again, and enter the PIN while the Moonlight dialog is still open.
 
 ## Steam Remote Play without a desktop (`steam-bigpicture-session.nix`)
 
@@ -28,8 +28,8 @@ What was decided and why. The units and settings themselves are in the modules n
 
 ## Session without tty1 (`hyprland-headless-mathew`)
 
-- Hyprland has no headless-only mode: aquamarine's backend list is fixed (headless, DRM, wayland) and `AQ_BACKENDS` is not read by Hyprland 0.57.1 or aquamarine 0.16.0. Without a seat the DRM backend fails and the throw is `CBackend::create() failed!`. Upstream says Hyprland needs DRM access (hyprwm/Hyprland discussions #10263, #12689); no public recipe for a seatless Hyprland was found.
-- What works: `LIBSEAT_BACKEND=noop` lets the DRM backend open `/dev/dri/card0` directly, `AQ_DRM_DEVICES` and `AQ_NO_KMS_REQUIREMENT` keep it from requiring a usable output. SDDM keeps tty1 and its DRM master, so nothing is shown on DP-2; only `HEADLESS-1` exists.
+- Hyprland has no headless-only mode: aquamarine's backend list is fixed (headless, DRM, wayland) and `AQ_BACKENDS` is not read by Hyprland 0.57.1 or aquamarine 0.16.0. Without a seat the DRM backend fails with `CBackend::create() failed!`, and upstream requires DRM access (hyprwm/Hyprland discussions #10263, #12689).
+- The workaround: `LIBSEAT_BACKEND=noop` lets the DRM backend open `/dev/dri/card0` directly, `AQ_DRM_DEVICES` and `AQ_NO_KMS_REQUIREMENT` keep it from requiring a usable output. SDDM keeps tty1 and its DRM master, so nothing is shown on DP-2; only `HEADLESS-1` exists.
 - `mathew` needs the `video` group for `card0` (logind's ACL goes only to the active seat0 session). A user manager started before the group was added does not have it: `systemctl restart user@1000.service` after the first `switch`, otherwise `wayland-wm@` dies with `CBackend::create() failed!`.
 - `uwsm` looks the session up by the foreground VT and fails without a seat, so `XDG_SEAT=seat0` is passed to `uwsm start` only through `env`. In the unit `Environment` it reaches `pam_systemd`, which then does not create `XDG_RUNTIME_DIR`.
 - Sunshine's virtual keyboard and mouse need `/dev/uinput`: logind's ACL goes to the active seat0 session, which here is the SDDM greeter, so `mathew` is in the `uinput` group. Like `video`, a new group reaches Sunshine only after `systemctl restart user@1000.service`.

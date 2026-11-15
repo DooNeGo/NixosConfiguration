@@ -14,8 +14,8 @@ window#waybar {
 .modules-left,
 .modules-center,
 .modules-right {
-  background: alpha(@surface_container_high, 0.25);
-  border: 1px solid alpha(@on_surface, 0.12);
+  background: alpha(@surface_container_high, @glass_alpha@);
+  border: 1px solid alpha(@on_surface, @glass_border_alpha@);
   border-radius: 20px;
   padding: 0 2px;
 }

@@ -34,6 +34,8 @@
     watch
   ];
 
+  fonts.packages = [ pkgs.nerd-fonts.jetbrains-mono ];
+
   launchd.user.agents.autoraise = {
     command = "${pkgs.autoraise}/bin/autoraise -delay 2 -pollMillis 50";
     serviceConfig = {

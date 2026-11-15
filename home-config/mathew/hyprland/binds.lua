@@ -2,126 +2,8 @@
 
 local mod = "SUPER"
 local terminal = "kitty"
-local menu = "hyprlauncher"
+local menu = "sh -c 'pkill -x rofi || rofi -show drun'"
 local fileManager = "nemo"
-
-hl.on("hyprland.start", function()
-    hl.exec_cmd("hyprctl output create headless HEADLESS-1")
-    -- Set by the hyprland-mathew and hyprland-headless-mathew system units (remote start): lock before anything is visible on DP-2.
-    if os.getenv("HYPRLAND_START_LOCKED") then
-        hl.exec_cmd("hyprlock")
-    end
-end)
-
-hl.monitor({
-    output   = "HEADLESS-1",
-    mode     = "1680x1050@60",
-    position = "0x0",
-    scale    = 1,
-})
-
-hl.monitor({
-    output   = "DP-2",
-    mode     = "2560x1440@180",
-    position = "0x0",
-    scale    = 1,
-    cm       = "srgb",
-    bitdepth = 10,
-    vrr      = 1,
-    sdr_min_luminance = 0.005,
-    sdr_max_luminance = 400,
-})
-
-hl.config({
-    general = {
-        gaps_in = 5,
-        gaps_out = 10,
-        border_size = 0,
-        resize_on_border = true,
-        allow_tearing = true,
-        layout = "dwindle",
-    },
-})
-
-hl.config({
-    decoration = {
-        rounding = 15,
-        rounding_power = 2,
-        active_opacity = 1.0,
-        inactive_opacity = 0.85,
-        shadow = {
-            enabled = true,
-            range = 15,
-            render_power = 3,
-        },
-        blur = {
-            enabled = true,
-            size = 4,
-            passes = 3,
-            vibrancy = 0.1696,
-        },
-    },
-})
-
-hl.config({
-    input = {
-        touchpad = {
-            natural_scroll = true,
-            scroll_factor = 0.5,
-            tap_to_click = true,
-            tap_and_drag = true,
-            drag_lock    = 1,
-            clickfinger_behavior = true,
-            middle_button_emulation = true,
-            disable_while_typing = true,
-        },
-    },
-})
-
-hl.config({
-    dwindle = {
-        preserve_split = true,
-    },
-})
-
-hl.config({
-    misc = {
-        force_default_wallpaper = 1,
-        disable_hyprland_logo = true,
-        vrr = 0,
-        animate_manual_resizes = true,
-    },
-})
-
-hl.config({
-    input = {
-        kb_layout = "us,ru",
-        kb_options = "grp:win_space_toggle",
-        repeat_delay = 250,
-        accel_profile = "flat",
-        scroll_factor = 1.7,
-    },
-})
-
--- Moonlight/Sunshine virtual mouse: the MacBook trackpad scrolls in fine
--- steps, so it needs a lower factor than a real wheel mouse.
-hl.device({
-    name = "libvirtualhid-mouse",
-    scroll_factor = 0.6,
-})
-
-hl.window_rule({
-    match = { class = "pioneergame.exe" },
-    immediate = true,
-})
-
--- The islands are translucent; ignore_alpha keeps the transparent gaps between them unblurred.
-hl.layer_rule({
-    name = "waybar-blur",
-    match = { namespace = "^waybar$" },
-    blur = true,
-    ignore_alpha = 0.1,
-})
 
 hl.bind(mod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mod .. " + Q", hl.dsp.window.close())
@@ -133,6 +15,29 @@ hl.bind(mod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mod .. " + S", hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen())
+hl.bind(mod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
+hl.bind(mod .. " + V", hl.dsp.exec_cmd("clipboard-pick"))
+
+-- Screenshots (saved to ~/Pictures/Screenshots and copied) and the colour picker.
+hl.bind("Print", hl.dsp.exec_cmd("hyprshot -m region"))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd("hyprshot -m window"))
+hl.bind("CTRL + Print", hl.dsp.exec_cmd("hyprshot -m output"))
+hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd("hyprpicker -a"))
+
+-- Arrow keys: focus; with CTRL: resize the active window by 40 px.
+local arrows = {
+    left  = { dx = -40, dy = 0 },
+    right = { dx = 40,  dy = 0 },
+    up    = { dx = 0,   dy = -40 },
+    down  = { dx = 0,   dy = 40 },
+}
+for key, step in pairs(arrows) do
+    hl.bind(mod .. " + " .. key, hl.dsp.focus({ direction = key }))
+    hl.bind(mod .. " + CTRL + " .. key, hl.dsp.window.resize({ x = step.dx, y = step.dy, relative = true }), { repeating = true })
+end
+
+hl.bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
 hl.bind(mod .. " + SHIFT + T", function()
     local ws = hl.get_active_workspace()

@@ -1,0 +1,87 @@
+/* Two separate glass panels like the bar islands: the input field and the list. Colours: palette/rofi.rasi. */
+@import "~/.local/state/wallpaper-palette/rofi.rasi"
+
+configuration {
+    font: "JetBrainsMono Nerd Font 12";
+}
+
+/* Without this a widget that sets no background draws rofi's default one. */
+* {
+    background-color: transparent;
+    border-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    transparency: "real";
+    background-color: transparent;
+    border: 0;
+    padding: 0;
+    width: 640px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    spacing: 10px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    background-color: @glass;
+    border: 1px;
+    border-color: @glass-border;
+    border-radius: 20px;
+    padding: 12px 18px;
+    spacing: 10px;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @fg-dim;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @fg;
+    placeholder: "Поиск";
+    placeholder-color: @fg-dim;
+}
+
+listview {
+    background-color: @glass;
+    border: 1px;
+    border-color: @glass-border;
+    border-radius: 20px;
+    padding: 8px;
+    lines: 8;
+    spacing: 4px;
+    scrollbar: false;
+    fixed-height: false;
+}
+
+element {
+    background-color: transparent;
+    border-radius: 12px;
+    padding: 8px 12px;
+    spacing: 12px;
+    text-color: @fg;
+}
+
+element selected.normal {
+    background-color: @accent-soft;
+    text-color: @fg;
+}
+
+element-icon {
+    size: 1.6em;
+    background-color: transparent;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    vertical-align: 0.5;
+}
