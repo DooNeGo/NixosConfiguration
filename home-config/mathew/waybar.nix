@@ -15,7 +15,7 @@ let
     interval = 3600;
     tooltip = false;
   };
-  # Pango markup: glyphs of the right-island indicators share one size, larger than the 13px text.
+  # Pango markup: glyphs of the right-island indicators share one size, larger than the 15px text.
   # The text beside a glyph is raised (Pango rise, 1/1024 pt) so both share a vertical centre.
   text = t: "<span rise='2000'>${t}</span>";
   iconSize = "x-large";

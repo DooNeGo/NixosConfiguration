@@ -9,6 +9,7 @@ in
 
     settings = lib.mkAfter {
       font_family = style.fontFamily;
+      font_size = 13;
       background_opacity = 0.65;
       window_padding_width = style.gapInner;
       confirm_os_window_close = 0;
