@@ -27,6 +27,7 @@
       yt-dlp
       python3
       shellcheck
+      ruff
     ];
 
     sessionVariables = {
