@@ -17,10 +17,14 @@ hl.config({
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 0.85,
+        -- No offset: the shadow shows the window edge without making a lobe under it.
         shadow = {
             enabled = true,
-            range = 15,
-            render_power = 3,
+            range = 40,
+            render_power = 2,
+            offset = { 0, 0 },
+            color = 0x33000000,
+            color_inactive = 0x1a000000,
         },
         blur = {
             enabled = true,
