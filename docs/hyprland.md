@@ -59,7 +59,7 @@ rofi is the launcher (`SUPER+E`, drun mode, pressing it again closes it) and the
 
 ## Rules
 
-- Blur for every glass layer (`waybar`, `notifications`, `rofi`); `ignore_alpha = 0.1` leaves fully transparent areas, such as the gaps between the bar islands, unblurred.
+- Blur for every glass layer (`waybar`, `notifications`, `rofi`); `ignore_alpha = 0.1` leaves fully transparent areas, such as the gaps between the bar islands, unblurred. `blur_popups = true` in the same rule blurs the popups of the layer (the Waybar menus and tooltips).
 - `suppress_event = "maximize"` for every window: kitty and other apps request to start maximized, and a maximized window fills the work area over the others instead of joining the layout (`hyprctl clients` shows `fullscreen: 1`).
 - `immediate = true` for `steam_app_.*`: tearing, which lowers latency, applies only to a fullscreen window and needs `allow_tearing` in `settings.lua`.
 - The bar layer rule (blur): `docs/waybar.md`.
