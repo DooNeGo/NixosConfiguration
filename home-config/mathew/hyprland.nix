@@ -1,7 +1,14 @@
 { lib, ... }:
 let
   style = import ./style lib;
-  lua = file: { content = style.subst (builtins.readFile file); };
+  layouts = import ./layouts.nix;
+  lua = file: {
+    content = style.subst (
+      builtins.replaceStrings [ "@kb_layout@" ] [ (lib.concatMapStringsSep "," (l: l.code) layouts) ] (
+        builtins.readFile file
+      )
+    );
+  };
 in
 {
   wayland.windowManager.hyprland = {

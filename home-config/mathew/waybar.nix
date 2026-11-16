@@ -46,6 +46,21 @@ let
     };
     text = builtins.readFile ./waybar-mic.sh;
   };
+  layouts = import ./layouts.nix;
+  languageMenu = pkgs.writeText "waybar-language-menu.xml" ''
+    <?xml version="1.0" encoding="UTF-8"?>
+    <interface>
+      <object class="GtkMenu" id="menu">
+    ${lib.concatMapStringsSep "
+" (l: ''
+      <child>
+        <object class="GtkMenuItem" id="${l.code}">
+          <property name="label">${l.name}</property>
+        </object>
+      </child>'') layouts}
+      </object>
+    </interface>
+  '';
   # Empty output hides a custom module: no records, no indicator. The dot before it is a module of its own
   # (same condition) so every gap in the island is built the same way.
   failedUnits = pkgs.writeShellScript "waybar-failed-units" ''
@@ -151,6 +166,13 @@ in
 
         "hyprland/language" = {
           format = "${icon "󰌌"} ${text "{short}"}";
+          on-click = "hyprctl switchxkblayout all next";
+          # The menu opens under the module; the item ids are the layout codes.
+          menu = "on-click-right";
+          menu-file = "${languageMenu}";
+          menu-actions = builtins.listToAttrs (
+            lib.imap0 (i: l: lib.nameValuePair l.code "hyprctl switchxkblayout all ${toString i}") layouts
+          );
         };
 
         tray = {
