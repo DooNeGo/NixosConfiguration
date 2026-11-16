@@ -1,4 +1,8 @@
-{ config, ... }: {
+{ config, lib, ... }:
+let
+  style = import ./style lib;
+in
+{
   programs.hyprlock = {
     enable = true;
     sourceFirst = true;
@@ -11,7 +15,7 @@
       background = [
         {
           path = "screenshot";
-          blur_passes = 3;
+          blur_passes = style.blurPasses;
           blur_size = 6;
         }
       ];
@@ -20,8 +24,8 @@
         {
           text = "$TIME";
           font_size = 72;
-          font_family = "JetBrainsMono Nerd Font";
-          color = "$on_surface";
+          font_family = style.fontFamily;
+          color = "$text";
           position = "0, 120";
           halign = "center";
           valign = "center";
@@ -34,12 +38,12 @@
           position = "0, -40";
           halign = "center";
           valign = "center";
-          rounding = 20;
-          outline_thickness = 1;
+          rounding = style.radius;
+          outline_thickness = style.borderWidth;
           outer_color = "$glass_border";
           inner_color = "$glass_fill";
-          font_color = "$on_surface";
-          font_family = "JetBrainsMono Nerd Font";
+          font_color = "$text";
+          font_family = style.fontFamily;
           check_color = "$glass_border";
           fail_color = "$error";
           fade_on_empty = false;

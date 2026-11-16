@@ -1,5 +1,12 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
+  style = import ./style lib;
+  theme = pkgs.writeText "rofi-glass.rasi" (style.subst (builtins.readFile ./rofi-glass.rasi));
   clipboardPick = pkgs.writeShellApplication {
     name = "clipboard-pick";
     runtimeInputs = with pkgs; [
@@ -19,7 +26,7 @@ in
   # The launcher (SUPER+E) and the clipboard history (SUPER+V). The colours come from the wallpaper palette.
   programs.rofi = {
     enable = true;
-    theme = ./rofi-glass.rasi;
+    theme = "${theme}";
     settings = {
       terminal = "kitty";
       show-icons = true;

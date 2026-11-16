@@ -14,9 +14,9 @@ hl.window_rule({
     immediate = true,
 })
 
--- "Glass" surfaces (glass.nix): the translucent fill is blurred behind; ignore_alpha keeps fully transparent areas
+-- "Glass" surfaces (style/): the translucent fill is blurred behind; ignore_alpha keeps fully transparent areas
 -- (the gaps between the bar islands) unblurred.
-for _, namespace in ipairs({ "waybar", "notifications", "rofi" }) do
+for _, namespace in ipairs({ @glass_layers@ }) do
     hl.layer_rule({
         name = "glass-" .. namespace,
         match = { namespace = "^" .. namespace .. "$" },

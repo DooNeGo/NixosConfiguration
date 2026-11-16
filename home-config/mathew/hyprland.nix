@@ -1,4 +1,9 @@
-_: {
+{ lib, ... }:
+let
+  style = import ./style lib;
+  lua = file: { content = style.subst (builtins.readFile file); };
+in
+{
   wayland.windowManager.hyprland = {
     enable = true;
     package = null;
@@ -6,12 +11,12 @@ _: {
     systemd.enable = false;
     # Loaded in name order.
     extraLuaFiles = {
-      "hyprland/session".content = ./hyprland/session.lua;
-      "hyprland/monitors".content = ./hyprland/monitors.lua;
-      "hyprland/settings".content = ./hyprland/settings.lua;
-      "hyprland/animations".content = ./hyprland/animations.lua;
-      "hyprland/rules".content = ./hyprland/rules.lua;
-      "hyprland/binds".content = ./hyprland/binds.lua;
+      "hyprland/session" = lua ./hyprland/session.lua;
+      "hyprland/monitors" = lua ./hyprland/monitors.lua;
+      "hyprland/settings" = lua ./hyprland/settings.lua;
+      "hyprland/animations" = lua ./hyprland/animations.lua;
+      "hyprland/rules" = lua ./hyprland/rules.lua;
+      "hyprland/binds" = lua ./hyprland/binds.lua;
     };
   };
 }

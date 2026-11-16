@@ -2,8 +2,8 @@
 
 hl.config({
     general = {
-        gaps_in = 5,
-        gaps_out = 10,
+        gaps_in = @gap_inner@,
+        gaps_out = @gap@,
         border_size = 0,
         resize_on_border = true,
         allow_tearing = true,
@@ -13,7 +13,7 @@ hl.config({
 
 hl.config({
     decoration = {
-        rounding = 15,
+        rounding = @radius_window@,
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 0.85,
@@ -25,7 +25,7 @@ hl.config({
         blur = {
             enabled = true,
             size = 4,
-            passes = 3,
+            passes = @blur_passes@,
             vibrancy = 0.1696,
         },
     },
