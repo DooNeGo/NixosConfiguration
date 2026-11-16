@@ -28,6 +28,7 @@
       python3
       shellcheck
       ruff
+      uv
     ];
 
     sessionVariables = {
