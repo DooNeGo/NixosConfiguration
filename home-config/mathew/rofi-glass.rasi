@@ -18,8 +18,10 @@ window {
     border: 0;
     padding: 0;
     width: 640px;
-    location: center;
-    anchor: center;
+    /* Pinned by the top edge: the window keeps its top when a search shortens the list. */
+    location: north;
+    anchor: north;
+    y-offset: 22%;
 }
 
 mainbox {
