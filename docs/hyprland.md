@@ -19,7 +19,7 @@ A file is added in `hyprland.nix` and, if it is new, with `git add -N`.
 
 ## Look
 
-- Gaps 5/10, rounding 15 (the bar islands use 20), blur 4x3, inactive windows at 0.85 opacity.
+- Gaps 5/10, rounding 15 (the bar islands use 20), blur 4x3, inactive windows at 0.85 opacity. The window shadow is light and very soft, without offset: range 40, render power 2, black at alpha 0.2 when focused and 0.1 when not. It tells the window edge better than a border did, and an offset shadow drew a lobe under the window; the values are tuned by eye.
 - Windows have no border: the active one is told by the inactive ones' opacity.
 - **Style** (`style/default.nix`): the one place for the font, the glass surface (fill alpha 0.3, a 1 px border at alpha 0.16, a blur behind), the corner radii (panel 20 px for bar islands, notifications, launcher panels, lock field and tooltip; inner 12 px for a workspace button and the selected launcher row; window 15 px), the gaps (10 px, inner 5 px) and the palette roles that colour each part (`roles`). Its `tokens` are `@name@` placeholders (`@radius@`, `@gap@`, `@font_family@`, `@role_glass_fill@`...) in the waybar CSS, the rofi theme, the Lua files and the matugen templates; `subst` fills them in at build time, and `mako.nix`, `hyprlock.nix` and `kitty.nix` read the same values as Nix attributes. A new look value is one attribute and one token. The blur is a layer rule per namespace in `rules.lua` (`glassLayers`). The rofi layer namespace is `rofi`.
 - Animations: `speed` is in deciseconds. Windows use a critically damped spring (response 0.4 s, Apple's "smooth" idea: no overshoot), workspaces an ease-out curve with a sharp start and a long soft stop; closing windows, fades and layers are short ease-outs.
