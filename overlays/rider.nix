@@ -3,35 +3,34 @@
 # each hash from the .sha256 file next to the download (`nix hash convert --hash-algo sha256 --to sri <hex>`).
 final: prev:
 let
-  riderVersion = "2026.3";
-  riderBuildNumber = "263.7307.258";
+  riderVersion = "2026.2.4.1";
+  riderBuildNumber = "262.11879.119";
   riderBase = "https://download.jetbrains.com/rider/JetBrains.Rider-${riderVersion}";
   riderSources = {
     x86_64-linux = {
       url = "${riderBase}.tar.gz";
-      hash = "sha256-Hvx0/9CuHt8UN7NWKezwhi65dGQwxDE+bu9AhXUWXCE=";
+      hash = "sha256-kQ8nUDtAP5Ki+pq4bOMCbB8LqS43ygNYq6++Ht/fIa4=";
     };
     aarch64-darwin = {
       url = "${riderBase}-aarch64.dmg";
-      hash = "sha256-NxllC7K/Dw+S5UcgyfEgn96dG7MFQZNXgnYh9J1UN7s=";
+      hash = "sha256-Emd888W3Jl/ya+nh7clz3rJijgR5PldZuMnqVd6AIOI=";
     };
   };
 
-  gatewayVersion = "2026.3";
-  gatewayBuildNumber = "263.7307.184";
+  gatewayVersion = "2026.2.4";
+  gatewayBuildNumber = "262.11879.99";
   gatewayBase = "https://download.jetbrains.com/idea/gateway/JetBrainsGateway-${gatewayVersion}";
   gatewaySources = {
     x86_64-linux = {
       url = "${gatewayBase}.tar.gz";
-      hash = "sha256-RAs5Yd3/hbNlWJXjEKaRIAlhpGu2vC1xHZAxdzvforY=";
+      hash = "sha256-1yA0qzvMK52dBWi29X8qxy/IYy1110qm+JmV6KPzbc8=";
     };
     aarch64-darwin = {
       url = "${gatewayBase}-aarch64.dmg";
-      hash = "sha256-hhPTakmE7/MtKvtWt45iL6fW3LjtEzMk47D+eIzsQWs=";
+      hash = "sha256-tY9DqwG+k9CDU8QZhKtOSfe8bRifxFViSetrPtqQ09A=";
     };
   };
 
-  inherit (final) lib;
   inherit (final.stdenv.hostPlatform) system;
 in
 {
@@ -41,16 +40,6 @@ in
       passthru = old.passthru // {
         buildNumber = riderBuildNumber;
       };
-      # Since 2026.3: the MSAL sign-in library wants webkit2gtk-4.0 and libsoup-2.4, which nixpkgs no longer has,
-      # and the Android debugger agent wants the bionic liblog.so.
-      autoPatchelfIgnoreMissingDeps = lib.optionals final.stdenv.hostPlatform.isLinux [
-        "libcurl.so.4"
-        "libwebkit2gtk-4.0.so.37"
-        "libjavascriptcoregtk-4.0.so.18"
-        "libsoup-2.4.so.1"
-        "libsecret-1.so.0"
-        "liblog.so"
-      ];
       src = final.fetchurl (
         riderSources.${system} or (throw "overlays/rider.nix: no pinned Rider source for ${system}")
       );
