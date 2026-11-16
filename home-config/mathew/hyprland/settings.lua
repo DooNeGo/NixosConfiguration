@@ -27,6 +27,8 @@ hl.config({
             size = 4,
             passes = @blur_passes@,
             vibrancy = 0.1696,
+            -- The Waybar menus are popups of a layer surface.
+            popups = true,
         },
     },
 })
@@ -63,7 +65,7 @@ hl.config({
 
 hl.config({
     input = {
-        kb_layout = "us,ru",
+        kb_layout = "@kb_layout@",
         kb_options = "grp:win_space_toggle",
         repeat_delay = 250,
         accel_profile = "flat",
