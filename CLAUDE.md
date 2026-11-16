@@ -36,7 +36,7 @@ Flakes only see git-tracked files: a new file needs `git add -N` before any eval
 ```sh
 nix build --no-link ./system-config/nixos#nixosConfigurations.nixos.config.system.build.toplevel   # build the system without applying
 nix eval ./system-config/nixos#nixosConfigurations.nixos.config.<opt>    # inspect an option
-scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh, zsh -n over *.zsh
+scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh, zsh -n over *.zsh; run it without a pipe, `| tail` hides the exit status
 ```
 
 `home-config/openclaw-npm/scripts/config-check.sh` validates an OpenClaw config on an isolated temp state dir without touching `~/.openclaw`.
