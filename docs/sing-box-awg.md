@@ -1,6 +1,6 @@
 # sing-box with AmneziaWG and the Tailscale exit node
 
-How the tunnel and the exit node work and why. The units and rules are in `system-config/nixos/sing-box.nix` and `awg-exit-node.nix`; this file holds what the code does not show.
+How the tunnel and the exit node work and why. The units and rules are in `system-config/nixos/sing-box.nix`, `awg-exit-node.nix` and, for the Tailscale service and the `--advertise-exit-node` flag, `tailscale.nix`; this file holds what the code does not show.
 
 ## Why AmneziaWG sits under sing-box
 

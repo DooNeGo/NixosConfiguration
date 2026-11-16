@@ -19,6 +19,7 @@
     ./printing.nix
     ./network.nix
     ./sing-box.nix
+    ./tailscale.nix
     ./awg-exit-node.nix
     ./sshd.nix
     ./nvidia.nix

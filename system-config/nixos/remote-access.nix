@@ -1,22 +1,5 @@
-{
-  config,
-  ...
-}:
-{
+_: {
   services = {
-    tailscale = {
-      enable = true;
-      serve = {
-        enable = true;
-        services = {
-          openclaw-webui.endpoints = {
-            "tcp:80" = "http://127.0.0.1:19001";
-            "tcp:443" = "https://127.0.0.1:19001";
-          };
-        };
-      };
-    };
-
     sunshine = {
       enable = true;
       autoStart = true;
@@ -37,28 +20,10 @@
   # session, so Sunshine's virtual keyboard and mouse need the group.
   users.users.mathew.extraGroups = [ "uinput" ];
 
-  networking = {
-    nftables.enable = true;
-    firewall = {
-      trustedInterfaces = [ config.services.tailscale.interfaceName ];
-      allowedUDPPorts = [ config.services.tailscale.port ];
-    };
-  };
+  networking.nftables.enable = true;
 
   systemd = {
     # The SDDM greeter session also reaches graphical-session.target; a Sunshine started as sddm holds the ports.
     user.services.sunshine.unitConfig.ConditionUser = "mathew";
-
-    services = {
-      tailscaled.serviceConfig.Environment = [
-        "TS_DEBUG_FIREWALL_MODE=nftables"
-      ];
-
-      # tailscaled counts as started before it has joined the tailnet, and `serve set-config` then fails with NoState.
-      tailscale-serve.serviceConfig = {
-        Restart = "on-failure";
-        RestartSec = "10s";
-      };
-    };
   };
 }

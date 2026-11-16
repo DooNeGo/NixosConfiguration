@@ -26,11 +26,6 @@ in
     }
   ];
 
-  services.tailscale = {
-    useRoutingFeatures = "server";
-    extraSetFlags = [ "--advertise-exit-node" ];
-  };
-
   # Packets that arrive from the tailnet and are not for the tailnet or for
   # this host go out through the AWG tunnel. The unit is deliberately not tied to
   # the tunnel's lifecycle: while `awg0` is down, only the blackhole route is left
