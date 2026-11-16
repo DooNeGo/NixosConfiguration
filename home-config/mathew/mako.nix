@@ -1,12 +1,16 @@
-{ config, ... }: {
+{ config, lib, ... }:
+let
+  style = import ./style lib;
+in
+{
   services.mako = {
     enable = true;
     settings = {
-      border-radius = 10;
+      border-radius = style.radius;
       default-timeout = 5000;
-      margin = 5;
+      margin = style.gapInner;
       padding = "10,5";
-      border-size = 1;
+      border-size = style.borderWidth;
       # Colours of the wallpaper palette (wallpaper/).
       include = "${config.home.homeDirectory}/.local/state/wallpaper-palette/mako";
 

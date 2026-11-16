@@ -5,7 +5,7 @@
   ...
 }:
 let
-  glass = import ./glass.nix lib;
+  style = import ./style lib;
   # Written by the wallpaper script (wallpaper/), which also seeds it at activation.
   colorsFile = "${config.home.homeDirectory}/.local/state/wallpaper-palette/waybar.css";
   # Waybar reads the config under the full name "custom/sep#N", with no fallback to "custom/sep".
@@ -182,11 +182,9 @@ in
         };
       };
     };
-    style =
-      builtins.replaceStrings
-        [ "@colors@" "@glass_alpha@" "@glass_border_alpha@" ]
-        [ colorsFile (toString glass.alpha) (toString glass.borderAlpha) ]
-        (builtins.readFile ./waybar.css);
+    style = style.subst (
+      builtins.replaceStrings [ "@colors@" ] [ colorsFile ] (builtins.readFile ./waybar.css)
+    );
   };
 
   # Also provides the playerctl binary that the media keys in hyprland/binds.lua call.

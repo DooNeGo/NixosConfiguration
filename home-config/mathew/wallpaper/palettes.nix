@@ -5,7 +5,7 @@
   common,
 }:
 let
-  glass = import ../glass.nix lib;
+  style = import ../style lib;
 
   # Templates in ../palette, one output name each; a consumer imports its file from the palette directory.
   templates = {
@@ -17,14 +17,8 @@ let
   };
   files = lib.attrValues templates;
 
-  # The glass numbers (glass.nix) are filled in before matugen renders the colours.
-  template =
-    file:
-    pkgs.writeText file (
-      builtins.replaceStrings [ "@glass_alpha@" "@glass_border@" ] [ glass.alphaHex glass.borderHex ] (
-        builtins.readFile (../palette + "/${file}")
-      )
-    );
+  # The style tokens (style/) are filled in before matugen renders the colours.
+  template = file: pkgs.writeText file (style.subst (builtins.readFile (../palette + "/${file}")));
 
   # @out@ is the render directory of the build script: a fixed path, so no wallpaper name is ever spliced into the file.
   matugenConfig = pkgs.writeText "matugen.toml" (

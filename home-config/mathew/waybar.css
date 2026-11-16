@@ -1,22 +1,22 @@
 @import url("file://@colors@");
 
 * {
-  font-family: "JetBrainsMono Nerd Font", "Noto Sans", sans-serif;
+  font-family: "@font_family@", "Noto Sans", sans-serif;
   font-size: 13px;
   min-height: 0;
 }
 
 window#waybar {
   background: transparent;
-  color: @on_surface;
+  color: @fg;
 }
 
 .modules-left,
 .modules-center,
 .modules-right {
-  background: alpha(@surface_container_high, @glass_alpha@);
-  border: 1px solid alpha(@on_surface, @glass_border_alpha@);
-  border-radius: 20px;
+  background: alpha(@glass_fill, @glass_alpha@);
+  border: @glass_border_width@px solid alpha(@glass_border, @glass_border_alpha@);
+  border-radius: @radius@px;
   padding: 0 2px;
 }
 
@@ -24,20 +24,20 @@ window#waybar {
   padding: 0 8px;
   margin: 4px 2px;
   background: transparent;
-  color: @on_surface_variant;
-  border-radius: 15px;
+  color: @fg_dim;
+  border-radius: @radius_inner@px;
   border: none;
   box-shadow: none;
   text-shadow: none;
 }
 
 #workspaces button:hover {
-  background: alpha(@primary, 0.25);
-  color: @on_surface;
+  background: alpha(@accent, 0.25);
+  color: @fg;
 }
 
 #workspaces button.active {
-  background: @primary;
+  background: @accent;
   color: @on_primary;
 }
 
@@ -62,17 +62,17 @@ window#waybar {
 #idle_inhibitor,
 #tray {
   padding: 0 5px;
-  color: @on_surface;
+  color: @fg;
 }
 
 #custom-sep,
 #custom-failed-dot {
   padding: 0;
-  color: @on_surface_variant;
+  color: @fg_dim;
 }
 
 #idle_inhibitor.activated {
-  color: @primary;
+  color: @accent;
 }
 
 #custom-failed {
@@ -81,7 +81,7 @@ window#waybar {
 
 #custom-mic.muted,
 #custom-media.paused {
-  color: @on_surface_variant;
+  color: @fg_dim;
 }
 
 .image-button {
@@ -89,11 +89,11 @@ window#waybar {
 }
 
 #wireplumber.muted {
-  color: @on_surface_variant;
+  color: @fg_dim;
 }
 
 #network.disconnected {
-  color: @on_surface_variant;
+  color: @fg_dim;
 }
 
 #idle_inhibitor,
@@ -125,6 +125,6 @@ window#waybar {
 
 tooltip {
   background: @surface;
-  color: @on_surface;
-  border-radius: 10px;
+  color: @fg;
+  border-radius: @radius@px;
 }

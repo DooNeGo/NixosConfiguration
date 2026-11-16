@@ -1,12 +1,16 @@
-{ config, lib, ... }: {
+{ config, lib, ... }:
+let
+  style = import ./style lib;
+in
+{
   programs.kitty = {
     enable = true;
     enableGitIntegration = true;
 
     settings = lib.mkAfter {
-      font_family = "JetBrainsMono Nerd Font";
+      font_family = style.fontFamily;
       background_opacity = 0.65;
-      window_padding_width = 5;
+      window_padding_width = style.gapInner;
       confirm_os_window_close = 0;
     };
 

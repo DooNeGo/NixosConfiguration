@@ -1,4 +1,4 @@
-background-color=#{{colors.surface_container_high.default.hex_stripped}}@glass_alpha@
-text-color=#{{colors.on_surface.default.hex_stripped}}
-border-color=#{{colors.on_surface.default.hex_stripped}}@glass_border@
-progress-color=over #{{colors.primary.default.hex_stripped}}
+background-color=#{{colors.@role_glass_fill@.default.hex_stripped}}@glass_alpha_hex@
+text-color=#{{colors.@role_text@.default.hex_stripped}}
+border-color=#{{colors.@role_glass_border@.default.hex_stripped}}@glass_border_hex@
+progress-color=over #{{colors.@role_accent@.default.hex_stripped}}
