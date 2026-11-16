@@ -21,6 +21,8 @@ for _, namespace in ipairs({ @glass_layers@ }) do
         name = "glass-" .. namespace,
         match = { namespace = "^" .. namespace .. "$" },
         blur = true,
+        -- The Waybar menus are popups of the layer surface; the global blur.popups alone does not blur them.
+        blur_popups = true,
         ignore_alpha = 0.1,
     })
 end

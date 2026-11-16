@@ -123,8 +123,45 @@ window#waybar {
   -gtk-icon-effect: dim;
 }
 
-tooltip {
-  background: @surface;
+/* Every popup of the bar (the layout menu, tray menus, tooltips) is one glass panel. GTK wraps it in a window whose
+   decoration draws its own shadow, border and corners from the theme; only the panel below may show. */
+window.popup,
+window.popup decoration,
+tooltip decoration {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+
+menu,
+tooltip.background {
+  background: alpha(@glass_fill, @glass_alpha@);
   color: @fg;
+  border: @glass_border_width@px solid alpha(@glass_border, @glass_border_alpha@);
   border-radius: @radius@px;
+}
+
+menu {
+  padding: 5px;
+}
+
+/* The GTK theme gives tooltip text a dark shadow, which shows as an outline on the glass. */
+tooltip,
+tooltip label {
+  text-shadow: none;
+}
+
+tooltip label {
+  padding: 2px 8px;
+}
+
+menuitem {
+  border-radius: @radius_inner@px;
+  padding: 6px 12px;
+}
+
+menuitem:hover {
+  background: alpha(@accent, 0.3);
 }
