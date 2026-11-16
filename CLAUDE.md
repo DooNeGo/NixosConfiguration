@@ -8,7 +8,7 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/hooks/guard-git.sh` asks, in any spelling, before those commands and before commands that discard work (`reset --hard`, `clean`, `checkout .`, `restore .`); `.claude/settings.json` keeps prefix rules for them as a fallback and denies a force push.
+Work on a branch, except for a simple, quick change (adding a package, changing one setting), which goes straight to `main`. Build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/hooks/guard-git.sh` asks, in any spelling, before those commands and before commands that discard work (`reset --hard`, `clean`, `checkout .`, `restore .`); `.claude/settings.json` keeps prefix rules for them as a fallback and denies a force push.
 
 ## Where things go
 
