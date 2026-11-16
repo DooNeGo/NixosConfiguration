@@ -2,7 +2,7 @@
 
 ## Overview
 
-Personal NixOS + Home Manager configuration for the host `nixos` (x86_64-linux, Hyprland desktop, NVIDIA), plus nix-darwin + Home Manager for the owner's `macbook-air-m1` (aarch64-darwin). There is no test suite; verification means evaluating/building the Nix outputs. The darwin outputs cannot be built on this machine: evaluate them here, the owner builds and switches on the Mac. Build and verify, then hand `switch` (`nixos-rebuild`, `home-manager`) and any `chown`/`rm` under `/home` or `/games` to the owner.
+Personal NixOS + Home Manager configuration for the host `nixos` (x86_64-linux, Hyprland desktop, NVIDIA), plus nix-darwin + Home Manager for the owner's `macbook-air-m1` (aarch64-darwin). There is no test suite; verification means evaluating/building the Nix outputs. The darwin outputs cannot be built on this machine: evaluate them here, the owner builds and switches on the Mac. Build and verify, then hand `switch` (`nixos-rebuild`, `home-manager`) and any `chown`/`rm` under `/home` or `/games` to the owner, except a named path of the agent user `openclaw-npm` that the owner explicitly asks to delete.
 
 Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agent), `reports/` and `research_notes/` (untracked research) and `result` in the root.
 
