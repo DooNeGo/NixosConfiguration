@@ -60,9 +60,10 @@ in
   };
 
   # Hyprland without tty1 and without a seat: aquamarine has no headless-only mode and fails with "CBackend::create()
-  # failed" unless its DRM backend starts. LIBSEAT_BACKEND=noop lets that backend open card0 directly; the video group
-  # replaces the ACL that logind gives only to the active seat0 session. SDDM keeps tty1 and its DRM master, so there
-  # is no modeset on DP-2 and only HEADLESS-1 is usable.
+  # failed" unless its DRM backend starts. LIBSEAT_BACKEND=noop lets that backend open the DRM devices directly;
+  # AQ_DRM_DEVICES stays unset so aquamarine enumerates them (the cardN numbers change between boots). The video
+  # group replaces the ACL that logind gives only to the active seat0 session. SDDM keeps tty1 and its DRM master,
+  # so there is no modeset on DP-2 and only HEADLESS-1 is usable.
   users.users.mathew.extraGroups = [ "video" ];
 
   security.pam.services = {
@@ -90,7 +91,7 @@ in
       "dbus.socket"
       "systemd-logind.service"
     ];
-    # SDDM must hold DRM master on DP-2 before this Hyprland opens card0.
+    # SDDM must hold DRM master on DP-2 before this Hyprland opens the DRM devices.
     requires = [ "display-manager.service" ];
     # One Hyprland and one Steam client per user.
     conflicts = [
@@ -99,7 +100,6 @@ in
     ];
     environment = {
       LIBSEAT_BACKEND = "noop";
-      AQ_DRM_DEVICES = "/dev/dri/card0";
       AQ_NO_KMS_REQUIREMENT = "1";
       HYPRLAND_START_LOCKED = "1";
     };
