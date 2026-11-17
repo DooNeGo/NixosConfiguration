@@ -13,20 +13,19 @@ How to write a script or CLI tool kept in a `.sh` or `.zsh` file. The Nix module
 - Build it with `pkgs.writeShellApplication { text = builtins.readFile ./x.sh; runtimeInputs = [ … ]; }`: shellcheck runs on the real file at build time, and `errexit nounset pipefail` are set.
 - Pass values from Nix as environment variables with `runtimeEnv`, named `<TOOL>_<NAME>`; the script reads them like any other variable. Do not substitute text into the file (`replaceVars`, `${…}`): shellcheck would stop seeing real code.
 - A script that has to report a failure calls `failure-notify report`; the convention is in `.claude/rules/nix.md`.
-- Zsh code (a prompt hook) is read with `builtins.readFile`; the module may prepend a one-line variable definition. shellcheck does not parse zsh, so `scripts/lint.sh` runs `zsh -n` on it.
+- Zsh code (a prompt hook) is read with `builtins.readFile`; the module may prepend a one-line variable definition. `scripts/lint.sh` runs `zsh -n` on it.
 - Done when `scripts/lint.sh` exits 0 and the package builds with `nix build`.
 
 ## Command line
 
 - `-h` and `--help` print to stdout and exit 0.
-- A usage error prints `prog: reason` and `Try 'prog --help' for more information.` to stderr and exits 2. Runtime failures exit 1. Exit 2 is the convention of GNU tools, not a documented standard.
+- A usage error prints `prog: reason` and `Try 'prog --help' for more information.` to stderr.
 - Accept `--opt value` and `--opt=value`, end options at `--`, reject unknown options, and check that numbers are numbers.
 - Strip control characters from text that is later printed to a terminal; the record may come from an untrusted unit.
 
 ## State
 
 - Change shared state under `flock -w N` on a file descriptor, around the write only. A lock held across a slow call (a sink, a network request) stalls every other caller.
-- Publish a file with a temp file in the same directory plus `mv`, so a reader never sees half a file.
 - Test concurrency with parallel invocations on a temporary directory (`FAILURE_NOTIFY_DIR`-style override), then check that nothing was lost or corrupted.
 
 ## Completion
@@ -38,4 +37,4 @@ How to write a script or CLI tool kept in a `.sh` or `.zsh` file. The Nix module
 ## Prompt hooks
 
 - A hook runs before every prompt: builtins only, no forks.
-- zsh differs from bash here: `printf '%(...)T'` is unsupported (use `strftime` from `zsh/datetime`), and an unmatched glob is an error (use `(N)`).
+- An unmatched glob is an error in zsh (use `(N)`); for time use `strftime` from `zsh/datetime`.
