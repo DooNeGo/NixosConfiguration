@@ -13,6 +13,7 @@
     ./steam.nix
     ./sddm.nix
     ./hyprland-session.nix
+    ./testuser.nix
     ./steam-bigpicture-session.nix
     ./audio.nix
     ./murmur.nix
@@ -29,7 +30,6 @@
     ../shared/vim.nix
     ./xdg.nix
     ./file-systems.nix
-    #./bees.nix
     ./backup.nix
     ./failure-notify.nix
     ./smartd.nix
@@ -37,12 +37,13 @@
     ./android.nix
     ./usbmux.nix
     ./remote-access.nix
-    #./searx.nix
     ./whisper-cpp.nix
     ./shared-repo-acl.nix
   ];
 
   networking.hostName = "nixos";
+
+  testuser.enable = true;
 
   system.stateVersion = "26.05";
 }
