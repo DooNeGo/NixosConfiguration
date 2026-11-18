@@ -28,6 +28,9 @@ in
       ${reloadConsumers ""}
       # The palette of this wallpaper, so that a later switch refreshes the files from the same palette.
       basename "$RANDOM_WALL" > "$DIR/wallpaper"
+      # hyprlock reads this link, not a screenshot: a screenshot taken before the first wallpaper would be empty.
+      ln -sf "$RANDOM_WALL" "$DIR/lock-background.new"
+      mv -f -T "$DIR/lock-background.new" "$DIR/lock-background"
       exec hyprctl hyprpaper wallpaper ,"$RANDOM_WALL"
     '';
   };
@@ -40,6 +43,10 @@ in
     [ -n "$name" ] && [ -d "$src" ] || src=${palettes}/${defaultWallpaper}
     run mkdir -p ${paletteDir}
     run cp -f --no-preserve=mode "$src"/* ${paletteDir}/
+    # The link targets a store path that a later garbage collection can remove, so it is renewed on every switch.
+    img=${common.wallDir}/"$name"
+    [ -n "$name" ] && [ -e "$img" ] || img=${common.wallDir}/${defaultWallpaper}
+    run ln -sfn "$img" ${paletteDir}/lock-background
     if [ -S "''${XDG_RUNTIME_DIR:-/nonexistent}/bus" ]; then
       ${reloadConsumers "run "}
     else
@@ -54,9 +61,11 @@ in
         "hyprpaper.service"
         "graphical-session.target"
       ];
+      # The script reloads waybar; a waybar that is still starting dies on SIGUSR2.
+      Before = [ "waybar.service" ];
       # hyprctl needs a running Hyprland; skip quietly in any other session instead of failing.
       ConditionEnvironment = "HYPRLAND_INSTANCE_SIGNATURE";
-      # hyprpaper may not listen on its socket yet right after start: a few spaced retries, not a burst.
+      # A hyprpaper restart after login is not covered by the ordering; retry a few times, spaced.
       StartLimitIntervalSec = 60;
       StartLimitBurst = 5;
     };

@@ -59,7 +59,6 @@
     };
 
     zsh.initContent = ''
-      # OpenClaw Completion
       [ -f '/home/openclaw-npm/.openclaw/completions/openclaw.zsh' ] && source '/home/openclaw-npm/.openclaw/completions/openclaw.zsh'
     '';
   };

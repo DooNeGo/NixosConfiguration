@@ -4,7 +4,7 @@ How the tunnel and the exit node work and why. The units and rules are in `syste
 
 ## Why AmneziaWG sits under sing-box
 
-- The `main` instance reaches the internet through a server-issued AmneziaWG `.conf` (agenix: `secrets/awg-main.age`, delivered to `/etc/sing-box/main-awg.conf`). It listens on port 2080, which `HTTP(S)_PROXY`, searx and the Nix daemon use.
+- The `main` instance reaches the internet through a server-issued AmneziaWG `.conf` (agenix: `secrets/awg-main.age`, delivered to `/etc/sing-box/main-awg.conf`). It listens on port 2080, which `HTTP(S)_PROXY` and the Nix daemon use.
 - sing-box has no AmneziaWG outbound, so the kernel module (`wg-quick` with `type = "amneziawg"`) holds the tunnel and sing-box only binds its `proxy` outbound to `awg0`. What sing-box still gives: domain-based routing for `HTTP_PROXY` clients, DNS for proxied domains through the tunnel, and the same instance interface as the vless ones (`credits-*`).
 - Fail closed: `bind_interface` makes a matched domain fail when the tunnel is down instead of leaving through `eno1`.
 - The server `.conf` is stored verbatim; `prepare-awg.sh` derives the runtime config: it drops `DNS` (would replace the system resolver) and hooks (a third-party file must not run commands as root), puts the routes into table 51820 so `main` stays untouched, and keeps IPv4 only.

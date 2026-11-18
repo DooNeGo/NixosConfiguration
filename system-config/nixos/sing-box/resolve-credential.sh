@@ -10,8 +10,7 @@ UA=v2rayNG/1.8.5
 [ -r "$CRED_FILE" ] || { echo "resolve-credential: cannot read $CRED_FILE" >&2; exit 1; }
 src=$(grep -m1 -v '^[[:space:]]*$' "$CRED_FILE" | tr -d '\r\n')
 
-# Extract the first vless:// line from a subscription body (base64 if needed) --
-# byte-for-byte the pipeline from the former fetch-subscription.sh.
+# Extract the first vless:// line from a subscription body (base64 if needed).
 extract() {
   printf '%s\n' "$1" | { base64 -d 2>/dev/null || cat; } \
     | grep -m1 -o '^vless://.*' || true

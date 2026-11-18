@@ -6,7 +6,7 @@ set -euo pipefail
 prog=${0##*/}
 cd "$(dirname "$0")/.."
 
-all_flakes=(nixos darwin DooNeGo mathew openclaw-npm kokoro)
+all_flakes=(nixos darwin DooNeGo mathew openclaw-npm)
 
 usage() {
   cat << EOF
@@ -34,7 +34,6 @@ flake_dir() {
   case $1 in
     nixos | darwin) echo "system-config/$1" ;;
     DooNeGo | mathew | openclaw-npm) echo "home-config/$1" ;;
-    kokoro) echo "kokoro" ;;
     *) return 1 ;;
   esac
 }
@@ -46,7 +45,6 @@ verify() {
     DooNeGo) nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath ;;
     # the same derivation `home-manager build` makes, without the ./result link
     mathew | openclaw-npm) nix build --no-link "./home-config/$1#homeConfigurations.$1.activationPackage" ;;
-    kokoro) nix build --no-link ./kokoro#kokoro-ru ;;
   esac
 }
 

@@ -8,7 +8,7 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, except for a simple, quick change (adding a package, changing one setting), which goes straight to `main`. Build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Merge into `main`, rebase, push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. `.claude/hooks/guard-git.sh` asks, in any spelling, before those commands and before commands that discard work (`reset --hard`, `clean`, `checkout .`, `restore .`); `.claude/settings.json` keeps prefix rules for them as a fallback and denies a force push.
+Work on a branch, except for a simple, quick change (adding a package, changing one setting), which goes straight to `main`. Build-verify, and commit only when asked: one concern per commit, documentation as its own commit. Change `main` (merge into it, rebase or reset it, `branch -f`), push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. To look at an older commit use `git switch --detach <hash>`. `.claude/hooks/guard-git.sh` asks, in any spelling, before those commands and before commands that discard work (`reset --hard`, `clean`, `checkout .`, `restore .`); history on other branches is not guarded. `.claude/settings.json` keeps prefix rules for the commands asked on every branch as a fallback and denies a force push.
 
 ## Where things go
 
@@ -25,9 +25,8 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 | `home-config/DooNeGo/` | `homeConfigurations.DooNeGo` | the MacBook user (standalone Home Manager, like the Linux users) |
 | `home-config/mathew/` | `homeConfigurations.mathew` | desktop user `mathew` (Hyprland, waybar, kitty…) |
 | `home-config/openclaw-npm/` | `homeConfigurations.openclaw-npm` | agent/dev user (MAUI/Android SDK, Rider, nix-ld) |
-| `kokoro/` | Russian TTS packages (`kokoro-ru`, `ruaccent`, `pycrfsuite`, pinned data trees) + `cli/kokoro_cli.py` | standalone; pinned to its own nixpkgs rev |
 
-`lib/pkgs.nix` is a plain function, not a flake: the NixOS flake and the home flakes call it with their own `inputs`; `kokoro/` does not use it.
+`lib/pkgs.nix` is a plain function, not a flake: the NixOS flake and the home flakes call it with their own `inputs`.
 
 ## Commands (run from repo root)
 
@@ -49,6 +48,8 @@ scripts/lint.sh                                       # deadnix + statix + nixfm
 
 Session start over ssh, Sunshine and Steam Remote Play: `.claude/rules/remote-access.md` (loads with those files); reasons and troubleshooting: `docs/remote-access.md`.
 
+To try any Home Manager configuration without the owner's `switch`, apply it to the test account `testuser`: `scripts/testuser-switch.sh TARGET`, `docs/testuser.md`.
+
 ## Verifying a change
 
 | Changed path | Build |
@@ -57,13 +58,12 @@ Session start over ssh, Sunshine and Steam Remote Play: `.claude/rules/remote-ac
 | `system-config/darwin/` | the darwin eval: `nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath` (evaluation only) |
 | `system-config/shared/` | the system `toplevel` and the darwin eval |
 | `home-config/DooNeGo/` | the `DooNeGo` eval: `nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath` |
-| `home-config/mathew/` | `home-manager build --flake ./home-config/mathew#mathew` |
-| `home-config/openclaw-npm/` | `home-manager build --flake ./home-config/openclaw-npm#openclaw-npm` |
+| `home-config/mathew/` | `home-manager build --no-out-link --flake ./home-config/mathew#mathew` |
+| `home-config/openclaw-npm/` | `home-manager build --no-out-link --flake ./home-config/openclaw-npm#openclaw-npm` |
 | `home-config/shared/` | both home builds and the `DooNeGo` eval |
 | `lib/`, `overlays/` | both home builds, the system build and the `DooNeGo` eval |
 | `assets/sofa/` | the system `toplevel` |
 | `assets/wallpapers/` | the `mathew` home build |
-| `kokoro/` | `nix build ./kokoro#kokoro-ru` |
 
 When a build fails, rerun it without output redirection and read `2>&1 | tail -30`. Report to the owner the exact `switch` commands and what could not be verified without running (a service start, a session, a mount).
 

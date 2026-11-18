@@ -13,8 +13,10 @@ rec {
   # Tell every running consumer of this user to read the new palette files; none of them is required to run.
   # `prefix` is `run ` in the activation step, so that a dry run prints the commands instead of executing them.
   reloadConsumers = prefix: ''
-    ${prefix}${pkgs.systemd}/bin/systemctl --user try-reload-or-restart waybar.service || true
-    ${prefix}${pkgs.mako}/bin/makoctl reload || true
+    # --no-block: waybar.service is ordered after random-wallpaper, which runs this; waiting for it would deadlock.
+    ${prefix}${pkgs.systemd}/bin/systemctl --user --no-block try-reload-or-restart waybar.service || true
+    # makoctl asks D-Bus to start mako, which fails without a session (the unit needs a Wayland display).
+    ${prefix}${pkgs.systemd}/bin/systemctl --user is-active --quiet mako.service && ${prefix}${pkgs.mako}/bin/makoctl reload || true
     # The Nix kitty runs as a wrapped process named .kitty-wrapped.
     ${prefix}${pkgs.procps}/bin/pkill -U "$(id -u)" -USR1 -x '\.kitty-wrapped|kitty' || true
   '';

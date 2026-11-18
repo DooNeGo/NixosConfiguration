@@ -19,6 +19,7 @@
     ./fastfetch.nix
     ./wallpaper
     ./hyprpaper.nix
+    ./hyprlock-initial.nix
     ../shared/zsh.nix
     ./zsh-theme.nix
     ../shared/auto-expire.nix

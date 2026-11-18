@@ -7,6 +7,7 @@
     nixfmt-tree
     deadnix
     statix
+    jq
     sshpass
     home-manager
     agenix

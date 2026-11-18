@@ -13,8 +13,6 @@ Done when `scripts/flake-update.sh` exits 0: every lock went through `nix flake 
 
 Locks change only through `nix flake update`, which the script runs: do not edit a `flake.lock`, and do not restore an old lock to get past a failure. When the breakage is upstream and has no fix in this repo, stop and tell the owner which input and revision broke which flake.
 
-`kokoro` pins nixpkgs by revision in `flake.nix`, so its lock normally stays unchanged; it is still built.
-
 Report: the inputs that changed per flake, each fix made to the configuration and why, and the switch commands for the owner:
 
 ```sh

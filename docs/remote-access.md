@@ -5,12 +5,15 @@ How the remote sessions work and why they are built this way. The units and sett
 ## Session model
 
 - No autologin: with autologin Xwayland does not start in the `mathew` session (Steam and other X11 apps fail, and Sunshine needs a `DISPLAY` workaround). The session is chosen with `defaultSession = "hyprland-uwsm"` instead.
-- The owner starts the session over ssh: `systemctl start hyprland-mathew` (`hyprland-session.nix`). The unit runs the same UWSM command as SDDM, because Home Manager session variables (NVIDIA env) reach the compositor only through `~/.config/uwsm/env`.
-- The session starts locked (`HYPRLAND_START_LOCKED` → `hyprlock` in `hyprland/session.lua`), so nobody at the physical keyboard sees a remotely opened desktop.
+- The owner starts the stream session over ssh: `systemctl start hyprland-headless-mathew` (`hyprland-session.nix`). The unit runs the same UWSM command as SDDM, because Home Manager session variables (NVIDIA env) reach the compositor only through `~/.config/uwsm/env`. A physical login goes through SDDM.
+- The session starts locked (`HYPRLAND_START_LOCKED` → `hyprlock-initial.service`), so nobody at the physical keyboard sees a remotely opened desktop. Start order (`home-config/mathew/hyprlock-initial.nix`, `remote-access.nix`): `hyprpaper`, `random-wallpaper`, `waybar` → `hyprlock-initial.service` (its `ExecStartPre` waits until waybar is active and both layers are on the output, 30 s at most, then locks anyway) → `sunshine.service`. Sunshine therefore does not capture an unlocked desktop. The order is `After=` only: a failed or skipped unit does not hold the next one back, so a desktop that did not come up still gets locked and streamed.
+- The lock must start after the desktop has drawn. A lock started earlier fades out into the compositor's flat background colour (`#121212`) before the desktop appears: the stream shows a near-black frame for 0.7 s at the first unlock. With the lock started later, its fade-out (`hyprlock.nix`, 0.3 s) shows the desktop. `misc.session_lock_xray` makes no difference (tested on and off; the idle cost is the same).
+- `hyprlock-initial` fails if hyprlock is dead one second after the start, and restarts after a crash (not after an unlock). A new hyprlock can take over a dead lock only with `misc.allow_session_lock_restore` (`hyprland/settings.lua`): without it Hyprland keeps its red lock-dead screen and every new hyprlock crashes with SEGV; a restart on `home-manager switch` would kill hyprlock under the lock, so the unit has `X-SwitchMethod = "keep-old"`. A failure is visible in `systemctl --user status` only: `failure-notify` covers system services.
+- A unit pulled in by `graphical-session.target` needs `After=graphical-session.target` itself: a target gets an implicit `After=` on every unit it wants, and without it `random-wallpaper` (which is `After=` the target) closes an ordering cycle. Such a unit is also `PartOf=` the target, otherwise it stays active between sessions of the same user manager.
 
 ## Sunshine (`remote-access.nix`)
 
-- Runs as `mathew` only. `capture = "wlr"` captures the virtual `HEADLESS-1` output created in `hyprland/session.lua` (1680x1050@60, the aspect ratio of the owner's client, a 16:10 laptop; a mismatch letterboxes the picture). `DP-2` is a physical monitor that is normally off.
+- Runs as `mathew` only. `capture = "wlr"` captures the virtual `HEADLESS-1` output created in `hyprland/session.lua` (only in a remote start, so a local login at SDDM has no extra monitor) (1680x1050@60, the aspect ratio of the owner's client, a 16:10 laptop; a mismatch letterboxes the picture). `DP-2` is a physical monitor that is normally off.
 - Capture is `wlr`, not KMS (KMS needs the remote access re-confirmed in front of the machine) and not NvFBC (X11 only); NVENC only encodes.
 - `lan_encryption_mode = 0`, `wan_encryption_mode = 1`: encryption off on the LAN, on over WAN. Tailscale traffic is already encrypted.
 - `csrf_allowed_origins` lists the host names the web UI is opened under (`https://nixos`, the Tailscale address); without them the web UI rejects the requests.
@@ -22,7 +25,7 @@ How the remote sessions work and why they are built this way. The units and sett
 
 ## Steam Remote Play without a desktop (`steam-bigpicture-session.nix`)
 
-- `systemctl start steam-bigpicture-mathew` runs Steam Big Picture in gamescope with the headless backend: no monitor, no tty, no Hyprland, no nesting. Remote Play captures gamescope's PipeWire stream and encodes with NVENC. The unit conflicts with `hyprland-mathew`: one Steam per user.
+- `systemctl start steam-bigpicture-mathew` runs Steam Big Picture in gamescope with the headless backend: no monitor, no tty, no Hyprland, no nesting. Remote Play captures gamescope's PipeWire stream and encodes with NVENC. The unit conflicts with `hyprland-headless-mathew`: one Steam per user.
 - The stream size is fixed when gamescope starts (`width`/`height` in the module); a client cannot change it, so a new client aspect ratio means editing the Nix file.
 - The Home Manager cursor theme (`rose-pine-hyprcursor`) has no X11 cursors, so gamescope draws a huge fallback cursor. The unit exports an XCursor theme (Adwaita, size 12) after `hm-session-vars`.
 
@@ -35,6 +38,6 @@ How the remote sessions work and why they are built this way. The units and sett
 - Sunshine's virtual keyboard and mouse need `/dev/uinput`: logind's ACL goes to the active seat0 session, which here is the SDDM greeter, so `mathew` is in the `uinput` group. Like `video`, a new group reaches Sunshine only after `systemctl restart user@1000.service`.
 - The Sunshine user unit starts for `mathew` only: the SDDM greeter session reaches `graphical-session.target` too, and a Sunshine run as `sddm` held the ports.
 - Hyprland reads every `/dev/input/*` device under `noop`, and the greeter shares seat0, so Moonlight input can also reach the greeter and the physical keyboard can reach the locked stream session.
-- Conflicts with `hyprland-mathew` and `steam-bigpicture-mathew` (one Hyprland, one Steam per user).
-- A seat session and the stream session of `mathew` exclude each other, because one user manager serves both (`graphical-session.target`, Sunshine, Steam). The unit refuses to start while `mathew` has a session on a seat (`ExecStartPre`), and the `sddm` PAM stack refuses `mathew` while the unit runs; nothing is stopped automatically. The unit also `requires` `display-manager.service`: SDDM keeps DRM master on DP-2, so a stopped SDDM (for example under `hyprland-mathew`) stops the stream session too.
+- Conflicts with `steam-bigpicture-mathew` (one Hyprland, one Steam per user).
+- A seat session and the stream session of `mathew` exclude each other, because one user manager serves both (`graphical-session.target`, Sunshine, Steam). The unit refuses to start while `mathew` has a session on a seat (`ExecStartPre`), and the `sddm` PAM stack refuses `mathew` while the unit runs; nothing is stopped automatically. The unit also `requires` `display-manager.service`: SDDM keeps DRM master on DP-2, so a stopped SDDM stops the stream session too.
 - uwsm exports the unit environment (`LIBSEAT_BACKEND`, `AQ_*`) into the user manager, since Hyprland starts from it; the variables stay there until the session stops and uwsm cleans them up.
