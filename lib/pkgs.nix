@@ -1,5 +1,5 @@
 # Shared pkgs construction for the system flake and the home-config flakes. A plain function, not a flake: every
-# flake keeps its own inputs and lock, and passes them in. kokoro/ is standalone and deliberately does not use it.
+# flake keeps its own inputs and lock, and passes them in.
 { inputs }:
 rec {
   # Base nixpkgs config of the repo. cudaSupport is NOT here: it belongs to one host's main package set only,

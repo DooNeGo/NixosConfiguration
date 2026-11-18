@@ -8,9 +8,6 @@ in
   "secrets/murmur-password.age".publicKeys = [
     host
   ];
-  "secrets/searx-env.age".publicKeys = [
-    host
-  ];
   "secrets/mathew-password.age".publicKeys = [
     host
   ];
