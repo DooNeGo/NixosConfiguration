@@ -24,6 +24,11 @@ _: {
 
   systemd = {
     # The SDDM greeter session also reaches graphical-session.target; a Sunshine started as sddm holds the ports.
-    user.services.sunshine.unitConfig.ConditionUser = "mathew";
+    user.services.sunshine = {
+      unitConfig.ConditionUser = "mathew";
+      # Capture starts after the lock (hyprlock-initial.service, Home Manager) in a remote session. Ordering only: a failed
+      # or skipped unit does not hold Sunshine back.
+      after = [ "hyprlock-initial.service" ];
+    };
   };
 }

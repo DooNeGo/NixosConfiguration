@@ -5,6 +5,8 @@ in
 {
   programs.hyprlock = {
     enable = true;
+    # The system module installs it together with its PAM service.
+    package = null;
     sourceFirst = true;
     settings = {
       # Defines $glass_fill, $glass_border and the palette colours (wallpaper/).
@@ -12,9 +14,18 @@ in
 
       general.hide_cursor = true;
 
+      animations = {
+        enabled = true;
+        bezier = [ "easeOut, 0.25, 0.1, 0.25, 1" ];
+        animation = [
+          "fadeIn, 1, 3, easeOut"
+          "fadeOut, 1, 3, easeOut"
+        ];
+      };
+
       background = [
         {
-          path = "screenshot";
+          path = "${config.home.homeDirectory}/.local/state/wallpaper-palette/lock-background";
           blur_passes = style.blurPasses;
           blur_size = 6;
         }

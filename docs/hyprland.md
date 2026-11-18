@@ -8,7 +8,7 @@ Home Manager writes `~/.config/hypr/hyprland.lua` with one `require("hyprland.<n
 
 | File | Holds |
 |---|---|
-| `session.lua` | the `hyprland.start` hook: creates `HEADLESS-1`, runs `hyprlock` when `HYPRLAND_START_LOCKED` is set |
+| `session.lua` | the `hyprland.start` hook: when `HYPRLAND_START_LOCKED` is set (a remote start, not a login at SDDM) creates `HEADLESS-1`; the lock is `hyprlock-initial.service` (`hyprlock-initial.nix`) |
 | `monitors.lua` | `DP-2` (2560x1440@180, 10 bit, VRR) and the virtual `HEADLESS-1` for Sunshine, to the right of `DP-2` so the two outputs do not overlap |
 | `settings.lua` | gaps, rounding, blur, shadow, input, `misc` |
 | `animations.lua` | curves and animations |
@@ -36,7 +36,7 @@ A file is added in `hyprland.nix` and, if it is new, with `git add -N`.
 | `rofi.rasi` | `@import` in `rofi-glass.rasi` | none: read at each start |
 | `hyprlock.conf` | `source=` in `hyprlock.conf`, defines `$text`, `$accent`, `$glass_fill`, `$glass_border`... (the password field is glass) | read at each lock |
 
-`~/.local/state/wallpaper-palette/wallpaper` names the current wallpaper. Every `switch` refreshes the directory from that wallpaper's palette (the first wallpaper by name before the script ever ran) and reloads waybar, mako and kitty, so a new template or colour role reaches the consumers without a relogin. A switch from a context without a user session bus (a plain tty or `su`) skips the reload and says so; the consumers then read the palette when they next start. A build fails when matugen leaves a template file out for any wallpaper. The cache of clipboard thumbnails is separate (`clipboard-pick.sh`). A new colour role is one line in the template; a new consumer is one template, one entry in `templates` and a reload line.
+`hyprpaper.service` turns active only once its IPC socket exists (`ExecStartPre` removes a stale socket, `ExecStartPost` waits for the new one, both in `hyprpaper.nix`; the name `.hyprpaper.sock` is hardcoded in hyprpaper, so the wait fails with a message after 10 s if an update renames it), and `random-wallpaper` runs before `waybar.service`, so the script's reload does not hit a waybar that is still starting (SIGUSR2 kills it); that reload is `--no-block`, because waiting for a unit that is ordered after the script itself deadlocks the start (and a `switch`). `~/.local/state/wallpaper-palette/wallpaper` names the current wallpaper, and `lock-background` in the same directory links to its image: hyprlock shows it as its blurred background, because a screenshot is empty when the lock starts before the first wallpaper (remote start). Every `switch` refreshes the directory from that wallpaper's palette (the first wallpaper by name before the script ever ran) and reloads waybar, mako and kitty, so a new template or colour role reaches the consumers without a relogin. A switch from a context without a user session bus (a plain tty or `su`) skips the reload and says so; the consumers then read the palette when they next start. A build fails when matugen leaves a template file out for any wallpaper. The cache of clipboard thumbnails is separate (`clipboard-pick.sh`). A new colour role is one line in the template; a new consumer is one template, one entry in `templates` and a reload line.
 
 ## Terminal and shell colours
 

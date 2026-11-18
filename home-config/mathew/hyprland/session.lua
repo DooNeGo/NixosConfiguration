@@ -1,9 +1,9 @@
 ---@module 'hl'
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("hyprctl output create headless HEADLESS-1")
-    -- Set by the hyprland-mathew and hyprland-headless-mathew system units (remote start): lock before anything is visible on DP-2.
+    -- Set by the hyprland-headless-mathew system unit (remote start), not by a login at SDDM: a remote session streams
+    -- HEADLESS-1; a local login at SDDM has no extra monitor. The lock is hyprlock-initial.service (hyprlock-initial.nix).
     if os.getenv("HYPRLAND_START_LOCKED") then
-        hl.exec_cmd("hyprlock")
+        hl.exec_cmd("hyprctl output create headless HEADLESS-1")
     end
 end)
