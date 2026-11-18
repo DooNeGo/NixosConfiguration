@@ -1,23 +1,18 @@
 {
   "permissions": {
     "ask": [
-      "Bash(git merge:*)",
-      "Bash(git rebase:*)",
       "Bash(git push:*)",
       "Bash(git branch -D:*)",
-      "Bash(git branch -d -f:*)",
-      "Bash(git branch -d --force:*)",
-      "Bash(git branch -f -d:*)",
       "Bash(git branch -df:*)",
-      "Bash(git branch --delete --force:*)",
+      "Bash(git branch -d* -f*)",
+      "Bash(git branch -d*--force*)",
+      "Bash(git branch --delete*--force*)",
+      "Bash(git tag* -f*)",
+      "Bash(git tag*--force*)",
       "Bash(git reset --hard:*)",
       "Bash(git clean:*)",
-      "Bash(git checkout .:*)",
-      "Bash(git checkout -- .:*)",
-      "Bash(git checkout HEAD -- .:*)",
-      "Bash(git restore .:*)",
-      "Bash(git restore -- .:*)",
-      "Bash(git restore --staged --worktree .:*)"
+      "Bash(git checkout* .)",
+      "Bash(git restore* .)"
     ],
     "deny": [
       "Bash(git push*--force*)",
