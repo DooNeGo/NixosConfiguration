@@ -26,7 +26,7 @@ How the Nix store, generations, journal and boot menu are kept in bounds, and wh
 
 - No Hyprland cachix substituter: no flake here has a `hyprland` input (`programs.hyprland` comes from nixpkgs), so the cache would only add a lookup per path.
 - Firewall ports 8080 and 18789 are closed. The OpenClaw gateway is reachable over Tailscale (`tailscale0` is a trusted interface).
-- `searx.nix` is imported nowhere (like `bees.nix`); the module, its agenix secret `searx-env` and its entry in `secrets.nix` stay for a return.
+- `bees.nix` is imported nowhere; the module stays for a return.
 
 ## Backups
 
