@@ -13,7 +13,6 @@
     ./steam.nix
     ./sddm.nix
     ./hyprland-session.nix
-    ./testuser.nix
     ./steam-bigpicture-session.nix
     ./audio.nix
     ./murmur.nix
@@ -42,8 +41,6 @@
   ];
 
   networking.hostName = "nixos";
-
-  testuser.enable = true;
 
   system.stateVersion = "26.05";
 }
