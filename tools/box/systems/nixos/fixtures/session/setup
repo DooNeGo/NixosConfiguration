@@ -1,0 +1,3 @@
+# shellcheck shell=bash
+systemctl start "$SESSION_UNIT"
+wait_output

@@ -1,0 +1,1 @@
+The session of this system needs the host GPU: box passes /dev/dri, the nvidia devices and the video group to the container.

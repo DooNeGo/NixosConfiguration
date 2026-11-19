@@ -1,0 +1,2 @@
+# shellcheck shell=bash
+systemctl stop "$SESSION_UNIT"
