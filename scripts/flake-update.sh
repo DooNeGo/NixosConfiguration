@@ -6,7 +6,7 @@ set -euo pipefail
 prog=${0##*/}
 cd "$(dirname "$0")/.."
 
-all_flakes=(nixos darwin DooNeGo mathew openclaw-npm)
+all_flakes=(nixos darwin box DooNeGo mathew openclaw-npm)
 
 usage() {
   cat << EOF
@@ -32,7 +32,7 @@ usage_error() {
 
 flake_dir() {
   case $1 in
-    nixos | darwin) echo "system-config/$1" ;;
+    nixos | darwin | box) echo "system-config/$1" ;;
     DooNeGo | mathew | openclaw-npm) echo "home-config/$1" ;;
     *) return 1 ;;
   esac
@@ -41,6 +41,7 @@ flake_dir() {
 verify() {
   case $1 in
     nixos) nix build --no-link ./system-config/nixos#nixosConfigurations.nixos.config.system.build.toplevel ;;
+    box) nix build --no-link ./system-config/box#nixosConfigurations.box.config.system.build.toplevel ;;
     darwin) nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath ;;
     DooNeGo) nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath ;;
     # the same derivation `home-manager build` makes, without the ./result link
