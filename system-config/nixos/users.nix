@@ -21,6 +21,9 @@
     isNormalUser = true;
     linger = true;
     shell = pkgs.zsh;
-    extraGroups = [ "systemd-journal" ]; # read-only access to the system/user journals for diagnostics
+    extraGroups = [
+      "systemd-journal" # read-only access to the system/user journals for diagnostics
+      "video" # /dev/dri/card0 for the Hyprland session of scripts/box.sh
+    ];
   };
 }

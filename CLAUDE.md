@@ -21,6 +21,7 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 | Flake | Output | Applies to |
 |---|---|---|
 | `system-config/nixos/` | `nixosConfigurations.nixos` | the whole system |
+| `system-config/box/` | `nixosConfigurations.box` | the NixOS container of `scripts/box.sh` (not switched) |
 | `system-config/darwin/` | `darwinConfigurations.macbook-air-m1` (nix-darwin, nix-homebrew) | the MacBook system |
 | `home-config/DooNeGo/` | `homeConfigurations.DooNeGo` | the MacBook user (standalone Home Manager, like the Linux users) |
 | `home-config/mathew/` | `homeConfigurations.mathew` | desktop user `mathew` (Hyprland, waybar, kitty…) |
@@ -48,13 +49,14 @@ scripts/lint.sh                                       # deadnix + statix + nixfm
 
 Session start over ssh, Sunshine and Steam Remote Play: `.claude/rules/remote-access.md` (loads with those files); reasons and troubleshooting: `docs/remote-access.md`.
 
-To try any Home Manager configuration without the owner's `switch`, apply it to the test account `testuser`: `scripts/testuser-switch.sh TARGET`, `docs/testuser.md`.
+To test what the owner's `switch` cannot check safely (session order, hyprlock, a user unit of any Home Manager user), run it in the rootless-podman box: `scripts/box.sh`, `docs/box.md`.
 
 ## Verifying a change
 
 | Changed path | Build |
 |---|---|
 | `system-config/nixos/` | the system `toplevel` (first command above) |
+| `system-config/box/` | `nix build --no-link ./system-config/box#nixosConfigurations.box.config.system.build.toplevel` |
 | `system-config/darwin/` | the darwin eval: `nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath` (evaluation only) |
 | `system-config/shared/` | the system `toplevel` and the darwin eval |
 | `home-config/DooNeGo/` | the `DooNeGo` eval: `nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath` |
