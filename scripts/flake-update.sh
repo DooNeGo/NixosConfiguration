@@ -32,7 +32,8 @@ usage_error() {
 
 flake_dir() {
   case $1 in
-    nixos | darwin | box) echo "system-config/$1" ;;
+    nixos | darwin) echo "system-config/$1" ;;
+    box) echo "tools/box" ;;
     DooNeGo | mathew | openclaw-npm) echo "home-config/$1" ;;
     *) return 1 ;;
   esac
@@ -41,7 +42,8 @@ flake_dir() {
 verify() {
   case $1 in
     nixos) nix build --no-link ./system-config/nixos#nixosConfigurations.nixos.config.system.build.toplevel ;;
-    box) nix build --no-link ./system-config/box#nixosConfigurations.box.config.system.build.toplevel ;;
+    # the real system and home with the layers of the box: the build of an instance, without starting it
+    box) tools/box/box build --system nixos --home mathew > /dev/null ;;
     darwin) nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath ;;
     DooNeGo) nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath ;;
     # the same derivation `home-manager build` makes, without the ./result link

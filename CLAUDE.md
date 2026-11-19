@@ -21,7 +21,7 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 | Flake | Output | Applies to |
 |---|---|---|
 | `system-config/nixos/` | `nixosConfigurations.nixos` | the whole system |
-| `system-config/box/` | `nixosConfigurations.box` | the NixOS container of `scripts/box.sh` (not switched) |
+| `tools/box/` | `packages.<system>.podman`, `lib` | not a configuration: the test box (`tools/box/box`) that applies layers to the flakes above |
 | `system-config/darwin/` | `darwinConfigurations.macbook-air-m1` (nix-darwin, nix-homebrew) | the MacBook system |
 | `home-config/DooNeGo/` | `homeConfigurations.DooNeGo` | the MacBook user (standalone Home Manager, like the Linux users) |
 | `home-config/mathew/` | `homeConfigurations.mathew` | desktop user `mathew` (Hyprland, waybar, kitty…) |
@@ -31,12 +31,12 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 
 ## Commands (run from repo root)
 
-Flakes only see git-tracked files: a new file needs `git add -N` before any eval/build, otherwise Nix fails with "not tracked by Git" (the `Write` hook in `.claude/settings.json` does it; files made by other means need it by hand). The `Stop` hook runs `scripts/lint.sh` when `.nix`, `.sh` or `.zsh` files changed.
+Flakes only see git-tracked files: a new file needs `git add -N` before any eval/build, otherwise Nix fails with "not tracked by Git" (the `Write` hook in `.claude/settings.json` does it; files made by other means need it by hand). The `Stop` hook runs `scripts/lint.sh` when `.nix`, `.sh`, `.zsh` or `tools/box` files changed.
 
 ```sh
 nix build --no-link ./system-config/nixos#nixosConfigurations.nixos.config.system.build.toplevel   # build the system without applying
 nix eval ./system-config/nixos#nixosConfigurations.nixos.config.<opt>    # inspect an option
-scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh, zsh -n over *.zsh; run it without a pipe, `| tail` hides the exit status
+scripts/lint.sh                                       # deadnix + statix + nixfmt --check over all flakes (config: statix.toml), shellcheck over tracked *.sh and the `tools/box` fixtures, zsh -n over *.zsh, ruff over `tools/box`; run it without a pipe, `| tail` hides the exit status
 ```
 
 `home-config/openclaw-npm/scripts/config-check.sh` validates an OpenClaw config on an isolated temp state dir without touching `~/.openclaw`.
@@ -49,14 +49,14 @@ scripts/lint.sh                                       # deadnix + statix + nixfm
 
 Session start over ssh, Sunshine and Steam Remote Play: `.claude/rules/remote-access.md` (loads with those files); reasons and troubleshooting: `docs/remote-access.md`.
 
-To test what the owner's `switch` cannot check safely (session order, hyprlock, a user unit of any Home Manager user), run it in the rootless-podman box: `scripts/box.sh`, `docs/box.md`.
+To test what the owner's `switch` cannot check safely (session order, hyprlock, a user unit of any Home Manager user), run it in the rootless-podman box (skill `box-test`; how it works: `docs/box.md`).
 
 ## Verifying a change
 
 | Changed path | Build |
 |---|---|
 | `system-config/nixos/` | the system `toplevel` (first command above) |
-| `system-config/box/` | `nix build --no-link ./system-config/box#nixosConfigurations.box.config.system.build.toplevel` |
+| `tools/box/` | `tools/box/box build --system nixos --home mathew`, `python3 -m unittest discover -s tools/box/tests -t tools/box` and `scripts/lint.sh` (ruff) |
 | `system-config/darwin/` | the darwin eval: `nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath` (evaluation only) |
 | `system-config/shared/` | the system `toplevel` and the darwin eval |
 | `home-config/DooNeGo/` | the `DooNeGo` eval: `nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath` |
