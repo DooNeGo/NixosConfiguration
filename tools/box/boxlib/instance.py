@@ -20,15 +20,11 @@ INNER_ENV = {
     "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/0/bus",
     "NIX_REMOTE": "daemon",
 }
-DEVICES = [
-    "/dev/dri/card0",
-    "/dev/dri/renderD128",
-    "/dev/nvidiactl",
-    "/dev/nvidia0",
-    "/dev/nvidia-modeset",
-    "/dev/nvidia-uvm",
-    "/dev/nvidia-uvm-tools",
-]
+# The NVIDIA container toolkit (hardware.nvidia-container-toolkit) writes the CDI spec of the host GPU: the device
+# nodes, the driver files and /run/opengl-driver come from it, so the box lists none of them.
+CDI_DIRS = ("/etc/cdi", "/var/run/cdi")
+CDI_KIND = "nvidia.com/gpu"
+CDI_DEVICE = f"{CDI_KIND}=all"
 BOOT_WAIT_SECONDS = 120
 
 
@@ -208,13 +204,6 @@ class Instance:
         (self.dir / "out").mkdir(parents=True, exist_ok=True)
         for old in (self.dir / "out").glob("*.ppm"):
             old.unlink()
-        # keep-groups: the host group `video` gives /dev/dri/card0, which Hyprland needs even with only a headless
-        # output. The daemon socket is for the nix commands of the Home Manager activation.
-        devices = [arg for d in DEVICES if gpu and os.path.exists(d) for arg in ("--device", d)]
-        groups = ["--group-add", "keep-groups"] if gpu else []
-        driver = (
-            ["-v", "/run/opengl-driver:/run/opengl-driver:ro"] if gpu and os.path.isdir("/run/opengl-driver") else []
-        )
         cmd = [
             "systemd-run",
             "--user",
@@ -230,15 +219,14 @@ class Instance:
             "--rootfs",
             "--network=none",
             "--systemd=always",
-            *groups,
+            *gpu_args(gpu),
             "-v",
             "/nix/store:/nix/store:ro",
             "-v",
+            # for the nix commands of the Home Manager activation
             "/nix/var/nix/daemon-socket:/nix/var/nix/daemon-socket",
             "-v",
             f"{self.dir}/out:/out",
-            *driver,
-            *devices,
             "--tmpfs",
             "/run/wrappers:rw,exec,suid,mode=755",
             str(self.dir / "rootfs"),
@@ -292,6 +280,35 @@ class Instance:
     def run_script(self, text: str, layers: list[Layer]) -> subprocess.CompletedProcess:
         """Runs a fixture or check script in the container and captures its output."""
         return self.inner(self.with_prelude(text, layers), capture=True, check=False)
+
+
+def gpu_args(gpu: bool) -> list[str]:
+    """The podman arguments of the host GPU. The CDI spec alone is not enough: its additionalGids names the group
+    `video` of the user namespace, not the host's, so /dev/dri/card0 (which Hyprland needs even for a headless
+    output) stays closed; keep-groups passes the groups of the user manager, and `require_video` checks them."""
+    return ["--device", CDI_DEVICE, "--group-add", "keep-groups"] if gpu else []
+
+
+def cdi_has_gpu(dirs: tuple[str, ...] = CDI_DIRS) -> bool:
+    """True when a CDI spec in `dirs` defines the device `all` of the NVIDIA GPU kind."""
+    for directory in dirs:
+        for spec in sorted(Path(directory).glob("*.json")):
+            try:
+                data = json.loads(spec.read_text())
+            except (OSError, ValueError):
+                continue
+            if data.get("kind") == CDI_KIND and any(d.get("name") == "all" for d in data.get("devices", [])):
+                return True
+    return False
+
+
+def require_cdi() -> None:
+    if not cdi_has_gpu():
+        raise BoxError(
+            f"no CDI spec for {CDI_DEVICE} in {' or '.join(CDI_DIRS)}; the host needs "
+            "hardware.nvidia-container-toolkit.enable and a switch, then "
+            "`systemctl status nvidia-container-toolkit-cdi-generator` shows why the spec is missing"
+        )
 
 
 def require_video() -> None:
