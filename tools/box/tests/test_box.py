@@ -4,6 +4,7 @@ from pathlib import Path
 
 from boxlib import flake
 from boxlib.fixtures import Check, Fixture, Ref, closure, parse_refs, plan
+from boxlib.instance import CDI_DEVICE, cdi_has_gpu, gpu_args
 from boxlib.layers import discover
 from boxlib.runner import report, run_checks
 from boxlib.targets import Target, UsageError, instance_name, parse_target
@@ -188,6 +189,26 @@ class LayerAndFlakeTests(unittest.TestCase):
             self.assertIn("sys.nixosConfigurations.nixos", text)
             self.assertIn("home.homeConfigurations.mathew", text)
             self.assertIn('home.url = "git+file:///repo?dir=home-config/mathew"', text)
+
+
+class GpuTests(unittest.TestCase):
+    def test_gpu_args(self):
+        self.assertEqual(gpu_args(False), [])
+        # the group stays: the CDI spec alone leaves /dev/dri/card0 closed to the container root
+        self.assertEqual(gpu_args(True), ["--device", CDI_DEVICE, "--group-add", "keep-groups"])
+
+    def test_cdi_spec_lookup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            etc, run = Path(tmp) / "etc", Path(tmp) / "run"
+            etc.mkdir()
+            self.assertFalse(cdi_has_gpu((str(etc), str(run))))  # a missing directory is no spec
+            (etc / "broken.json").write_text("{")
+            (etc / "other.json").write_text('{"kind": "vendor.com/gpu", "devices": [{"name": "all"}]}')
+            (etc / "single.json").write_text('{"kind": "nvidia.com/gpu", "devices": [{"name": "0"}]}')
+            self.assertFalse(cdi_has_gpu((str(etc), str(run))))
+            run.mkdir()
+            (run / "nvidia.json").write_text('{"kind": "nvidia.com/gpu", "devices": [{"name": "0"}, {"name": "all"}]}')
+            self.assertTrue(cdi_has_gpu((str(etc), str(run))))
 
 
 if __name__ == "__main__":

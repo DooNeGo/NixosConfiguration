@@ -22,6 +22,8 @@
   nixpkgs.config.cudaSupport = true;
 
   hardware = {
+    nvidia-container-toolkit.enable = true;
+
     graphics = {
       enable = true;
       enable32Bit = true;

@@ -9,7 +9,6 @@ let
     "tailscaled-serve"
     "tailscaled-autoconnect"
     "sing-box-credits-git-fetch"
-    "sing-box-credits-stage-fetch"
     "sing-box-main-awg-prepare"
   ];
   # Hyprland refuses to run as root without a flag; start-hyprland passes what follows `--` on to Hyprland.

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from . import flake as flake_mod
 from .fixtures import Check, Fixture, discover_checks, discover_fixtures, plan
-from .instance import BoxError, Host, Instance, note, require_video, sh
+from .instance import BoxError, Host, Instance, note, require_cdi, require_video, sh
 from .layers import Layer, discover
 from .runner import report, run_checks
 from .targets import NAME_RE, Target, UsageError, instance_name, parse_target
@@ -151,6 +151,7 @@ def bring_up(host: Host, args, cleanup: bool):
     note("layers: " + ", ".join(layer.name for layer in prep.layers))
     gpu = any(layer.gpu for layer in prep.layers)
     if gpu:
+        require_cdi()
         require_video()
     top, home_out = inst.build(prep.flake_dir, home is not None)
     try:
