@@ -48,19 +48,8 @@ let
       listenPort = 2081;
       credentialFile = "/etc/sing-box/credits-git-credential";
       runtimeKey = "/etc/sing-box/credits-git-key";
-      proxyDomains = [ "gitlab.credits.com" ];
-      routeMatch = "domain";
-      fetchIntervalSec = 21600;
-      onBootSec = "2min";
-    };
-
-    credits-stage = {
-      kind = "vless";
-      listenAddress = "127.0.0.1";
-      listenPort = 2082;
-      credentialFile = "/etc/sing-box/credits-stage-credential";
-      runtimeKey = "/etc/sing-box/credits-stage-key";
       proxyDomains = [
+        "gitlab.credits.com"
         "mobileapi-stage.credits.com"
         "chats-stage.credits.com"
         "web-wallet-stage.credits.com"
@@ -69,6 +58,22 @@ let
       fetchIntervalSec = 21600;
       onBootSec = "2min";
     };
+
+    #    credits-stage = {
+    #      kind = "vless";
+    #      listenAddress = "127.0.0.1";
+    #      listenPort = 2082;
+    #      credentialFile = "/etc/sing-box/credits-stage-credential";
+    #      runtimeKey = "/etc/sing-box/credits-stage-key";
+    #      proxyDomains = [
+    #        "mobileapi-stage.credits.com"
+    #        "chats-stage.credits.com"
+    #        "web-wallet-stage.credits.com"
+    #      ];
+    #      routeMatch = "domain";
+    #      fetchIntervalSec = 21600;
+    #      onBootSec = "2min";
+    #    };
   };
 
   # Instance that HTTP(S)_PROXY points at.
