@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # requires: desktop-ready (shared)
 # hyprlock-initial locks a desktop that has drawn: it starts after hyprpaper and waybar.
-ts() { systemctl --user show -p ActiveEnterTimestampMonotonic --value "$1"; }
+ts() { box_user systemctl --user show -p ActiveEnterTimestampMonotonic --value "$1"; }
 lock=$(ts hyprlock-initial)
 for unit in hyprpaper waybar; do
   other=$(ts "$unit")

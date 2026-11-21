@@ -20,14 +20,5 @@
   systemd = {
     mounts = lib.mkForce [ ];
     oomd.enable = false;
-
-    # The session runs as the container root, which is the host user that started the container: a container user
-    # cannot open /dev/dri/card0 (the host group `video` is unmapped for it). user@0 keeps the groups of that root.
-    units."user@0.service" = {
-      text = "[Service]\nUser=\nPAMName=\nEnvironment=XDG_RUNTIME_DIR=/run/user/0\n";
-      overrideStrategy = "asDropin";
-    };
   };
-  # Keeps user@0 (and the bus that exec and the home activation use) alive while the session unit is stopped.
-  users.users.root.linger = true;
 }

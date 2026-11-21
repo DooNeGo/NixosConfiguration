@@ -1,5 +1,5 @@
 {
-  description = "Test box: applies the layers of tools/box to any system and home configuration and runs them in rootless podman";
+  description = "Test box: applies the layers of tools/box to any system and home configuration and runs them in a rootless podman container or a QEMU VM";
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
@@ -18,23 +18,11 @@
       lib = {
         mkSystem = { configuration, modules }: configuration.extendModules { inherit modules; };
 
-        # The home runs as the container root: Hyprland of the session cannot run as another user (docs/box.md).
         mkHome =
           { configuration, modules }:
           assert
             configuration.pkgs.stdenv.hostPlatform.isLinux || throw "the home configuration is not a Linux one";
-          configuration.extendModules {
-            modules = [
-              (
-                { lib, ... }:
-                {
-                  home.username = lib.mkForce "root";
-                  home.homeDirectory = lib.mkForce "/root";
-                }
-              )
-            ]
-            ++ modules;
-          };
+          configuration.extendModules { inherit modules; };
       };
     };
 }

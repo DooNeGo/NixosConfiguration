@@ -1,5 +1,5 @@
 { lib, ... }:
 {
-  # No polkit daemon runs in the container, so its agent has nothing to talk to.
+  # Not tested: the headless session has no logind session for the agent, and the container has no polkit daemon.
   services.hyprpolkitagent.enable = lib.mkForce false;
 }

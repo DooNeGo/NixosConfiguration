@@ -21,7 +21,7 @@ This repo is **not** one flake. Each flake has its own `flake.lock`, no flake pu
 | Flake | Output | Applies to |
 |---|---|---|
 | `system-config/nixos/` | `nixosConfigurations.nixos` | the whole system |
-| `tools/box/` | `packages.<system>.podman`, `lib` | not a configuration: the test box (`tools/box/box`) that applies layers to the flakes above |
+| `tools/box/` | `packages.<system>.podman`, `lib` | not a configuration: the test box (`tools/box/box`, container or VM) that applies layers to the flakes above |
 | `system-config/darwin/` | `darwinConfigurations.macbook-air-m1` (nix-darwin, nix-homebrew) | the MacBook system |
 | `home-config/DooNeGo/` | `homeConfigurations.DooNeGo` | the MacBook user (standalone Home Manager, like the Linux users) |
 | `home-config/mathew/` | `homeConfigurations.mathew` | desktop user `mathew` (Hyprland, waybar, kitty…) |
@@ -49,14 +49,14 @@ scripts/lint.sh                                       # deadnix + statix + nixfm
 
 Session start over ssh, Sunshine and Steam Remote Play: `.claude/rules/remote-access.md` (loads with those files); reasons and troubleshooting: `docs/remote-access.md`.
 
-To test what the owner's `switch` cannot check safely (session order, hyprlock, a user unit of any Home Manager user), run it in the rootless-podman box (skill `box-test`; how it works: `docs/box.md`).
+To test what the owner's `switch` cannot check safely (session order, hyprlock, a user unit of any Home Manager user), run it in the box: a rootless-podman container or a QEMU VM (skill `box-test`; how it works: `docs/box.md`).
 
 ## Verifying a change
 
 | Changed path | Build |
 |---|---|
 | `system-config/nixos/` | the system `toplevel` (first command above) |
-| `tools/box/` | `tools/box/box build --system nixos --home mathew`, `python3 -m unittest discover -s tools/box/tests -t tools/box` and `scripts/lint.sh` (ruff) |
+| `tools/box/` | `tools/box/box build --system nixos --home mathew` (and `--backend vm`), `python3 -m unittest discover -s tools/box/tests -t tools/box` and `scripts/lint.sh` (ruff) |
 | `system-config/darwin/` | the darwin eval: `nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath` (evaluation only) |
 | `system-config/shared/` | the system `toplevel` and the darwin eval |
 | `home-config/DooNeGo/` | the `DooNeGo` eval: `nix eval --raw ./home-config/DooNeGo#homeConfigurations.DooNeGo.activationPackage.drvPath` |

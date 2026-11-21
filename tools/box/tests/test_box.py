@@ -3,11 +3,13 @@ import unittest
 from pathlib import Path
 
 from boxlib import flake
-from boxlib.fixtures import Check, Fixture, Ref, closure, parse_refs, plan
-from boxlib.instance import CDI_DEVICE, cdi_has_gpu, gpu_args
-from boxlib.layers import discover
+from boxlib.cli import select_checks, split_names
+from boxlib.container import CDI_DEVICE, cdi_has_gpu, gpu_args
+from boxlib.fixtures import Check, Fixture, Ref, closure, discover_checks, parse_backends, parse_refs, plan
+from boxlib.layers import Layer, discover
 from boxlib.runner import report, run_checks
 from boxlib.targets import Target, UsageError, instance_name, parse_target
+from boxlib.vm import guest_cid, qemu_options
 
 
 def fx(name, *requires):
@@ -171,30 +173,125 @@ class RunnerTests(unittest.TestCase):
 
 
 class LayerAndFlakeTests(unittest.TestCase):
+    def make_box(self, tmp):
+        box = Path(tmp)
+        (box / "backends/container").mkdir(parents=True)
+        (box / "backends/container/module.nix").write_text("{}")
+        (box / "backends/vm").mkdir(parents=True)
+        (box / "backends/vm/module.nix").write_text("{}")
+        (box / "systems/nixos").mkdir(parents=True)
+        (box / "systems/nixos/module.nix").write_text("{}")
+        (box / "systems/nixos/vm.nix").write_text("{}")
+        (box / "systems/nixos/gpu").write_text("")
+        (box / "homes/mathew").mkdir(parents=True)
+        (box / "homes/mathew/module.nix").write_text("{}")
+        return box
+
     def test_layers_and_render(self):
         with tempfile.TemporaryDirectory() as tmp:
-            box = Path(tmp)
-            (box / "container.nix").write_text("{}")
-            (box / "systems/nixos").mkdir(parents=True)
-            (box / "systems/nixos/module.nix").write_text("{}")
-            (box / "systems/nixos/gpu").write_text("")
-            (box / "homes/mathew").mkdir(parents=True)
+            box = self.make_box(tmp)
             system = Target("system", "system-config/nixos", "nixos")
             home = Target("home", "home-config/mathew", "mathew")
             layers = discover(box, system, home)
-            self.assertEqual([layer.name for layer in layers], ["container", "systems/nixos", "homes/mathew"])
-            self.assertEqual([layer.gpu for layer in layers], [False, True, False])
+            names = ["backends", "backends/container", "systems/nixos", "homes/mathew"]
+            self.assertEqual([layer.name for layer in layers], names)
+            self.assertEqual([layer.gpu for layer in layers], [False, False, True, False])
             text = flake.render(Path("/repo"), box, system, home, layers, ["system-0.nix"], [])
-            self.assertIn('"${box}/container.nix" "${box}/systems/nixos/module.nix" ./system-0.nix', text)
+            self.assertIn(
+                '"${box}/backends/container/module.nix" "${box}/systems/nixos/module.nix" ./system-0.nix', text
+            )
+            self.assertNotIn("vm.nix", text, "a module of another backend is not applied")
+            self.assertIn("toplevel = (box.lib.mkSystem", text)
             self.assertIn("sys.nixosConfigurations.nixos", text)
             self.assertIn("home.homeConfigurations.mathew", text)
+            self.assertIn('modules = [ "${box}/homes/mathew/module.nix" ];', text)
             self.assertIn('home.url = "git+file:///repo?dir=home-config/mathew"', text)
+
+    def test_vm_layers_and_render(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            box = self.make_box(tmp)
+            system = Target("system", "system-config/nixos", "nixos")
+            home = Target("home", "home-config/mathew", "mathew")
+            layers = discover(box, system, home, "vm")
+            self.assertEqual(layers[1].name, "backends/vm")
+            text = flake.render(Path("/repo"), box, system, home, layers, [], [], "vm", Path("/state/out"))
+            self.assertIn('"${box}/systems/nixos/vm.nix"', text)
+            self.assertNotIn("container.nix", text)
+            self.assertIn("vm = (box.lib.mkSystem", text)
+            self.assertIn("config.system.build.vm", text)
+            self.assertIn('source = "/state/out"', text)
+            self.assertIn("virtualisation.additionalPaths = [ homePackage ]", text)
+            self.assertIn("lib.username", text)
+
+    def test_vm_needs_out_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            box = self.make_box(tmp)
+            system = Target("system", "system-config/nixos", "nixos")
+            layers = discover(box, system, None, "vm")
+            with self.assertRaises(ValueError):
+                flake.render(Path("/repo"), box, system, None, layers, [], [], "vm")
+
+    def test_unknown_backend(self):
+        with self.assertRaises(UsageError):
+            discover(Path("/box"), Target("system", "d", "a"), None, "kvm")
+
+
+class BackendTests(unittest.TestCase):
+    def test_parse_backends(self):
+        self.assertIsNone(parse_backends("# requires: a\nexit 0\n"), "no line: every backend")
+        self.assertEqual(parse_backends("# backends: vm\n"), ("vm",))
+        self.assertEqual(parse_backends("# backends: container, vm\n"), ("container", "vm"))
+        for text in ("# backends:\n", "# backends: kvm\n"):
+            with self.assertRaises(UsageError, msg=text):
+                parse_backends(text)
+
+    def test_checks_of_a_backend(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "checks").mkdir()
+            for name, text in (
+                ("any", "exit 0\n"),
+                ("only-vm", "# backends: vm\nexit 0\n"),
+                ("both", "# backends: container vm\n"),
+            ):
+                (root / "checks" / f"{name}.sh").write_text(text)
+            layer = Layer("systems/x", "system", root, ())
+            self.assertEqual([c.name for c in discover_checks([layer], "container")], ["any", "both"])
+            self.assertEqual([c.name for c in discover_checks([layer], "vm")], ["any", "both", "only-vm"])
+
+    def test_split_names(self):
+        self.assertIsNone(split_names(None))
+        self.assertEqual(split_names(["a,b", "c*", ",d"]), ["a", "b", "c*", "d"])
+        self.assertEqual(split_names([","]), [], "separators only: no name, an error later, not every check")
+
+    def test_select_checks(self):
+        checks = [Check(n, Path(f"{n}.sh"), ()) for n in ("session-order", "session-frame", "unlock-frame")]
+        names = lambda only: [c.name for c in select_checks(checks, only)]  # noqa: E731
+        self.assertEqual(names(["unlock-frame"]), ["unlock-frame"])
+        self.assertEqual(names(["session-*"]), ["session-order", "session-frame"])
+        self.assertEqual(names(["unlock-frame", "session-order"]), ["session-order", "unlock-frame"], "their own order")
+        with self.assertRaises(UsageError):
+            select_checks(checks, ["session-*", "missing"])
+        with self.assertRaises(UsageError):
+            select_checks(checks, [])
+
+    def test_guest_cid_and_qemu_options(self):
+        self.assertEqual(guest_cid("nixos-mathew"), guest_cid("nixos-mathew"))
+        self.assertNotEqual(guest_cid("a"), guest_cid("b"))
+        self.assertGreaterEqual(guest_cid("a"), 100, "0 to 2 are reserved")
+        plain = qemu_options(7, Path("/c.log"), "KEY", None)
+        self.assertEqual(plain[-2:], ["-display", "none"])
+        self.assertIn("vhost-vsock-pci,guest-cid=7", plain)
+        gpu = qemu_options(7, Path("/c.log"), "KEY", Path("/dev/dri/renderD128"))
+        self.assertIn("virtio-vga-gl", gpu)
+        self.assertIn("egl-headless,gl=on,rendernode=/dev/dri/renderD128", gpu)
+        self.assertTrue(all(" " not in item for item in gpu), "QEMU_OPTS is split on spaces")
 
 
 class GpuTests(unittest.TestCase):
     def test_gpu_args(self):
         self.assertEqual(gpu_args(False), [])
-        # the group stays: the CDI spec alone leaves /dev/dri/card0 closed to the container root
+        # the group stays: the CDI spec alone leaves /dev/dri/card0 closed to the container user
         self.assertEqual(gpu_args(True), ["--device", CDI_DEVICE, "--group-add", "keep-groups"])
 
     def test_cdi_spec_lookup(self):
