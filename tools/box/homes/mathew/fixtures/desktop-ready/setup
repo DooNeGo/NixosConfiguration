@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # hyprlock-initial locks the session once the desktop has drawn (about 30 s after the start).
 for _ in $(seq 240); do
-  systemctl --user is-active --quiet hyprlock-initial && exit 0
+  box_user systemctl --user is-active --quiet hyprlock-initial && exit 0
   sleep 0.5
 done
 echo "hyprlock-initial is not active after 120 s" >&2

@@ -1,31 +1,16 @@
-"""Host side of a box instance: rootless podman, the container of one system and the commands run inside it."""
+"""Host side of a box instance: what every backend (container, VM) shares."""
 
 import fcntl
-import grp
 import json
 import os
+import shlex
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from .layers import Layer
-
-# The environment of the user session of the container root, for everything run inside.
-INNER_ENV = {
-    "USER": "root",
-    "HOME": "/root",
-    "XDG_RUNTIME_DIR": "/run/user/0",
-    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/0/bus",
-    "NIX_REMOTE": "daemon",
-}
-# The NVIDIA container toolkit (hardware.nvidia-container-toolkit) writes the CDI spec of the host GPU: the device
-# nodes, the driver files and /run/opengl-driver come from it, so the box lists none of them.
-CDI_DIRS = ("/etc/cdi", "/var/run/cdi")
-CDI_KIND = "nvidia.com/gpu"
-CDI_DEVICE = f"{CDI_KIND}=all"
-BOOT_WAIT_SECONDS = 120
+from .layers import SYSTEM_ATTR, Layer
 
 
 class BoxError(Exception):
@@ -68,73 +53,44 @@ class Host:
         base = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local/state")
         return cls(repo, Path(base) / "box", dict(os.environ))
 
-    def setup_podman(self) -> None:
-        (self.state / "roots").mkdir(parents=True, exist_ok=True)
-        # An out link per build is a GC root: the running containers use these store paths.
-        built = sh(
+    def running_names(self) -> list[str]:
+        """The instances of every backend: each runs as the transient user unit box-<name>."""
+        out = sh(
             [
-                "nix",
-                "build",
-                "--option",
-                "warn-dirty",
-                "false",
-                "--out-link",
-                str(self.state / "roots/podman"),
-                "--print-out-paths",
-                f"{self.repo}/tools/box#packages.x86_64-linux.podman",
+                "systemctl",
+                "--user",
+                "list-units",
+                "box-*.service",
+                "--state=active,activating",
+                "--plain",
+                "--no-legend",
             ],
             capture=True,
             stdout_only=True,
-        ).stdout.strip()
-        runtime = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
-        conf = (
-            "[storage]\n"
-            # overlay needs privileges a rootless user lacks, and containers start from a rootfs directory
-            'driver = "vfs"\n'
-            f'graphroot = "{self.state}/storage"\n'
-            f'runroot = "{runtime}/box"\n'
-        )
-        tmp = self.state / f"storage.conf.tmp.{os.getpid()}"
-        tmp.write_text(conf)
-        os.replace(tmp, self.state / "storage.conf")
-        # newuidmap and newgidmap are the setuid wrappers of the host.
-        self.env["PATH"] = f"{built}/bin:/run/wrappers/bin:{self.env['PATH']}"
-        self.env["CONTAINERS_STORAGE_CONF"] = str(self.state / "storage.conf")
-
-    def podman(
-        self, *args: str, check: bool = True, capture: bool = False, stdin: bool = False, stdout_only: bool = False
-    ):
-        return sh(["podman", *args], env=self.env, check=check, capture=capture, stdin=stdin, stdout_only=stdout_only)
-
-    def running_names(self) -> list[str]:
-        out = self.podman(
-            "ps", "--filter", "name=^box-", "--format", "{{.Names}}", capture=True, stdout_only=True
+            check=False,
         ).stdout
-        return sorted(line.removeprefix("box-") for line in out.split() if line.startswith("box-"))
+        return sorted(
+            line.split()[0].removeprefix("box-").removesuffix(".service") for line in out.splitlines() if line
+        )
 
 
 class Instance:
-    def __init__(self, host: Host, name: str):
+    """One system (and home) running in some backend. The subclasses are ContainerInstance and VmInstance."""
+
+    backend = ""
+    boot_wait = 120  # seconds until the system runs
+
+    def __init__(self, host: Host, name: str, user: str | None = None):
         self.host = host
         self.name = name
-        self.container = f"box-{name}"
+        self.system_attr = SYSTEM_ATTR[self.backend]
+        self.user = user  # the session user: the user of the home, else the one the system layer names
+        self.unit = f"box-{name}"
         self.dir = host.state / name
 
     @property
     def meta_file(self) -> Path:
         return self.dir / "meta.json"
-
-    def running(self) -> bool:
-        if self.host.podman("container", "exists", self.container, check=False).returncode != 0:
-            return False
-        inspect = self.host.podman(
-            "inspect", "-f", "{{.State.Running}}", self.container, capture=True, stdout_only=True
-        )
-        return inspect.stdout.strip() == "true"
-
-    def require_running(self) -> None:
-        if not self.running():
-            raise BoxError(f"{self.name}: the container is not running; start it with 'box up'")
 
     def take_lock(self):
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -145,27 +101,18 @@ class Instance:
             raise BoxError(f"{self.name}: another up, down or build of this instance is running") from None
         return handle
 
-    def inner(
-        self, script: str, *, stdin: bool = False, capture: bool = False, check: bool = True, stdout_only: bool = False
-    ):
-        args = ["exec"]
-        if stdin:
-            args.append("-i")
-        for key, value in INNER_ENV.items():
-            args += ["-e", f"{key}={value}"]
-        args += [self.container, "/run/current-system/sw/bin/bash", "-lc", script]
-        return self.host.podman(*args, capture=capture, check=check, stdin=stdin, stdout_only=stdout_only)
+    def require_running(self) -> None:
+        if not self.running():
+            raise BoxError(f"{self.name}: not running; start it with 'box up'")
 
-    def remove_container(self) -> None:
-        # SIGTERM to `podman run` is a signal that systemd inside ignores: the unit would wait its 90 s stop timeout.
-        # `podman stop` sends the stop signal of systemd containers, which powers it off.
-        self.host.podman("stop", "-t", "10", self.container, check=False, capture=True)
-        sh(["systemctl", "--user", "stop", f"{self.container}.service"], check=False, capture=True)
-        self.host.podman("rm", "-f", self.container, check=False, capture=True)
+    def stop_unit(self) -> None:
+        sh(["systemctl", "--user", "stop", f"{self.unit}.service"], check=False, capture=True)
 
-    def remove_rootfs(self) -> None:
-        # Files of container users belong to subuids: only the user namespace of podman may remove them.
-        self.host.podman("unshare", "rm", "-rf", str(self.dir / "rootfs"), check=False)
+    def reset_unit(self) -> None:
+        sh(["systemctl", "--user", "reset-failed", f"{self.unit}.service"], check=False, capture=True)
+
+    def unit_active(self) -> bool:
+        return sh(["systemctl", "--user", "is-active", "--quiet", f"{self.unit}.service"], check=False).returncode == 0
 
     def build(self, flake_dir: Path, has_home: bool, prefix: str = "") -> tuple[Path, Path | None]:
         """The out links are GC roots; `prefix` keeps a build of a running instance off the roots it runs from."""
@@ -194,76 +141,25 @@ class Instance:
 
         # The home first: when it fails, the roots of the running system have not been replaced.
         home = build_one("home") if has_home else None
-        return build_one("toplevel"), home
+        return build_one(self.system_attr), home
 
-    def start(self, top: Path, gpu: bool) -> None:
-        self.remove_container()
-        sh(["systemctl", "--user", "reset-failed", f"{self.container}.service"], check=False, capture=True)
-        self.remove_rootfs()
-        (self.dir / "rootfs").mkdir(parents=True, exist_ok=True)
-        (self.dir / "out").mkdir(parents=True, exist_ok=True)
-        for old in (self.dir / "out").glob("*.ppm"):
-            old.unlink()
-        cmd = [
-            "systemd-run",
-            "--user",
-            "--quiet",
-            f"--unit={self.container}",
-            "--setenv=PATH",
-            "--setenv=CONTAINERS_STORAGE_CONF",
-            "podman",
-            "run",
-            "--rm",
-            "--name",
-            self.container,
-            "--rootfs",
-            "--network=none",
-            "--systemd=always",
-            *gpu_args(gpu),
-            "-v",
-            "/nix/store:/nix/store:ro",
-            "-v",
-            # for the nix commands of the Home Manager activation
-            "/nix/var/nix/daemon-socket:/nix/var/nix/daemon-socket",
-            "-v",
-            f"{self.dir}/out:/out",
-            "--tmpfs",
-            "/run/wrappers:rw,exec,suid,mode=755",
-            str(self.dir / "rootfs"),
-            f"{top}/init",
-        ]
-        sh(cmd, env=self.host.env, what="systemd-run of the container")
+    def configure(self, flake_dir: Path, has_home: bool) -> None:
+        """The session user is the user of the home; a system without a home leaves it to the layer."""
+        if has_home:
+            out = sh(
+                ["nix", "eval", "--raw", f"path:{flake_dir}#lib.username"],
+                capture=True,
+                stdout_only=True,
+                what="reading the user of the home",
+            )
+            self.user = out.stdout.strip()
 
-    def wait_up(self) -> str:
-        deadline = time.monotonic() + BOOT_WAIT_SECONDS
-        while time.monotonic() < deadline:
-            if self.running():
-                state = self.system_state()
-                if state in ("running", "degraded"):
-                    return state
-            # No --collect on the unit: a failed podman run stays and its journal says why.
-            if sh(["systemctl", "--user", "is-active", "--quiet", f"{self.container}.service"], check=False).returncode:
-                sh(["journalctl", "--user", "-u", f"{self.container}.service", "--no-pager", "-n", "15"], check=False)
-                self.remove_container()
-                raise BoxError(f"{self.name}: podman run exited")
-            time.sleep(2)
-        self.remove_container()
-        raise BoxError(f"{self.name}: systemd in the container did not come up in {BOOT_WAIT_SECONDS} s")
-
-    def system_state(self) -> str:
-        return self.inner("systemctl is-system-running", capture=True, check=False, stdout_only=True).stdout.strip()
-
-    def activate(self, home: Path) -> None:
-        # A file Hyprland wrote on its first start would block the activation: keep it as .bak.
-        self.inner(f"HOME_MANAGER_BACKUP_EXT=bak HOME_MANAGER_BACKUP_OVERWRITE=1 {home}/activate")
-
-    def down(self) -> None:
-        self.remove_container()
-        self.remove_rootfs()
+    def check_host(self, gpu: bool) -> None:
+        """Fails with a message when the host cannot run this backend (with a GPU when `gpu`)."""
 
     def save_meta(self, meta: dict) -> None:
         tmp = self.dir / f"meta.json.tmp.{os.getpid()}"
-        tmp.write_text(json.dumps(meta))
+        tmp.write_text(json.dumps({"backend": self.backend, **meta}))
         os.replace(tmp, self.meta_file)
 
     def load_meta(self) -> dict:
@@ -271,72 +167,78 @@ class Instance:
             raise BoxError(f"{self.name}: no metadata; start it with 'box up'")
         return json.loads(self.meta_file.read_text())
 
-    @staticmethod
-    def with_prelude(text: str, layers: list[Layer], strict: bool = True) -> str:
+    def prelude_vars(self) -> str:
+        """Shell lines that come before the lib.sh of the layers."""
+        return f"BOX_USER={shlex.quote(self.user)}\n" if self.user else ""
+
+    def with_prelude(self, text: str, layers: list[Layer], strict: bool = True) -> str:
         """A script after the lib.sh of every layer, so that its helpers are available."""
         libs = "".join(layer.lib.read_text() + "\n" for layer in layers if layer.lib)
-        return ("set -eo pipefail\n" if strict else "") + libs + text
+        return ("set -eo pipefail\n" if strict else "") + self.prelude_vars() + libs + text
 
     def run_script(self, text: str, layers: list[Layer]) -> subprocess.CompletedProcess:
-        """Runs a fixture or check script in the container and captures its output."""
+        """Runs a fixture or check script in the system and captures its output."""
         return self.inner(self.with_prelude(text, layers), capture=True, check=False)
 
+    # The backend implements these.
+    def running(self) -> bool:
+        raise NotImplementedError
 
-def gpu_args(gpu: bool) -> list[str]:
-    """The podman arguments of the host GPU. The CDI spec alone is not enough: its additionalGids names the group
-    `video` of the user namespace, not the host's, so /dev/dri/card0 (which Hyprland needs even for a headless
-    output) stays closed; keep-groups passes the groups of the user manager, and `require_video` checks them."""
-    return ["--device", CDI_DEVICE, "--group-add", "keep-groups"] if gpu else []
+    def start(self, top: Path, gpu: bool) -> None:
+        raise NotImplementedError
 
+    def inner(
+        self, script: str, *, stdin: bool = False, capture: bool = False, check: bool = True, stdout_only: bool = False
+    ) -> subprocess.CompletedProcess:
+        raise NotImplementedError
 
-def cdi_has_gpu(dirs: tuple[str, ...] = CDI_DIRS) -> bool:
-    """True when a CDI spec in `dirs` defines the device `all` of the NVIDIA GPU kind."""
-    for directory in dirs:
-        for spec in sorted(Path(directory).glob("*.json")):
-            try:
-                data = json.loads(spec.read_text())
-            except (OSError, ValueError):
-                continue
-            if data.get("kind") == CDI_KIND and any(d.get("name") == "all" for d in data.get("devices", [])):
-                return True
-    return False
+    def down(self) -> None:
+        raise NotImplementedError
 
+    def prepare_out(self) -> None:
+        """The directory the system shares with the host for frames, empty at every start."""
+        (self.dir / "out").mkdir(parents=True, exist_ok=True)
+        for old in (self.dir / "out").glob("*.ppm"):
+            old.unlink()
 
-def require_cdi() -> None:
-    if not cdi_has_gpu():
-        raise BoxError(
-            f"no CDI spec for {CDI_DEVICE} in {' or '.join(CDI_DIRS)}; the host needs "
-            "hardware.nvidia-container-toolkit.enable and a switch, then "
-            "`systemctl status nvidia-container-toolkit-cdi-generator` shows why the spec is missing"
+    def ready(self) -> bool:
+        """True when commands can run in the system."""
+        raise NotImplementedError
+
+    def show_failure(self) -> None:
+        sh(["journalctl", "--user", "-u", f"{self.unit}.service", "--no-pager", "-n", "15"], check=False)
+
+    def wait_up(self) -> str:
+        """Waits until systemd of the system runs (or is degraded) and returns its state; a start that fails is torn
+        down."""
+        deadline = time.monotonic() + self.boot_wait
+        while time.monotonic() < deadline:
+            # No --collect on the unit: a failed run stays and its journal says why.
+            if not self.unit_active():
+                self.show_failure()
+                self.down()
+                raise BoxError(f"{self.name}: the {self.backend} exited")
+            if self.ready():
+                state = self.system_state()
+                if state in ("running", "degraded"):
+                    return state
+            time.sleep(2)
+        self.show_failure()
+        self.down()
+        raise BoxError(f"{self.name}: the {self.backend} did not come up in {self.boot_wait} s")
+
+    def activate(self, home: Path, layers: list[Layer]) -> None:
+        """Runs the activation of the home as its user, once the user manager and its bus are up. A file Hyprland
+        wrote on its first start would block it: it is kept as .bak."""
+        if not self.user:
+            raise BoxError(f"{self.name}: no session user to activate the home for")
+        script = (
+            f"box_session_up\nbox_user env HOME_MANAGER_BACKUP_EXT=bak HOME_MANAGER_BACKUP_OVERWRITE=1 {home}/activate"
         )
+        self.inner(self.with_prelude(script, layers))
 
-
-def require_video() -> None:
-    """A user manager started before openclaw-npm joined `video` lacks the group, and Hyprland fails unhelpfully."""
-    if not Path("/dev/dri/card0").exists():
-        return
-    try:
-        gid = grp.getgrnam("video").gr_gid
-    except KeyError:
-        raise BoxError("the host has no group video") from None
-    # The unit of the user manager: `pgrep systemd` would also match the systemd of a running container.
-    shown = sh(
-        ["systemctl", "show", f"user@{os.getuid()}.service", "-p", "MainPID", "--value"],
-        capture=True,
-        stdout_only=True,
-        check=False,
-    )
-    pid = shown.stdout.strip()
-    if not pid.isdigit() or pid == "0":
-        raise BoxError("no systemd user manager for this user; enable linger or log in")
-    groups: list[str] = []
-    for line in Path(f"/proc/{pid}/status").read_text().splitlines():
-        if line.startswith("Groups:"):
-            groups = line.split()[1:]
-    if str(gid) not in groups:
-        raise BoxError(
-            f"the user manager has no group video; the owner restarts it (systemctl restart user@{os.getuid()}.service)"
-        )
+    def system_state(self) -> str:
+        return self.inner("systemctl is-system-running", capture=True, check=False, stdout_only=True).stdout.strip()
 
 
 def note(message: str) -> None:

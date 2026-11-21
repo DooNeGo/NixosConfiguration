@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
 
-from .layers import Layer
+from .layers import BACKENDS, Layer
 from .targets import UsageError
 
 _REQUIRES_RE = re.compile(r"^#[ \t]*requires:[ \t]*(.*)$", re.MULTILINE)
+_BACKENDS_RE = re.compile(r"^#[ \t]*backends:[ \t]*(.*)$", re.MULTILINE)
 _REF_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_-]*)(?:\s*\((shared)\))?")
 
 
@@ -48,6 +49,18 @@ def parse_refs(text: str) -> tuple[Ref, ...]:
     return tuple(refs)
 
 
+def parse_backends(text: str) -> tuple[str, ...] | None:
+    """The `# backends: container, vm` line of a check; without one the check runs on every backend."""
+    found = _BACKENDS_RE.findall(text)
+    if not found:
+        return None
+    names = tuple(item.strip() for line in found for item in line.replace(",", " ").split())
+    unknown = [n for n in names if n not in BACKENDS]
+    if not names or unknown:
+        raise UsageError(f"invalid backends line {found[0]!r} (have: {', '.join(BACKENDS)})")
+    return names
+
+
 def discover_fixtures(layers: list[Layer]) -> dict[str, Fixture]:
     found: dict[str, Fixture] = {}
     for layer in layers:
@@ -65,14 +78,18 @@ def discover_fixtures(layers: list[Layer]) -> dict[str, Fixture]:
     return found
 
 
-def discover_checks(layers: list[Layer]) -> list[Check]:
+def discover_checks(layers: list[Layer], backend: str) -> list[Check]:
+    """The checks of the layers that run on `backend`."""
     checks: list[Check] = []
     for layer in layers:
         if layer.checks_dir.is_dir():
             for path in sorted(layer.checks_dir.glob("*.sh")):
                 if any(c.name == path.stem for c in checks):
                     raise UsageError(f"check {path.stem} is defined twice")
-                checks.append(Check(path.stem, path, parse_refs(path.read_text())))
+                text = path.read_text()
+                backends = parse_backends(text)
+                if backends is None or backend in backends:
+                    checks.append(Check(path.stem, path, parse_refs(text)))
     return checks
 
 

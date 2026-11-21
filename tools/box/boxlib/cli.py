@@ -1,6 +1,7 @@
 """Command line of box."""
 
 import argparse
+import fnmatch
 import shlex
 import shutil
 import sys
@@ -8,9 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import flake as flake_mod
+from .backends import make_instance, open_instance
 from .fixtures import Check, Fixture, discover_checks, discover_fixtures, plan
-from .instance import BoxError, Host, Instance, note, require_cdi, require_video, sh
-from .layers import Layer, discover
+from .instance import BoxError, Host, Instance, note, sh
+from .layers import BACKENDS, Layer, discover
 from .runner import report, run_checks
 from .targets import NAME_RE, Target, UsageError, instance_name, parse_target
 
@@ -35,7 +37,7 @@ def add_targets(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--home",
         metavar="TARGET",
-        help="a Home Manager configuration, written like --system (it runs as the container root)",
+        help="a Home Manager configuration, written like --system",
     )
     parser.add_argument(
         "--system-module", action="append", default=[], metavar="FILE", help="an extra NixOS module for the system"
@@ -44,13 +46,19 @@ def add_targets(parser: argparse.ArgumentParser) -> None:
         "--home-module", action="append", default=[], metavar="FILE", help="an extra Home Manager module"
     )
     parser.add_argument("--name", help="instance name (default: the system and the home names joined by -)")
+    parser.add_argument(
+        "--backend",
+        choices=BACKENDS,
+        default="container",
+        help="container (default): the host GPU, fast. vm: a full boot with a kernel, a real login and a virtual GPU",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = Parser(
         prog="box",
         description="Run a system and home configuration of this repository in a NixOS container "
-        "(rootless podman, no sudo, the host GPU and nix store) and test it.",
+        "(rootless podman) or a VM (QEMU), no sudo, on the host nix store, and test it.",
     )
     sub = parser.add_subparsers(dest="command", required=True, parser_class=Parser)
     for name, text in (
@@ -61,7 +69,12 @@ def build_parser() -> argparse.ArgumentParser:
         p = sub.add_parser(name, help=text, description=text)
         add_targets(p)
         if name == "test":
-            p.add_argument("--only", metavar="CHECK", help="run one check")
+            p.add_argument(
+                "--tests",
+                nargs="+",
+                metavar="CHECK",
+                help="run only these checks: names or shell patterns (session-*), separated by spaces or commas",
+            )
             p.add_argument("--keep", action="store_true", help="leave the instance running")
     for name, text in (
         ("down", "stop an instance and remove its rootfs"),
@@ -75,9 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("fixture")
     p.add_argument("action", nargs="?", default="restart", choices=["setup", "teardown", "restart"])
     p.add_argument("--name")
-    p = sub.add_parser(
-        "exec", help="run a command in the container as its root, after the lib.sh helpers of the layers"
-    )
+    p = sub.add_parser("exec", help="run a command in the system as its root, after the lib.sh helpers of the layers")
     p.add_argument("--name")
     p.add_argument("cmd", nargs=argparse.REMAINDER, help="one argument is a shell command line")
     return parser
@@ -114,7 +125,7 @@ def read_extras(paths: list[str], prefix: str, flake_dir: Path) -> list[str]:
 
 def instance_of(host: Host, args) -> tuple[Instance, Target, Target | None]:
     system, home = targets_from(args)
-    return Instance(host, instance_name(system, home, args.name)), system, home
+    return make_instance(host, instance_name(system, home, args.name), args.backend), system, home
 
 
 def require_tracked() -> None:
@@ -131,14 +142,16 @@ def require_tracked() -> None:
 def prepare(inst: Instance, system: Target, home: Target | None, args) -> Prepared:
     """Writes the generated flake of an instance (the caller holds its lock)."""
     require_tracked()
-    layers = discover(BOX_DIR, system, home)
+    layers = discover(BOX_DIR, system, home, inst.backend)
     flake_dir = inst.dir / "flake"
     shutil.rmtree(flake_dir, ignore_errors=True)
     flake_dir.mkdir(parents=True)
     system_extras = read_extras(args.system_module, "system", flake_dir)
     home_extras = read_extras(args.home_module, "home", flake_dir)
     (flake_dir / "flake.nix").write_text(
-        flake_mod.render(REPO, BOX_DIR, system, home, layers, system_extras, home_extras)
+        flake_mod.render(
+            REPO, BOX_DIR, system, home, layers, system_extras, home_extras, inst.backend, inst.dir / "out"
+        )
     )
     return Prepared(inst, system, home, layers, flake_dir)
 
@@ -150,20 +163,22 @@ def bring_up(host: Host, args, cleanup: bool):
     prep = prepare(inst, system, home, args)
     note("layers: " + ", ".join(layer.name for layer in prep.layers))
     gpu = any(layer.gpu for layer in prep.layers)
-    if gpu:
-        require_cdi()
-        require_video()
+    inst.check_host(gpu)
+    inst.configure(prep.flake_dir, home is not None)
     top, home_out = inst.build(prep.flake_dir, home is not None)
     try:
-        inst.meta_file.unlink(missing_ok=True)
+        if inst.meta_file.is_file():
+            previous = open_instance(host, inst.name)
+            if previous.backend != inst.backend:
+                previous.down()  # the unit name is the same in both backends
+        inst.save_meta({"system": system.__dict__, "home": home.__dict__ if home else None, "user": inst.user})
         inst.start(top, gpu)
-        inst.save_meta({"system": system.__dict__, "home": home.__dict__ if home else None})
         state = inst.wait_up()
         note(f"{inst.name} is up ({state})")
         if state == "degraded":
             inst.inner("systemctl --failed --no-legend", check=False)
         if home_out:
-            inst.activate(home_out)
+            inst.activate(home_out, prep.layers)
     except BaseException:
         # `up` leaves a half-made instance to be looked at; `test` always cleans up.
         if cleanup:
@@ -176,31 +191,44 @@ def resolve(host: Host, name: str | None) -> Instance:
     if name:
         if not NAME_RE.match(name):
             raise UsageError(f"invalid --name {name!r}")
-        return Instance(host, name)
+        return open_instance(host, name)
     running = host.running_names()
     if not running:
         raise BoxError("no running instance; start one with 'box up'")
     if len(running) > 1:
         raise BoxError(f"several instances run ({', '.join(running)}); pick one with --name")
-    return Instance(host, running[0])
+    return open_instance(host, running[0])
 
 
 def layers_of(inst: Instance) -> list[Layer]:
     meta = inst.load_meta()
     home = Target(**meta["home"]) if meta["home"] else None
-    return discover(BOX_DIR, Target(**meta["system"]), home)
+    return discover(BOX_DIR, Target(**meta["system"]), home, inst.backend)
 
 
-def planned_checks(layers: list[Layer], only: str | None) -> tuple[list[Check], dict[str, Fixture]]:
+def split_names(values: list[str] | None) -> list[str] | None:
+    """The names of `--tests`, which may be separated by spaces, commas or both."""
+    return [name for value in values for name in value.split(",") if name] if values is not None else None
+
+
+def select_checks(checks: list[Check], only: list[str]) -> list[Check]:
+    """The checks whose name matches one of the names or shell patterns of `only`, in their own order."""
+    if not only:
+        raise UsageError("--tests names no check")
+    for pattern in only:
+        if not any(fnmatch.fnmatchcase(c.name, pattern) for c in checks):
+            raise UsageError(f"no check {pattern!r} (have: {', '.join(sorted(c.name for c in checks))})")
+    return [c for c in checks if any(fnmatch.fnmatchcase(c.name, p) for p in only)]
+
+
+def planned_checks(layers: list[Layer], only: list[str] | None, backend: str) -> tuple[list[Check], dict[str, Fixture]]:
     """The checks to run and their fixtures; every error of the layers shows here, before anything is built."""
     fixtures = discover_fixtures(layers)
-    checks = discover_checks(layers)
-    if only:
-        if only not in {c.name for c in checks}:
-            raise UsageError(f"no check {only!r} (have: {', '.join(sorted(c.name for c in checks))})")
-        checks = [c for c in checks if c.name == only]
+    checks = discover_checks(layers, backend)
+    if only is not None:
+        checks = select_checks(checks, only)
     if not checks:
-        raise UsageError("no checks in the layers of this system and home")
+        raise UsageError(f"no checks for the {backend} backend in the layers of this system and home")
     plan(checks, fixtures)
     return checks, fixtures
 
@@ -221,7 +249,8 @@ def run_fixture(inst: Instance, layers: list[Layer], name: str, action: str) -> 
 
 def cmd_test(host: Host, args) -> int:
     system, home = targets_from(args)
-    checks, fixtures = planned_checks(discover(BOX_DIR, system, home), args.only)
+    planned = discover(BOX_DIR, system, home, args.backend)
+    checks, fixtures = planned_checks(planned, split_names(args.tests), args.backend)
     inst, layers, lock = bring_up(host, args, cleanup=True)
     try:
         ok = report(run_checks(inst, layers, checks, fixtures))
@@ -254,7 +283,10 @@ def dispatch(host: Host, args) -> int:
             inst.down()
     elif cmd == "status":
         inst = resolve(host, args.name)
-        print(f"{inst.name}: " + (f"running, systemd {inst.system_state()}" if inst.running() else "not running"))
+        print(
+            f"{inst.name} ({inst.backend}): "
+            + (f"running, systemd {inst.system_state()}" if inst.running() else "not running")
+        )
     elif cmd == "fixture":
         inst = resolve(host, args.name)
         inst.require_running()
@@ -273,10 +305,7 @@ def dispatch(host: Host, args) -> int:
 def main() -> int:
     args = build_parser().parse_args()
     try:
-        host = Host.create(REPO)
-        if args.command != "build":  # build only runs nix
-            host.setup_podman()
-        return dispatch(host, args)
+        return dispatch(Host.create(REPO), args)
     except UsageError as err:
         print(f"box: {err}", file=sys.stderr)
         print("Try 'box --help' for more information.", file=sys.stderr)
