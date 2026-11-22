@@ -1,7 +1,6 @@
 """Tests for decode-vpn.py and its use in prepare-awg.sh, with synthetic data and fake keys."""
 
 import base64
-import importlib.util
 import json
 import os
 import shutil
@@ -14,11 +13,12 @@ import urllib.parse
 import zlib
 from pathlib import Path
 
+from kinds import vless
+
 HERE = Path(__file__).resolve().parent
 DECODER = HERE / "decode-vpn.py"
 PREPARE = HERE / "prepare-awg.sh"
 RESOLVE = HERE / "resolve-credential.sh"
-GENERATE = HERE / "generate-config.py"
 UUID = "11111111-2222-3333-4444-555555555555"
 PBK = "cHVibGljLXJlYWxpdHkta2V5LTAwMDAwMDAwMDAwMDA"
 SECRET = "c2VjcmV0LXByaXZhdGUta2V5LTAwMDAwMDAwMDAwMDAwMDAwMDA="
@@ -277,10 +277,7 @@ class DecodeXrayTest(unittest.TestCase):
         self.assertEqual(decode("xray", awg_only).returncode, 1)
 
     def test_generate_config_reads_the_link_as_intended(self):
-        spec = importlib.util.spec_from_file_location("generate_config", GENERATE)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        outbound = module.build_outbound(self.link())
+        outbound = vless.build_outbound(self.link())
         self.assertEqual(
             (outbound["type"], outbound["server"], outbound["server_port"], outbound["uuid"]),
             ("vless", "198.51.100.9", 443, UUID),

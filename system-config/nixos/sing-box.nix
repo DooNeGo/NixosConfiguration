@@ -72,11 +72,6 @@ let
   python = "${pkgs.python3}/bin/python3";
   ip = "${pkgs.iproute2}/bin/ip";
 
-  generator = pkgs.writeTextFile {
-    name = "sing-box-generate-config.py";
-    text = builtins.readFile ./sing-box/generate-config.py;
-  };
-
   decodeVpn = pkgs.writeTextFile {
     name = "sing-box-decode-vpn.py";
     text = builtins.readFile ./sing-box/decode-vpn.py;
@@ -132,6 +127,15 @@ let
     awg = ./sing-box/kinds/awg.nix;
     vless = ./sing-box/kinds/vless.nix;
   };
+
+  # Python imports `kinds` from the real directory of the script, so the files are copied, not linked.
+  generator = pkgs.runCommand "sing-box-generator" { } ''
+    install -D ${./sing-box/generate-config.py} $out/generate-config.py
+    ${lib.concatMapStrings (k: "install -D ${./sing-box/kinds + "/${k}.py"} $out/kinds/${k}.py\n") (
+      lib.attrNames kindFiles
+    )}
+    touch $out/kinds/__init__.py
+  '';
 
   kindDefaults = {
     services = { };
@@ -202,7 +206,7 @@ let
         StateDirectoryMode = "0700";
         WorkingDirectory = "/var/lib/sing-box/${name}";
         ExecStartPre = [
-          "${python} ${generator}"
+          "${python} ${generator}/generate-config.py"
           "${singBoxCmd name} check"
         ];
         ExecStart = "${singBoxCmd name} run";
