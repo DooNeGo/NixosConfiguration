@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,6 +23,9 @@ class RegistryTest(unittest.TestCase):
         py = {p.stem for p in (HERE / "kinds").glob("*.py") if not p.stem.startswith(("test_", "__"))}
         self.assertEqual(set(generate.KINDS), nix)
         self.assertEqual(py, nix)
+        nix_file = (HERE.parent / "sing-box.nix").read_text()
+        listed = set(re.findall(r"^\s*(\w+) = \./sing-box/kinds/\w+\.nix;", nix_file, re.M))
+        self.assertEqual(listed, nix)
 
 
 class BuildConfigTest(unittest.TestCase):
@@ -50,11 +54,15 @@ class BuildConfigTest(unittest.TestCase):
         self.assertNotIn("dns", config)
         self.assertNotIn("default_domain_resolver", config["route"])
 
+    def test_kind_is_required(self):
+        with self.assertRaises(SystemExit):
+            generate.build_config(BASE, DOMAINS)
+
     def test_shared_part(self):
         link = "vless://11111111-2222-3333-4444-555555555555@h.example.test:443?type=tcp&security=tls"
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "k").write_text(link)
-            env = {**BASE, "CREDENTIALS_DIRECTORY": tmp, "SING_BOX_CREDENTIAL": "k"}
+            env = {**BASE, "SING_BOX_KIND": "vless", "CREDENTIALS_DIRECTORY": tmp, "SING_BOX_CREDENTIAL": "k"}
             config = generate.build_config(env, DOMAINS)
         self.assertEqual(config["inbounds"][0]["listen_port"], 2081)
         self.assertEqual(config["route"]["rules"][1], {"domain": DOMAINS, "action": "route", "outbound": "proxy"})

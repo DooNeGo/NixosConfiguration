@@ -46,6 +46,8 @@ in
     SING_BOX_TRANSPORT_OVERRIDE = "";
   };
 
+  failureUnits = [ fetch ];
+
   serviceConfig.LoadCredential = "${name}-key:${inst.runtimeKey}";
 
   assertions = [

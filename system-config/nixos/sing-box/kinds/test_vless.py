@@ -53,8 +53,8 @@ class OutboundTest(unittest.TestCase):
 class BuildTest(unittest.TestCase):
     def build(self, text):
         with tempfile.TemporaryDirectory() as tmp:
-            (Path(tmp) / "k").write_text(text + "\n")
-            return vless.build({"CREDENTIALS_DIRECTORY": tmp, "SING_BOX_CREDENTIAL": "k"})
+            (Path(tmp) / "k-key").write_text(text + "\n")
+            return vless.build({"CREDENTIALS_DIRECTORY": tmp, "SING_BOX_CREDENTIAL": "k-key"})
 
     def test_result_shape(self):
         result = self.build(REALITY)
@@ -63,8 +63,9 @@ class BuildTest(unittest.TestCase):
         self.assertIsNone(result["default_domain_resolver"])
 
     def test_unfetched_credential_is_refused(self):
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as ctx:
             self.build("https://sub.example.test/x")
+        self.assertIn("systemctl start sing-box-k-fetch", str(ctx.exception))
 
 
 if __name__ == "__main__":

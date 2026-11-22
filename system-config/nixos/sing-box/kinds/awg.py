@@ -1,7 +1,7 @@
 """kind = "awg": traffic leaves through a system AmneziaWG interface that the
 NixOS module brings up; sing-box only binds its sockets to it."""
 
-import re
+import ipaddress
 
 
 def read_address(interface, addr_file):
@@ -13,8 +13,10 @@ def read_address(interface, addr_file):
             addr = fh.read().strip()
     except OSError as exc:
         raise SystemExit(f"cannot read {addr_file} ({exc}); the -awg-prepare oneshot has not run") from exc
-    if not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", addr):
-        raise SystemExit(f"{addr_file} does not hold an IPv4 address")
+    try:
+        ipaddress.IPv4Address(addr)
+    except ValueError:
+        raise SystemExit(f"{addr_file} does not hold an IPv4 address") from None
     return addr
 
 

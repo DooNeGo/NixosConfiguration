@@ -153,22 +153,28 @@ let
 
   kindResult =
     name: inst:
-    kindDefaults
-    //
-      import
-        (kindFiles.${inst.kind}
-          or (throw "sing-box instance '${name}': unknown kind '${inst.kind}', expected one of ${toString (lib.attrNames kindFiles)}")
-        )
-        {
-          inherit
-            pkgs
-            lib
-            name
-            inst
-            shared
-            ;
-          secretFile = config.age.secrets."${inst.kind}-${name}".file;
-        };
+    let
+      result =
+        import
+          (kindFiles.${inst.kind}
+            or (throw "sing-box instance '${name}': unknown kind '${inst.kind}', expected one of ${toString (lib.attrNames kindFiles)}")
+          )
+          {
+            inherit
+              pkgs
+              lib
+              name
+              inst
+              shared
+              ;
+            secretFile = config.age.secrets."${inst.kind}-${name}".file;
+          };
+      unknown = lib.attrNames (builtins.removeAttrs result (lib.attrNames kindDefaults));
+    in
+    if unknown == [ ] then
+      kindDefaults // result
+    else
+      throw "sing-box kind '${inst.kind}' returns unknown fields: ${toString unknown}";
 
   results = lib.mapAttrs kindResult instances;
   resultList = lib.attrValues results;
@@ -234,6 +240,7 @@ let
   # Values a kind claims (interface, table) must differ between all instances.
   claims = lib.zipAttrsWith (_: lib.concatLists) (map (r: r.claims) resultList);
   unitNames = lib.concatMap (r: lib.attrNames r.services) resultList;
+  timerNames = lib.concatMap (r: lib.attrNames r.timers) resultList;
 
   commonAssertions =
     let
@@ -248,6 +255,10 @@ let
       {
         assertion = allUnique (unitNames ++ map (n: "sing-box-${n}") (lib.attrNames instances));
         message = "sing-box.nix: two instances define the same systemd unit";
+      }
+      {
+        assertion = allUnique timerNames;
+        message = "sing-box.nix: two instances define the same systemd timer";
       }
       {
         assertion = lib.all (n: (builtins.match "[a-z][a-z0-9_-]*" n) != null) (lib.attrNames instances);

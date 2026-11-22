@@ -20,14 +20,16 @@ def load_domains(env):
 
 
 def build_config(env, domains):
-    kind = env.get("SING_BOX_KIND", "vless")
+    kind = env.get("SING_BOX_KIND")
+    if not kind:
+        raise SystemExit("SING_BOX_KIND is not set")
     if kind not in KINDS:
         raise SystemExit(f"unknown SING_BOX_KIND {kind!r}")
     result = KINDS[kind].build(env)
     config = build_base_config(env, domains, result["outbound"])
-    if result["dns"] is not None:
+    if result.get("dns") is not None:
         config["dns"] = result["dns"]
-    if result["default_domain_resolver"] is not None:
+    if result.get("default_domain_resolver") is not None:
         config["route"]["default_domain_resolver"] = result["default_domain_resolver"]
     return config
 

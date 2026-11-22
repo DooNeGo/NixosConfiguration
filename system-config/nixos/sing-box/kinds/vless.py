@@ -66,10 +66,10 @@ def read_vless(env):
     with open(secret_file, encoding="utf-8") as fh:
         raw = fh.read().strip()
     if not raw.startswith("vless://"):
+        unit = "sing-box-" + env.get("SING_BOX_CREDENTIAL", "vless-key").removesuffix("-key") + "-fetch"
         raise SystemExit(
             "credential is not a vless:// link; the -fetch oneshot failed or the "
-            "agenix secret holds an un-fetched https:// URL - run "
-            "systemctl start <name>-fetch first"
+            f"agenix secret holds an un-fetched https:// URL - run systemctl start {unit} first"
         )
     return raw
 
