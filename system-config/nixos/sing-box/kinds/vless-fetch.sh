@@ -9,7 +9,9 @@ DECODER="${SING_BOX_DECODE_VPN:?SING_BOX_DECODE_VPN is not set}"
 UA=v2rayNG/1.8.5
 
 [ -r "$CRED_FILE" ] || { echo "vless-fetch: cannot read $CRED_FILE" >&2; exit 1; }
-src=$(grep -m1 -v '^[[:space:]]*$' "$CRED_FILE" | tr -d '[:space:]')
+decoded=$(python3 -I "$DECODER" xray --passthrough < "$CRED_FILE") \
+  || { echo "vless-fetch: cannot decode the vpn:// string" >&2; exit 1; }
+src=$(printf '%s\n' "$decoded" | grep -m1 -v '^[[:space:]]*$' | tr -d '[:space:]' || true)
 
 # Extract the first vless:// line from a subscription body (base64 if needed).
 extract() {
@@ -21,10 +23,6 @@ link=""
 case "$src" in
   vless://*)
     link="$src"
-    ;;
-  vpn://*)
-    link=$(printf '%s' "$src" | python3 -I "$DECODER" xray) \
-      || { echo "vless-fetch: cannot decode the vpn:// string" >&2; exit 1; }
     ;;
   https://*|http://*)
     host=$(printf '%s' "$src" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
@@ -46,7 +44,7 @@ case "$src" in
     link=$(extract "$body")
     ;;
   *)
-    echo "vless-fetch: $CRED_FILE is neither vless://, vpn:// nor http(s):// -- refusing" >&2
+    echo "vless-fetch: $CRED_FILE is neither vless://, vpn:// (xray) nor http(s):// -- refusing" >&2
     exit 1
     ;;
 esac

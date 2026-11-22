@@ -4,7 +4,7 @@
 # into the runtime config that awg-quick gets (SING_BOX_AWG_OUT_FILE):
 #   * DNS is dropped        -- awg-quick would make it the system resolver;
 #   * hooks are dropped     -- a third-party file must not run commands as root;
-#   * Table = SING_BOX_AWG_TABLE     -- routes go to a private table, main stays intact;
+#   * Table = SING_BOX_AWG_TABLE -- routes go to a private table, main stays intact;
 #   * Address: IPv4 only; AllowedIPs = 0.0.0.0/0 (the tunnel is IPv4-only).
 # The tunnel address is published to SING_BOX_AWG_ADDR_FILE (not a secret) for the
 # policy rule and for sing-box's inet4_bind_address.
@@ -21,11 +21,7 @@ die() { echo "awg-prepare: $*" >&2; exit 1; }
 [ -r "$SRC" ] || die "cannot read $SRC"
 case "$TABLE" in ''|*[!0-9]*) die "SING_BOX_AWG_TABLE must be a number, got '$TABLE'" ;; esac
 
-first=$(grep -m1 -v '^[[:space:]]*$' "$SRC" | tr -d '[:space:]' || true)
-case "$first" in
-  vpn://*) text=$(python3 -I "$DECODER" awg < "$SRC") || die "cannot decode the vpn:// string" ;;
-  *) text=$(cat "$SRC") ;;
-esac
+text=$(python3 -I "$DECODER" awg --passthrough < "$SRC") || die "cannot decode the vpn:// string"
 conf=$(printf '%s\n' "$text" | tr -d '\r' | sed 's/[[:space:]]*#.*$//')   # awg-quick ignores trailing comments too
 
 count() { printf '%s\n' "$conf" | grep -ciE "$1" || true; }

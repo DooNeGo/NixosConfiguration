@@ -118,6 +118,27 @@ def xray_vpn(cfg=None, **extra):
     return make_vpn([container, awg_container()], "amnezia-xray", **extra)
 
 
+class PassthroughTest(unittest.TestCase):
+    def test_other_input_is_copied_unchanged(self):
+        for text in (CONF, "\n  vless://u@h:1\n", ""):
+            with self.subTest(text=text[:12]):
+                result = run_decoder(["awg", "--passthrough"], text)
+                self.assertEqual((result.returncode, result.stdout), (0, text))
+
+    def test_copy_is_byte_exact(self):
+        data = b"[Interface]\r\nName = \xff\xfe\r\n" + b"x" * (2 * 1024 * 1024)
+        command = [sys.executable, "-I", "-B", str(DECODER), "awg", "--passthrough"]
+        result = subprocess.run(command, input=data, capture_output=True, check=False)
+        self.assertEqual((result.returncode, result.stdout), (0, data))
+
+    def test_vpn_string_is_still_decoded(self):
+        result = run_decoder(["awg", "--passthrough"], "\n " + make_vpn([awg_container()], "amnezia-awg"))
+        self.assertEqual((result.returncode, result.stdout), (0, CONF))
+
+    def test_unknown_option_is_a_usage_error(self):
+        self.assertEqual(run_decoder(["awg", "--bogus"], "").returncode, 2)
+
+
 class DecodeAwgTest(unittest.TestCase):
     def test_round_trip(self):
         result = decode("awg", make_vpn([awg_container()], "amnezia-awg"))
