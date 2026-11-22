@@ -5,6 +5,7 @@ import fnmatch
 import shlex
 import shutil
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -76,6 +77,9 @@ def build_parser() -> argparse.ArgumentParser:
                 help="run only these checks: names or shell patterns (session-*), separated by spaces or commas",
             )
             p.add_argument("--keep", action="store_true", help="leave the instance running")
+            p.add_argument(
+                "--timings", action="store_true", help="also print the time of up, of each fixture and of the whole run"
+            )
     for name, text in (
         ("down", "stop an instance and remove its rootfs"),
         ("status", "state of an instance"),
@@ -251,9 +255,15 @@ def cmd_test(host: Host, args) -> int:
     system, home = targets_from(args)
     planned = discover(BOX_DIR, system, home, args.backend)
     checks, fixtures = planned_checks(planned, split_names(args.tests), args.backend)
+    started = time.monotonic()
     inst, layers, lock = bring_up(host, args, cleanup=True)
+    up = time.monotonic()
+    on_fixture = (lambda label, seconds: print(f"time {label} ({seconds:.1f}s)")) if args.timings else None
     try:
-        ok = report(run_checks(inst, layers, checks, fixtures))
+        ok = report(run_checks(inst, layers, checks, fixtures, on_fixture))
+        if args.timings:
+            end = time.monotonic()
+            print(f"time up ({up - started:.1f}s), checks ({end - up:.1f}s), total ({end - started:.1f}s)")
     finally:
         if not args.keep:
             inst.down()

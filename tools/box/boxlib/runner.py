@@ -2,6 +2,7 @@
 
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from .fixtures import Check, Fixture, closure, plan
@@ -25,7 +26,14 @@ def _run(inst: Instance, layers: list[Layer], path_text: str) -> tuple[bool, str
     return done.returncode == 0, _CONTROL_RE.sub("", done.stdout or "").strip()
 
 
-def run_checks(inst: Instance, layers: list[Layer], checks: list[Check], fixtures: dict[str, Fixture]) -> list[Result]:
+def run_checks(
+    inst: Instance,
+    layers: list[Layer],
+    checks: list[Check],
+    fixtures: dict[str, Fixture],
+    on_fixture: Callable[[str, float], None] | None = None,
+) -> list[Result]:
+    """Runs the plan; `on_fixture(label, seconds)` is told how long each setup and teardown took."""
     needs = {c.name: set(closure([r.name for r in c.refs], fixtures)) for c in checks}
     failed: dict[str, str] = {}
     poisoned: set[str] = set()  # fixtures whose teardown failed: their state is unknown, so they are not set up again
@@ -44,11 +52,15 @@ def run_checks(inst: Instance, layers: list[Layer], checks: list[Check], fixture
                 not_run.add(item.name)
                 continue
             ok, output = _run(inst, layers, item.setup.read_text())
+            if on_fixture:
+                on_fixture(f"setup {item.name}", time.monotonic() - started)
             if not ok:
                 failed[item.name] = output
         elif kind == "teardown":
             if item.name not in not_run:
                 ok, output = _run(inst, layers, item.teardown.read_text())
+                if on_fixture:
+                    on_fixture(f"teardown {item.name}", time.monotonic() - started)
                 if not ok:
                     results.append(Result(f"teardown {item.name}", False, time.monotonic() - started, output))
                     poisoned.add(item.name)
