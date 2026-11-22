@@ -1,13 +1,17 @@
 {
   config,
+  lib,
   ...
 }:
 {
   services.tailscale = {
     enable = true;
-    # Forwarding for the exit node; the routing into awg0 is in awg-exit-node.nix.
+    # Forwarding for the exit node; the routing into the tunnel is in awg-exit-node.nix.
     useRoutingFeatures = "server";
-    extraSetFlags = [ "--advertise-exit-node" ];
+    # `tailscale set` flags are sticky: the false form withdraws the advertisement when no instance sets exitNode.
+    extraSetFlags = [
+      "--advertise-exit-node=${lib.boolToString (config.services.sing-box-tunnels.exitTunnel != null)}"
+    ];
     serve = {
       enable = true;
       services = {

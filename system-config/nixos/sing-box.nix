@@ -6,35 +6,38 @@
 }:
 
 let
-  mainDomains = [
-    "aistudio.google.com"
-    "gemini.google.com"
-    "googleapis.com"
-    "openai.com"
-    "chatgpt.com"
-    "muse.ai"
-    "jetbrains.com"
-    "swagger.io"
-    "anthropic.com"
-    "claude.ai"
-    "claude.com"
-    "bing.com"
-    "microsoft.com"
-  ];
-
-  # kind = "vless": credentialFile holds a vless:// link or a subscription URL;
+  # exitNode = true (kind "awg" only, at most one instance): the Tailscale exit
+  #                 node forwards into this instance's tunnel (awg-exit-node.nix).
+  # kind = "vless": credentialFile holds a vless:// link, a subscription URL or an
+  #                 Amnezia vpn:// string with an xray container;
   #                 the -fetch oneshot + timer resolve it into runtimeKey.
-  # kind = "awg":   credentialFile holds the server-issued AmneziaWG .conf,
-  #                 verbatim. The -awg-prepare oneshot normalises it, wg-quick
-  #                 brings up awg.interface with routes in awg.table, and
-  #                 sing-box binds its "proxy" outbound to that interface.
+  # kind = "awg":   credentialFile holds the server-issued AmneziaWG .conf or an
+  #                 Amnezia vpn:// string, verbatim. The -awg-prepare oneshot
+  #                 normalises it, wg-quick brings up awg.interface with routes
+  #                 in awg.table, and sing-box binds its "proxy" outbound to
+  #                 that interface.
   instances = {
     main = {
       kind = "awg";
+      exitNode = true;
       listenAddress = "127.0.0.1";
       listenPort = 2080;
       credentialFile = "/etc/sing-box/main-awg.conf";
-      proxyDomains = mainDomains;
+      proxyDomains = [
+        "aistudio.google.com"
+        "gemini.google.com"
+        "googleapis.com"
+        "openai.com"
+        "chatgpt.com"
+        "muse.ai"
+        "jetbrains.com"
+        "swagger.io"
+        "anthropic.com"
+        "claude.ai"
+        "claude.com"
+        "bing.com"
+        "microsoft.com"
+      ];
       routeMatch = "domain_suffix";
       awg = {
         interface = "awg0";
@@ -42,12 +45,12 @@ let
       };
     };
 
-    credits-git = {
+    credits = {
       kind = "vless";
       listenAddress = "127.0.0.1";
       listenPort = 2081;
-      credentialFile = "/etc/sing-box/credits-git-credential";
-      runtimeKey = "/etc/sing-box/credits-git-key";
+      credentialFile = "/etc/sing-box/credits-credential";
+      runtimeKey = "/etc/sing-box/credits-key";
       proxyDomains = [
         "gitlab.credits.com"
         "mobileapi-stage.credits.com"
@@ -58,22 +61,6 @@ let
       fetchIntervalSec = 21600;
       onBootSec = "2min";
     };
-
-    #    credits-stage = {
-    #      kind = "vless";
-    #      listenAddress = "127.0.0.1";
-    #      listenPort = 2082;
-    #      credentialFile = "/etc/sing-box/credits-stage-credential";
-    #      runtimeKey = "/etc/sing-box/credits-stage-key";
-    #      proxyDomains = [
-    #        "mobileapi-stage.credits.com"
-    #        "chats-stage.credits.com"
-    #        "web-wallet-stage.credits.com"
-    #      ];
-    #      routeMatch = "domain";
-    #      fetchIntervalSec = 21600;
-    #      onBootSec = "2min";
-    #    };
   };
 
   # Instance that HTTP(S)_PROXY points at.
@@ -93,6 +80,11 @@ let
     text = builtins.readFile ./sing-box/generate-config.py;
   };
 
+  decodeVpn = pkgs.writeTextFile {
+    name = "sing-box-decode-vpn.py";
+    text = builtins.readFile ./sing-box/decode-vpn.py;
+  };
+
   resolveCredential = pkgs.writeShellApplication {
     name = "sing-box-resolve-credential";
     text = builtins.readFile ./sing-box/resolve-credential.sh;
@@ -101,6 +93,7 @@ let
       coreutils
       gnused
       gnugrep
+      python3
     ];
   };
 
@@ -110,7 +103,9 @@ let
     runtimeInputs = with pkgs; [
       coreutils
       gnugrep
+      gnused
       gawk
+      python3
     ];
   };
 
@@ -225,6 +220,7 @@ let
       environment = {
         SING_BOX_CREDENTIAL_FILE = inst.credentialFile;
         SING_BOX_KEY_FILE = inst.runtimeKey;
+        SING_BOX_DECODE_VPN = "${decodeVpn}";
       };
       serviceConfig = {
         Type = "oneshot";
@@ -245,10 +241,17 @@ let
         AWG_OUT_FILE = awgConfFile inst;
         AWG_ADDR_FILE = awgAddrFile inst;
         AWG_TABLE = toString inst.awg.table;
+        SING_BOX_DECODE_VPN = "${decodeVpn}";
       };
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = "yes";
+        # parses an untrusted string as root, needs no network and writes only its RuntimeDirectory
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        PrivateNetwork = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
         RuntimeDirectory = "sing-box-awg-${inst.awg.interface}";
         RuntimeDirectoryMode = "0755";
         RuntimeDirectoryPreserve = "yes";
@@ -281,6 +284,10 @@ let
         fi
       '';
     };
+  # A new tunnel kind that owns a kernel interface joins by adding a branch to tunnelOf.
+  exitCapableKinds = [ "awg" ];
+  exitInstances = lib.filterAttrs (_: i: i.exitNode or false) instances;
+  tunnelOf = inst: if inst.kind == "awg" then { inherit (inst.awg) interface table; } else null;
 in
 assert allUnique ports;
 assert lib.all (i: i.proxyDomains != [ ]) (lib.attrValues instances);
@@ -309,63 +316,95 @@ assert allUnique awgIfaces;
 assert lib.all (t: builtins.isInt t && t > 255) awgTables;
 assert allUnique awgTables;
 {
-  environment.systemPackages = [ pkgs.sing-box ];
-
-  users.users."sing-box" = {
-    isSystemUser = true;
-    group = "sing-box";
-    home = "/var/lib/sing-box";
-  };
-  users.groups."sing-box" = { };
-
-  environment.variables = {
-    HTTP_PROXY = proxyUrl;
-    HTTPS_PROXY = proxyUrl;
-    NO_PROXY = noProxy;
-    http_proxy = proxyUrl;
-    https_proxy = proxyUrl;
-    no_proxy = noProxy;
+  options.services.sing-box-tunnels.exitTunnel = lib.mkOption {
+    type = lib.types.nullOr (
+      lib.types.submodule {
+        options = {
+          interface = lib.mkOption { type = lib.types.str; };
+          table = lib.mkOption { type = lib.types.int; };
+        };
+      }
+    );
+    readOnly = true;
+    internal = true;
+    description = "Interface and routing table of the tunnel that carries Tailscale exit-node traffic, or null.";
   };
 
-  # A tunnel that fails to come up would otherwise only reach the journal.
-  services.failure-notify.units = map (iface: "wg-quick-${iface}") awgIfaces;
+  config = {
+    assertions = [
+      {
+        assertion = lib.length (lib.attrNames exitInstances) <= 1;
+        message = "sing-box.nix: at most one instance may set exitNode, got ${toString (lib.attrNames exitInstances)}";
+      }
+      {
+        assertion = lib.all (i: lib.elem i.kind exitCapableKinds) (lib.attrValues exitInstances);
+        message = "sing-box.nix: exitNode is only supported for the kinds ${toString exitCapableKinds}";
+      }
+    ];
 
-  # type = "amneziawg" pulls in the kernel module and amneziawg-tools.
-  networking.wg-quick.interfaces = lib.mapAttrs' (
-    _: inst:
-    lib.nameValuePair inst.awg.interface {
-      type = "amneziawg";
-      configFile = awgConfFile inst;
-    }
-  ) awgInstances;
+    services.sing-box-tunnels.exitTunnel =
+      if exitInstances == { } then null else tunnelOf (lib.head (lib.attrValues exitInstances));
 
-  systemd.services = lib.listToAttrs (
-    lib.mapAttrsToList mkService instances
-    ++ lib.mapAttrsToList mkFetch vlessInstances
-    ++ lib.mapAttrsToList mkAwgPrepare awgInstances
-    ++ lib.mapAttrsToList mkAwgIface awgInstances
-  );
+    environment.systemPackages = [ pkgs.sing-box ];
 
-  systemd.timers = lib.mapAttrs' (
-    name: inst:
-    lib.nameValuePair "sing-box-${name}-fetch" {
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnBootSec = inst.onBootSec;
-        OnUnitActiveSec = toString inst.fetchIntervalSec;
-        Unit = "sing-box-${name}-fetch.service";
-      };
-    }
-  ) vlessInstances;
+    users.users."sing-box" = {
+      isSystemUser = true;
+      group = "sing-box";
+      home = "/var/lib/sing-box";
+    };
+    users.groups."sing-box" = { };
 
-  # vless-<name>.age: link or subscription URL; awg-<name>.age: AmneziaWG .conf
-  age.secrets = lib.mapAttrs' (
-    name: inst:
-    lib.nameValuePair "${inst.kind}-${name}" {
-      enable = true;
-      mode = "0600";
-      file = ../../secrets/${inst.kind}-${name}.age;
-      path = inst.credentialFile;
-    }
-  ) instances;
+    environment.variables = {
+      HTTP_PROXY = proxyUrl;
+      HTTPS_PROXY = proxyUrl;
+      NO_PROXY = noProxy;
+      http_proxy = proxyUrl;
+      https_proxy = proxyUrl;
+      no_proxy = noProxy;
+    };
+
+    # A tunnel that fails to come up would otherwise only reach the journal.
+    services.failure-notify.units =
+      map (iface: "wg-quick-${iface}") awgIfaces
+      ++ lib.mapAttrsToList (name: _: "sing-box-${name}-awg-prepare") awgInstances;
+
+    # type = "amneziawg" pulls in the kernel module and amneziawg-tools.
+    networking.wg-quick.interfaces = lib.mapAttrs' (
+      _: inst:
+      lib.nameValuePair inst.awg.interface {
+        type = "amneziawg";
+        configFile = awgConfFile inst;
+      }
+    ) awgInstances;
+
+    systemd.services = lib.listToAttrs (
+      lib.mapAttrsToList mkService instances
+      ++ lib.mapAttrsToList mkFetch vlessInstances
+      ++ lib.mapAttrsToList mkAwgPrepare awgInstances
+      ++ lib.mapAttrsToList mkAwgIface awgInstances
+    );
+
+    systemd.timers = lib.mapAttrs' (
+      name: inst:
+      lib.nameValuePair "sing-box-${name}-fetch" {
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = inst.onBootSec;
+          OnUnitActiveSec = toString inst.fetchIntervalSec;
+          Unit = "sing-box-${name}-fetch.service";
+        };
+      }
+    ) vlessInstances;
+
+    # vless-<name>.age: link, subscription URL or vpn:// string; awg-<name>.age: AmneziaWG .conf or vpn:// string
+    age.secrets = lib.mapAttrs' (
+      name: inst:
+      lib.nameValuePair "${inst.kind}-${name}" {
+        enable = true;
+        mode = "0600";
+        file = ../../secrets/${inst.kind}-${name}.age;
+        path = inst.credentialFile;
+      }
+    ) instances;
+  };
 }
