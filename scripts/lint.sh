@@ -27,6 +27,5 @@ git ls-files -z 'tools/box/*/fixtures/*/setup' 'tools/box/*/fixtures/*/teardown'
 # tools/box/box has no .py extension: ruff lints a file named on the command line regardless.
 ruff check tools/box tools/box/box
 ruff format --check tools/box tools/box/box
-# Only the decoder and its test: generate-config.py predates the ruff config.
-ruff check --config tools/box/ruff.toml system-config/nixos/sing-box/decode-vpn.py system-config/nixos/sing-box/test_decode_vpn.py
-ruff format --check --config tools/box/ruff.toml system-config/nixos/sing-box/decode-vpn.py system-config/nixos/sing-box/test_decode_vpn.py
+ruff check --config tools/box/ruff.toml system-config/nixos/sing-box
+ruff format --check --config tools/box/ruff.toml system-config/nixos/sing-box
