@@ -20,6 +20,10 @@ rec {
   alpha = 0.3;
   borderAlpha = 0.16;
   borderWidth = 1;
+  # GTK file manager (gtk.nix): a file list needs more fill than a panel to stay readable over the blur, while the
+  # window background and the toolbars stay close to the panels.
+  glassViewAlpha = 0.75;
+  glassChromeAlpha = 0.45;
   blurPasses = 3;
   # Layer namespaces that get the blur rule (hyprland/rules.lua).
   glassLayers = [
@@ -53,6 +57,8 @@ rec {
     "@glass_border_alpha@" = toString borderAlpha;
     "@glass_border_hex@" = hex borderAlpha;
     "@glass_border_width@" = toString borderWidth;
+    "@glass_view_alpha@" = toString glassViewAlpha;
+    "@glass_chrome_alpha@" = toString glassChromeAlpha;
     "@blur_passes@" = toString blurPasses;
     "@glass_layers@" = lib.concatMapStringsSep ", " (n: ''"${n}"'') glassLayers;
     "@radius@" = toString radius;

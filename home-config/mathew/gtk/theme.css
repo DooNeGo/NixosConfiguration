@@ -1,0 +1,47 @@
+/* matugen-glass: adw-gtk3-dark (colours from the wallpaper palette, loaded by ~/.config/gtk-*/gtk.css) with the shapes of
+   the desktop on top. The values come from style/ through the style tokens. */
+
+button,
+entry,
+spinbutton,
+combobox button,
+.card,
+popover.background > contents,
+menu,
+.menu {
+  border-radius: @radius_inner@px;
+}
+
+popover.background > contents,
+menu,
+.menu {
+  border: @glass_border_width@px solid alpha(@window_fg_color, @glass_border_alpha@);
+}
+
+/* Nemo: translucent fills over the blur Hyprland already draws behind a translucent window. The selection keeps the
+   accent fill, and the text stays opaque because only the background colours carry the alpha. */
+window.background.nemo-window {
+  background-color: alpha(@window_bg_color, @glass_chrome_alpha@);
+}
+
+.nemo-window .sidebar,
+.nemo-window .sidebar .view,
+.nemo-window .sidebar scrolledwindow,
+.nemo-window toolbar,
+.nemo-window .toolbar,
+.nemo-window .primary-toolbar,
+.nemo-window headerbar,
+.nemo-window statusbar {
+  background-color: alpha(@sidebar_bg_color, @glass_chrome_alpha@);
+}
+
+.nemo-window .view:not(:selected),
+.nemo-window iconview:not(:selected),
+.nemo-window treeview.view:not(:selected) {
+  background-color: alpha(@view_bg_color, @glass_view_alpha@);
+}
+
+.nemo-window .sidebar row:selected,
+.nemo-window .view:selected {
+  border-radius: @radius_inner@px;
+}

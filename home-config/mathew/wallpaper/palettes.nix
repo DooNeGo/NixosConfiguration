@@ -14,8 +14,17 @@ let
     kitty = "kitty.conf";
     hyprlock = "hyprlock.conf";
     rofi = "rofi.rasi";
+    gtk = "gtk.css";
+    kvantum = "kvantum.sed";
   };
-  files = lib.attrValues templates;
+  # The sed script is an intermediate: it recolours Kvantum's KvFlat into the two files of the theme KvMatugen.
+  kvantumSed = templates.kvantum;
+  kvantumFiles = [
+    "KvMatugen.kvconfig"
+    "KvMatugen.svg"
+  ];
+  kvFlat = "${pkgs.kdePackages.qtstyleplugin-kvantum}/share/Kvantum/KvFlat";
+  files = lib.filter (f: f != kvantumSed) (lib.attrValues templates) ++ kvantumFiles;
 
   # The style tokens (style/) are filled in before matugen renders the colours.
   template = file: pkgs.writeText file (style.subst (builtins.readFile (../palette + "/${file}")));
@@ -51,6 +60,9 @@ let
       rm -rf "$render"
       mkdir "$render"
       matugen -q -c $TMPDIR/matugen.toml -m dark -t scheme-tonal-spot --source-color-index 0 image "$img"
+      sed -f "$render/${kvantumSed}" ${kvFlat}/KvFlat.kvconfig > "$render/KvMatugen.kvconfig"
+      sed -f "$render/${kvantumSed}" ${kvFlat}/KvFlat.svg > "$render/KvMatugen.svg"
+      rm "$render/${kvantumSed}"
       for f in ${lib.concatStringsSep " " files}; do
         [ -s "$render/$f" ] || { echo "matugen made no $f for $name" >&2; exit 1; }
       done
