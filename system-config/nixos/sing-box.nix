@@ -38,6 +38,10 @@ let
                 "microsoft.com"
               ];
               routeMatch = "domain_suffix";
+              tun = {
+                address = "172.19.0.1/30";
+                fakeRange = "198.18.0.0/16";
+              };
               awg = {
                 interface = "awg0";
                 table = 51820;
@@ -55,7 +59,11 @@ let
                 "chats-stage.credits.com"
                 "web-wallet-stage.credits.com"
               ];
-              routeMatch = "domain";
+              routeMatch = "domain_suffix";
+              tun = {
+                address = "172.19.0.5/30";
+                fakeRange = "198.19.0.0/16";
+              };
               vless = {
                 runtimeKey = "/etc/sing-box/credits-key";
                 fetchIntervalSec = 21600;
@@ -97,6 +105,27 @@ let
         default = false;
         description = "The Tailscale exit node forwards into this instance's tunnel (kinds that own an interface; at most one instance).";
       };
+      tun = lib.mkOption {
+        description = ''
+          Fake-IP TUN next to the proxy port: programs that ignore HTTP(S)_PROXY reach proxyDomains through the tunnel.
+          systemd-networkd owns the persistent link, its fake-IP route and the resolved routing domains; with sing-box down the names do not resolve.
+        '';
+        default = null;
+        type = lib.types.nullOr (
+          lib.types.submodule {
+            options = {
+              address = lib.mkOption {
+                type = lib.types.strMatching "${ipv4}/30";
+                description = "Address of the link with its /30 prefix, host .1 or .2 of its block; the other host is where sing-box answers DNS for resolved.";
+              };
+              fakeRange = lib.mkOption {
+                type = lib.types.strMatching "${ipv4}/(8|9|1[0-9]|2[0-4])";
+                description = "IPv4 range of the fake addresses; routed to the link.";
+              };
+            };
+          }
+        );
+      };
       awg = lib.mkOption {
         description = "Settings of kind awg: the interface and routing table that wg-quick brings up.";
         default = { };
@@ -133,7 +162,19 @@ let
     };
   };
 
+  ipv4 =
+    let
+      octet = "(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])";
+    in
+    lib.concatStringsSep "\\." (lib.replicate 4 octet);
+
   python = "${pkgs.python3}/bin/python3";
+
+  waitLink = pkgs.writeShellApplication {
+    name = "sing-box-wait-link";
+    text = builtins.readFile ./sing-box/wait-link.sh;
+    runtimeInputs = with pkgs; [ coreutils ];
+  };
 
   decodeVpn = pkgs.writeTextFile {
     name = "sing-box-decode-vpn.py";
@@ -227,6 +268,9 @@ let
         SING_BOX_PROXY_DOMAINS = builtins.toJSON inst.proxyDomains;
         SING_BOX_ROUTE_MATCH = inst.routeMatch;
       }
+      // lib.optionalAttrs (inst.tun != null) {
+        SING_BOX_TUN = builtins.toJSON (tunFull name inst);
+      }
       // kind.environment;
       serviceConfig = {
         Type = "simple";
@@ -237,10 +281,12 @@ let
         StateDirectory = "sing-box/${name}";
         StateDirectoryMode = "0700";
         WorkingDirectory = "/var/lib/sing-box/${name}";
-        ExecStartPre = [
-          "${python} ${generator}/generate-config.py"
-          "${singBoxCmd name} check"
-        ];
+        ExecStartPre =
+          lib.optional (inst.tun != null) "${waitLink}/bin/sing-box-wait-link ${tunLink name}"
+          ++ [
+            "${python} ${generator}/generate-config.py"
+            "${singBoxCmd name} check"
+          ];
         ExecStart = "${singBoxCmd name} run";
         Restart = "on-failure";
         RestartSec = 3;
@@ -258,8 +304,39 @@ let
           "AF_NETLINK"
         ];
       }
+      // lib.optionalAttrs (inst.tun != null) {
+        # attaching to the persistent link and setting its address needs CAP_NET_ADMIN
+        AmbientCapabilities = [ "CAP_NET_ADMIN" ];
+        CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];
+      }
       // kind.serviceConfig;
     };
+
+  tunInstances = lib.filterAttrs (_: i: i.tun != null) instances;
+  tunLink = name: "sbtun-${name}";
+  tunAddr = t: lib.head (lib.splitString "/" t.address);
+  tunHost = t: lib.toInt (lib.last (lib.splitString "." (tunAddr t)));
+  # the other host of the /30 block of the link address
+  tunDns =
+    t:
+    let
+      octets = lib.splitString "." (tunAddr t);
+      last = tunHost t;
+    in
+    lib.concatStringsSep "." (
+      lib.take 3 octets ++ [ (toString (if lib.mod last 4 == 1 then last + 1 else last - 1)) ]
+    );
+  tunFull =
+    name: inst:
+    inst.tun
+    // {
+      interface = tunLink name;
+      dnsAddress = tunDns inst.tun;
+    };
+  # one unit file name per link, shared by the netdev and the network
+  byLink =
+    f: lib.mapAttrs' (name: inst: lib.nameValuePair "40-${tunLink name}" (f name inst)) tunInstances;
+  tuns = lib.mapAttrsToList (_: i: i.tun) tunInstances;
 
   exitInstances = lib.filterAttrs (_: i: i.exitNode) instances;
 
@@ -295,6 +372,26 @@ let
         toString (lib.attrNames (lib.filterAttrs (n: _: results.${n}.exitTunnel == null) exitInstances))
       }";
     }
+    {
+      assertion =
+        allUnique (map tunAddr tuns ++ map tunDns tuns) && allUnique (map (t: t.fakeRange) tuns);
+      message = "sing-box.nix: tun /30 blocks and fakeRange must differ between instances";
+    }
+    {
+      # .0 and .3 of a /30 are the network and the broadcast address
+      assertion = lib.all (t: lib.mod (tunHost t) 4 == 1 || lib.mod (tunHost t) 4 == 2) tuns;
+      message = "sing-box.nix: a tun address must be host .1 or .2 of its /30 block";
+    }
+    {
+      # resolved sends every subdomain of a proxied name to the TUN DNS; one that stayed direct would resolve back into the fake range
+      assertion = lib.all (i: i.routeMatch == "domain_suffix") (lib.attrValues tunInstances);
+      message = "sing-box.nix: an instance with tun needs routeMatch = \"domain_suffix\"";
+    }
+    {
+      # kernel limit on link names
+      assertion = lib.all (n: lib.stringLength (tunLink n) <= 15) (lib.attrNames tunInstances);
+      message = "sing-box.nix: the link name sbtun-<name> is at most 15 characters, got ${toString (lib.attrNames tunInstances)}";
+    }
   ]
   ++ lib.mapAttrsToList (claim: values: {
     assertion = allUnique values;
@@ -325,8 +422,6 @@ in
         services.sing-box-tunnels.exitTunnel =
           if exitInstances == { } then null else results.${lib.head (lib.attrNames exitInstances)}.exitTunnel;
 
-        environment.systemPackages = [ pkgs.sing-box ];
-
         users.users."sing-box" = {
           isSystemUser = true;
           group = "sing-box";
@@ -334,23 +429,67 @@ in
         };
         users.groups."sing-box" = { };
 
-        environment.variables = {
-          HTTP_PROXY = proxyUrl;
-          HTTPS_PROXY = proxyUrl;
-          NO_PROXY = noProxy;
-          http_proxy = proxyUrl;
-          https_proxy = proxyUrl;
-          no_proxy = noProxy;
+        environment = {
+          systemPackages = [ pkgs.sing-box ];
+
+          variables = {
+            HTTP_PROXY = proxyUrl;
+            HTTPS_PROXY = proxyUrl;
+            NO_PROXY = noProxy;
+            http_proxy = proxyUrl;
+            https_proxy = proxyUrl;
+            no_proxy = noProxy;
+          };
+
+          # Browser DoH bypasses the system resolver, so the fake addresses would never reach the browser.
+          # Firefox reads /etc/firefox/policies/policies.json, Google Chrome /etc/opt/chrome/policies/managed.
+          etc = lib.mkIf (tunInstances != { }) {
+            "firefox/policies/policies.json".text = builtins.toJSON {
+              policies.DNSOverHTTPS = {
+                Enabled = false;
+                Locked = true;
+              };
+            };
+            "opt/chrome/policies/managed/dns.json".text = builtins.toJSON { DnsOverHttpsMode = "off"; };
+          };
         };
+
+        # sing-box redirects each TCP connection to a listener on the link address; the firewall drops that input otherwise
+        networking.firewall.trustedInterfaces = map tunLink (lib.attrNames tunInstances);
 
         # A tunnel that fails to come up would otherwise only reach the journal.
         services.failure-notify.units = lib.concatMap (r: r.failureUnits) resultList;
 
-        systemd.services = lib.mkMerge (
-          [ (lib.mapAttrs' mkService instances) ] ++ map (r: r.services) resultList
-        );
+        systemd = {
+          services = lib.mkMerge ([ (lib.mapAttrs' mkService instances) ] ++ map (r: r.services) resultList);
 
-        systemd.timers = lib.mkMerge (map (r: r.timers) resultList);
+          timers = lib.mkMerge (map (r: r.timers) resultList);
+
+          network.netdevs = byLink (
+            name: _: {
+              netdevConfig = {
+                Kind = "tun";
+                Name = tunLink name;
+              };
+              tunConfig = {
+                User = "sing-box";
+                Group = "sing-box";
+              };
+            }
+          );
+
+          network.networks = byLink (
+            name: inst: {
+              matchConfig.Name = tunLink name;
+              address = [ inst.tun.address ];
+              routes = [ { Destination = inst.tun.fakeRange; } ];
+              dns = [ (tunDns inst.tun) ];
+              domains = map (d: "~${d}") inst.proxyDomains;
+              networkConfig.ConfigureWithoutCarrier = true;
+              linkConfig.RequiredForOnline = "no";
+            }
+          );
+        };
 
         # vless-<name>.age: link, subscription URL or vpn:// string; awg-<name>.age: AmneziaWG .conf or vpn:// string
         age.secrets = lib.mapAttrs' (

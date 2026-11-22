@@ -54,6 +54,47 @@ class BuildConfigTest(unittest.TestCase):
         self.assertNotIn("dns", config)
         self.assertNotIn("default_domain_resolver", config["route"])
 
+    def _tun_config(self, kind):
+        tun = {
+            "interface": "sbtun-x",
+            "address": "172.19.0.5/30",
+            "dnsAddress": "172.19.0.6",
+            "fakeRange": "198.19.0.0/16",
+        }
+        env = {**BASE, "SING_BOX_KIND": kind, "SING_BOX_TUN": json.dumps(tun)}
+        with tempfile.TemporaryDirectory() as tmp:
+            if kind == "vless":
+                link = "vless://11111111-2222-3333-4444-555555555555@h.example.test:443?type=tcp&security=tls"
+                (Path(tmp) / "k").write_text(link)
+                env.update({"CREDENTIALS_DIRECTORY": tmp, "SING_BOX_VLESS_CREDENTIAL": "k"})
+            else:
+                (Path(tmp) / "address").write_text("10.8.1.2\n")
+                env.update({"SING_BOX_AWG_INTERFACE": "awg0", "SING_BOX_AWG_ADDR_FILE": str(Path(tmp) / "address")})
+            return generate.build_config(env, DOMAINS)
+
+    def test_tun_adds_fakeip_for_the_domains_only(self):
+        config = self._tun_config("vless")
+        tun = next(i for i in config["inbounds"] if i["type"] == "tun")
+        self.assertFalse(tun["auto_route"])
+        self.assertNotIn("stack", tun)
+        self.assertEqual(tun["interface_name"], "sbtun-x")
+        self.assertEqual(tun["address"], ["172.19.0.5/30"])
+        self.assertEqual(tun["dns_address"], "172.19.0.6")
+        fake = [s for s in config["dns"]["servers"] if s["type"] == "fakeip"]
+        self.assertEqual(fake[0]["inet4_range"], "198.19.0.0/16")
+        self.assertEqual(config["dns"]["rules"][0]["inbound"], ["tun-in"])
+        self.assertEqual(config["dns"]["final"], "dns-local")
+        self.assertEqual(config["route"]["default_domain_resolver"], "dns-local")
+        self.assertEqual(config["route"]["rules"][1], {"protocol": "dns", "action": "hijack-dns"})
+        self.assertEqual(config["route"]["final"], "direct")
+        self.assertTrue(config["experimental"]["cache_file"]["store_fakeip"])
+
+    def test_tun_keeps_the_resolvers_of_the_kind(self):
+        config = self._tun_config("awg")
+        tags = [s["tag"] for s in config["dns"]["servers"]]
+        self.assertEqual(tags, ["dns-tunnel", "dns-local", "dns-fakeip"])
+        self.assertEqual(config["route"]["default_domain_resolver"], "dns-local")
+
     def test_kind_is_required(self):
         with self.assertRaises(SystemExit):
             generate.build_config(BASE, DOMAINS)
