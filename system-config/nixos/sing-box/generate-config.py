@@ -26,12 +26,45 @@ def build_config(env, domains):
     if kind not in KINDS:
         raise SystemExit(f"unknown SING_BOX_KIND {kind!r}")
     result = KINDS[kind].build(env)
+    tun = json.loads(env.get("SING_BOX_TUN") or "null")
     config = build_base_config(env, domains, result["outbound"])
     if result.get("dns") is not None:
         config["dns"] = result["dns"]
     if result.get("default_domain_resolver") is not None:
         config["route"]["default_domain_resolver"] = result["default_domain_resolver"]
+    if tun:
+        add_tun(config, tun, domains)
     return config
+
+
+def add_tun(config, tun, domains):
+    """TUN inbound with fake-IP for the proxied domains only."""
+    dns = config.setdefault("dns", {"servers": [{"type": "local", "tag": "dns-local"}], "final": "dns-local"})
+    config["route"].setdefault("default_domain_resolver", "dns-local")
+    dns["servers"].append({"type": "fakeip", "tag": "dns-fakeip", "inet4_range": tun["fakeRange"]})
+    # Only queries that arrive through the TUN get fake answers; the outbound's
+    # own lookups keep the kind's resolvers. First, so no rule of the kind
+    # shadows it.
+    dns.setdefault("rules", []).insert(
+        0, {"inbound": ["tun-in"], "domain_suffix": domains, "action": "route", "server": "dns-fakeip"}
+    )
+    config["inbounds"].append(
+        {
+            "type": "tun",
+            "tag": "tun-in",
+            "interface_name": tun["interface"],
+            "address": [tun["address"]],
+            "dns_address": tun["dnsAddress"],
+            "auto_route": False,
+        }
+    )
+    rules = config["route"]["rules"]
+    sniff = next((i for i, rule in enumerate(rules) if rule.get("action") == "sniff"), None)
+    if sniff is None:
+        raise SystemExit("the base config has no sniff rule to place hijack-dns after")
+    rules.insert(sniff + 1, {"protocol": "dns", "action": "hijack-dns"})
+    # a restart keeps the fake address of a name that a client still holds
+    config["experimental"] = {"cache_file": {"enabled": True, "store_fakeip": True}}
 
 
 def build_base_config(env, domains, proxy):
