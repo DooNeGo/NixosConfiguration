@@ -1,5 +1,6 @@
 # Recolours Kvantum's KvFlat (kvconfig and SVG) to the wallpaper palette; wallpaper/palettes.nix applies it with sed.
 # Greys of the SVG: the dark ones become surface steps, the light ones outline and text; the blues become the accent.
+s/#000\b/#{{colors.shadow.default.hex_stripped}}/Ig
 s/#000000/#{{colors.shadow.default.hex_stripped}}/Ig
 s/#1e1e1e/#{{colors.surface_container_lowest.default.hex_stripped}}/Ig
 s/#101010/#{{colors.surface_container_lowest.default.hex_stripped}}/Ig
