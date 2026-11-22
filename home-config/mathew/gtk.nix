@@ -42,7 +42,7 @@ in
 
     font = {
       name = style.fontFamily;
-      size = 11;
+      size = 13;
     };
 
     gtk3.extraCss = ''@import url("${palette}");'';

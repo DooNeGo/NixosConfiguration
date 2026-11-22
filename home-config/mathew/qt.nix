@@ -9,7 +9,7 @@
 let
   style = import ./style lib;
   # The font of the desktop in qtct's format: family, size, then the fixed Qt font fields.
-  font = ''"${style.fontFamily},11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"'';
+  font = ''"${style.fontFamily},13,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"'';
   qtct = {
     Appearance.style = "kvantum";
     Fonts = {

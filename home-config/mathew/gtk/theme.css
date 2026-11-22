@@ -18,10 +18,11 @@ menu,
   border: @glass_border_width@px solid alpha(@window_fg_color, @glass_border_alpha@);
 }
 
-/* Nemo: translucent fills over the blur Hyprland already draws behind a translucent window. The selection keeps the
-   accent fill, and the text stays opaque because only the background colours carry the alpha. */
+/* Nemo: the glass of the bar islands (one fill colour, a thin light border) over the blur Hyprland draws behind a
+   translucent window. The list is a little denser than the window and the sidebar. The selection keeps the accent
+   fill, and the text stays opaque because only the background colours carry the alpha. */
 window.background.nemo-window {
-  background-color: alpha(@window_bg_color, @glass_chrome_alpha@);
+  background-color: alpha(@glass_fill, @glass_chrome_alpha@);
 }
 
 .nemo-window .sidebar,
@@ -32,16 +33,41 @@ window.background.nemo-window {
 .nemo-window .primary-toolbar,
 .nemo-window headerbar,
 .nemo-window statusbar {
-  background-color: alpha(@sidebar_bg_color, @glass_chrome_alpha@);
+  background-color: transparent;
 }
 
 .nemo-window .view:not(:selected),
 .nemo-window iconview:not(:selected),
 .nemo-window treeview.view:not(:selected) {
-  background-color: alpha(@view_bg_color, @glass_view_alpha@);
+  background-color: alpha(@glass_fill, @glass_view_alpha@);
 }
 
-.nemo-window .sidebar row:selected,
-.nemo-window .view:selected {
+.nemo-window .sidebar,
+.nemo-window statusbar,
+.nemo-window .primary-toolbar {
+  border-color: alpha(@glass_border, @glass_border_alpha@);
+}
+
+/* Room: the rows, the buttons and the path bar are bigger than the adw-gtk3 default. */
+.nemo-window .sidebar row {
+  min-height: 34px;
+  padding: 0 @gap_inner@px;
+  margin: 1px @gap_inner@px;
   border-radius: @radius_inner@px;
+}
+
+.nemo-window .primary-toolbar button,
+.nemo-window toolbar button {
+  min-height: 34px;
+  min-width: 34px;
+  margin: @gap_inner@px 2px;
+}
+
+.nemo-window .view:selected,
+.nemo-window iconview:selected {
+  border-radius: @radius_inner@px;
+}
+
+.nemo-window statusbar {
+  min-height: 34px;
 }
