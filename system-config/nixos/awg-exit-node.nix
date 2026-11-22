@@ -12,6 +12,11 @@ let
   # routed inside the tailnet and only exit-node traffic reaches this rule.
   rulePriority = "5280";
 
+  # Between Tailscale's 5270 and the exit-node rule. The exit node answers DNS for its clients through
+  # resolved, which gives a proxied name a fake address; that traffic goes to sing-box (table main
+  # routes the range into its TUN), not into the tunnel.
+  fakeRulePriority = "5275";
+
   ip = "${pkgs.iproute2}/bin/ip";
   ts = config.services.tailscale.interfaceName;
 in
@@ -21,6 +26,16 @@ in
       iface = exit.interface;
       table = toString exit.table;
       rule = "iif ${ts} lookup ${table} priority ${rulePriority}";
+      fakeRules = map (
+        range: "iif ${ts} to ${range} lookup main priority ${fakeRulePriority}"
+      ) config.services.sing-box-tunnels.fakeRanges;
+      addRules = lib.concatMapStrings (r: ''
+        ${ip} -4 rule del ${r} 2>/dev/null || true
+                ${ip} -4 rule add ${r}
+      '') fakeRules;
+      delRules = lib.concatMapStrings (r: ''
+        ${ip} -4 rule del ${r} 2>/dev/null || true
+      '') fakeRules;
     in
     {
       assertions = [
@@ -47,11 +62,11 @@ in
         script = ''
           ${ip} -4 rule del ${rule} 2>/dev/null || true
           ${ip} -4 rule add ${rule}
-          ${ip} -4 route replace blackhole default metric 4000 table ${table}
+          ${addRules}${ip} -4 route replace blackhole default metric 4000 table ${table}
         '';
         preStop = ''
           ${ip} -4 rule del ${rule} 2>/dev/null || true
-          ${ip} -4 route del blackhole default metric 4000 table ${table} 2>/dev/null || true
+          ${delRules}${ip} -4 route del blackhole default metric 4000 table ${table} 2>/dev/null || true
         '';
       };
 

@@ -414,13 +414,28 @@ in
     description = "Interface and routing table of the tunnel that carries Tailscale exit-node traffic, or null.";
   };
 
+  options.services.sing-box-tunnels.fakeRanges = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    readOnly = true;
+    internal = true;
+    description = "Fake-IP ranges of the instances with a tun; the exit-node traffic to them must reach sing-box.";
+  };
+
   config = lib.mkMerge (
     [
       {
         assertions = commonAssertions;
 
-        services.sing-box-tunnels.exitTunnel =
-          if exitInstances == { } then null else results.${lib.head (lib.attrNames exitInstances)}.exitTunnel;
+        services = {
+          sing-box-tunnels = {
+            fakeRanges = map (t: t.fakeRange) tuns;
+            exitTunnel =
+              if exitInstances == { } then null else results.${lib.head (lib.attrNames exitInstances)}.exitTunnel;
+          };
+
+          # A tunnel that fails to come up would otherwise only reach the journal.
+          failure-notify.units = lib.concatMap (r: r.failureUnits) resultList;
+        };
 
         users.users."sing-box" = {
           isSystemUser = true;
@@ -456,9 +471,6 @@ in
 
         # sing-box redirects each TCP connection to a listener on the link address; the firewall drops that input otherwise
         networking.firewall.trustedInterfaces = map tunLink (lib.attrNames tunInstances);
-
-        # A tunnel that fails to come up would otherwise only reach the journal.
-        services.failure-notify.units = lib.concatMap (r: r.failureUnits) resultList;
 
         systemd = {
           services = lib.mkMerge ([ (lib.mapAttrs' mkService instances) ] ++ map (r: r.services) resultList);
