@@ -29,13 +29,10 @@ in
       fakeRules = map (
         range: "iif ${ts} to ${range} lookup main priority ${fakeRulePriority}"
       ) config.services.sing-box-tunnels.fakeRanges;
-      addRules = lib.concatMapStrings (r: ''
-        ${ip} -4 rule del ${r} 2>/dev/null || true
-                ${ip} -4 rule add ${r}
-      '') fakeRules;
-      delRules = lib.concatMapStrings (r: ''
-        ${ip} -4 rule del ${r} 2>/dev/null || true
-      '') fakeRules;
+      addRules = lib.concatMapStringsSep "\n" (
+        r: "${ip} -4 rule del ${r} 2>/dev/null || true\n${ip} -4 rule add ${r}"
+      ) fakeRules;
+      delRules = lib.concatMapStringsSep "\n" (r: "${ip} -4 rule del ${r} 2>/dev/null || true") fakeRules;
     in
     {
       assertions = [
@@ -62,11 +59,13 @@ in
         script = ''
           ${ip} -4 rule del ${rule} 2>/dev/null || true
           ${ip} -4 rule add ${rule}
-          ${addRules}${ip} -4 route replace blackhole default metric 4000 table ${table}
+          ${addRules}
+          ${ip} -4 route replace blackhole default metric 4000 table ${table}
         '';
         preStop = ''
           ${ip} -4 rule del ${rule} 2>/dev/null || true
-          ${delRules}${ip} -4 route del blackhole default metric 4000 table ${table} 2>/dev/null || true
+          ${delRules}
+          ${ip} -4 route del blackhole default metric 4000 table ${table} 2>/dev/null || true
         '';
       };
 
