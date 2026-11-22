@@ -1,6 +1,6 @@
 { pkgs, lib, ... }:
 let
-  dotnet = pkgs.dotnet-sdk_10;
+  dotnet = pkgs.dotnet-sdk_11;
   environment.DOTNET_ROOT = "${dotnet}/share/dotnet";
 in
 {
