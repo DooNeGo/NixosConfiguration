@@ -1,6 +1,7 @@
 { pkgs, ... }: {
+  environment.etc."sddm/hyprland.lua".source = ./sddm-hyprland.lua;
+
   environment.systemPackages = with pkgs; [
-    weston
     (pkgs.catppuccin-sddm.override {
       flavor = "mocha";
       accent = "mauve";
@@ -14,7 +15,7 @@
     sddm = {
       enable = true;
       wayland.enable = true;
-      settings.Wayland.CompositorCommand = "start-hyprland";
+      settings.Wayland.CompositorCommand = "start-hyprland -- -c /etc/sddm/hyprland.lua";
       theme = "catppuccin-mocha-mauve";
     };
   };
