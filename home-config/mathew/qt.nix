@@ -8,13 +8,13 @@
 }:
 let
   style = import ./style lib;
-  # The font of the desktop in qtct's format: family, size, then the fixed Qt font fields.
-  font = ''"${style.fontFamily},13,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"'';
+  # Fonts in qtct's format: family, size, then the fixed Qt font fields. The interface is proportional, as in GTK.
+  font = family: ''"${family},11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"'';
   qtct = {
     Appearance.style = "kvantum";
     Fonts = {
-      general = font;
-      fixed = font;
+      general = font "Sans";
+      fixed = font style.fontFamily;
     };
   };
   paletteDir = "${config.home.homeDirectory}/.local/state/wallpaper-palette";

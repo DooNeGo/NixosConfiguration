@@ -40,9 +40,11 @@ in
       name = "Paper-Mono-Dark";
     };
 
+    # Every GTK application takes this font, Chrome's interface included: a proportional one. Nemo gets the
+    # desktop font from gtk/theme.css.
     font = {
-      name = style.fontFamily;
-      size = 13;
+      name = "Sans";
+      size = 11;
     };
 
     gtk3.extraCss = ''@import url("${palette}");'';
