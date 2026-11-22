@@ -83,6 +83,9 @@ class BuildConfigTest(unittest.TestCase):
         fake = [s for s in config["dns"]["servers"] if s["type"] == "fakeip"]
         self.assertEqual(fake[0]["inet4_range"], "198.19.0.0/16")
         self.assertEqual(config["dns"]["rules"][0]["inbound"], ["tun-in"])
+        self.assertEqual(config["dns"]["rules"][0]["query_type"], ["A", "AAAA"])
+        self.assertEqual(config["dns"]["rules"][1]["action"], "predefined")
+        self.assertEqual(config["dns"]["rules"][1]["rcode"], "NOERROR")
         self.assertEqual(config["dns"]["final"], "dns-local")
         self.assertEqual(config["route"]["default_domain_resolver"], "dns-local")
         self.assertEqual(config["route"]["rules"][1], {"protocol": "dns", "action": "hijack-dns"})

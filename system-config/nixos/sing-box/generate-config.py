@@ -45,9 +45,17 @@ def add_tun(config, tun, domains):
     # Only queries that arrive through the TUN get fake answers; the outbound's
     # own lookups keep the kind's resolvers. First, so no rule of the kind
     # shadows it.
-    dns.setdefault("rules", []).insert(
-        0, {"inbound": ["tun-in"], "domain_suffix": domains, "action": "route", "server": "dns-fakeip"}
-    )
+    # Any other query type (HTTPS, SVCB, ...) gets an empty answer: the fakeip server only answers A and AAAA.
+    dns.setdefault("rules", [])[0:0] = [
+        {
+            "inbound": ["tun-in"],
+            "domain_suffix": domains,
+            "query_type": ["A", "AAAA"],
+            "action": "route",
+            "server": "dns-fakeip",
+        },
+        {"inbound": ["tun-in"], "domain_suffix": domains, "action": "predefined", "rcode": "NOERROR"},
+    ]
     config["inbounds"].append(
         {
             "type": "tun",
