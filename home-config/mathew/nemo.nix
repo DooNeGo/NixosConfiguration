@@ -13,9 +13,8 @@
       show-full-path-titles = true;
       sort-directories-first = true;
     };
-    # The icons and the list are one step larger than the default.
+    # The icons are one step larger than the default; the list keeps it.
     "org/nemo/icon-view".default-zoom-level = "large";
-    "org/nemo/list-view".default-zoom-level = "small";
     "org/nemo/window-state" = {
       start-with-menu-bar = false;
     };

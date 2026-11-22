@@ -1,4 +1,4 @@
-/* matugen-glass: adw-gtk3-dark (colours from the wallpaper palette, loaded by ~/.config/gtk-*/gtk.css) with the shapes of
+/* matugen-glass: adw-gtk3-dark (colours from the wallpaper palette, loaded by the user gtk.css of GTK 3 and 4) with the shapes of
    the desktop on top. The values come from style/ through the style tokens. */
 
 button,
@@ -50,7 +50,7 @@ window.background.nemo-window {
 
 /* Room: the rows, the buttons and the path bar are bigger than the adw-gtk3 default. */
 .nemo-window .sidebar row {
-  min-height: 34px;
+  min-height: 30px;
   padding: 0 @gap_inner@px;
   margin: 1px @gap_inner@px;
   border-radius: @radius_inner@px;
@@ -58,8 +58,8 @@ window.background.nemo-window {
 
 .nemo-window .primary-toolbar button,
 .nemo-window toolbar button {
-  min-height: 34px;
-  min-width: 34px;
+  min-height: 30px;
+  min-width: 30px;
   margin: @gap_inner@px 2px;
 }
 
@@ -69,5 +69,5 @@ window.background.nemo-window {
 }
 
 .nemo-window statusbar {
-  min-height: 34px;
+  min-height: 30px;
 }
