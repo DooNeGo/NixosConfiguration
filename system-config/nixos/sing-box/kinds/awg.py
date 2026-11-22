@@ -38,7 +38,7 @@ def build(env):
             {
                 "type": "udp",
                 "tag": "dns-tunnel",
-                "server": env.get("SING_BOX_TUNNEL_DNS", "1.1.1.1"),
+                "server": env.get("SING_BOX_AWG_TUNNEL_DNS", "1.1.1.1"),
                 "detour": "proxy",
             },
             {"type": "local", "tag": "dns-local"},

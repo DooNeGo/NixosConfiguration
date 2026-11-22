@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# Turn the server-issued AmneziaWG .conf or Amnezia vpn:// string (AWG_SOURCE_FILE,
+# Turn the server-issued AmneziaWG .conf or Amnezia vpn:// string (SING_BOX_AWG_SOURCE_FILE,
 # kept verbatim in agenix; a vpn:// string is decoded by SING_BOX_DECODE_VPN)
-# into the runtime config that awg-quick gets (AWG_OUT_FILE):
+# into the runtime config that awg-quick gets (SING_BOX_AWG_OUT_FILE):
 #   * DNS is dropped        -- awg-quick would make it the system resolver;
 #   * hooks are dropped     -- a third-party file must not run commands as root;
-#   * Table = AWG_TABLE     -- routes go to a private table, main stays intact;
+#   * Table = SING_BOX_AWG_TABLE     -- routes go to a private table, main stays intact;
 #   * Address: IPv4 only; AllowedIPs = 0.0.0.0/0 (the tunnel is IPv4-only).
-# The tunnel address is published to AWG_ADDR_FILE (not a secret) for the
+# The tunnel address is published to SING_BOX_AWG_ADDR_FILE (not a secret) for the
 # policy rule and for sing-box's inet4_bind_address.
 set -euo pipefail
 
-SRC="${AWG_SOURCE_FILE:?AWG_SOURCE_FILE is not set}"
-OUT="${AWG_OUT_FILE:?AWG_OUT_FILE is not set}"
-ADDR_OUT="${AWG_ADDR_FILE:?AWG_ADDR_FILE is not set}"
-TABLE="${AWG_TABLE:?AWG_TABLE is not set}"
+SRC="${SING_BOX_AWG_SOURCE_FILE:?SING_BOX_AWG_SOURCE_FILE is not set}"
+OUT="${SING_BOX_AWG_OUT_FILE:?SING_BOX_AWG_OUT_FILE is not set}"
+ADDR_OUT="${SING_BOX_AWG_ADDR_FILE:?SING_BOX_AWG_ADDR_FILE is not set}"
+TABLE="${SING_BOX_AWG_TABLE:?SING_BOX_AWG_TABLE is not set}"
 DECODER="${SING_BOX_DECODE_VPN:?SING_BOX_DECODE_VPN is not set}"
 
-die() { echo "prepare-awg: $*" >&2; exit 1; }
+die() { echo "awg-prepare: $*" >&2; exit 1; }
 
 [ -r "$SRC" ] || die "cannot read $SRC"
-case "$TABLE" in ''|*[!0-9]*) die "AWG_TABLE must be a number, got '$TABLE'" ;; esac
+case "$TABLE" in ''|*[!0-9]*) die "SING_BOX_AWG_TABLE must be a number, got '$TABLE'" ;; esac
 
 first=$(grep -m1 -v '^[[:space:]]*$' "$SRC" | tr -d '[:space:]' || true)
 case "$first" in
@@ -71,5 +71,5 @@ umask 022
 printf '%s\n' "$addr" > "${ADDR_OUT}.tmp"
 mv "${ADDR_OUT}.tmp" "$ADDR_OUT"            # 0644: read by the sing-box user
 
-echo "prepare-awg: ${OUT} written (address ${addr}, table ${TABLE})"
+echo "awg-prepare: ${OUT} written (address ${addr}, table ${TABLE})"
 

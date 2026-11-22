@@ -66,39 +66,11 @@ let
   # Instance that HTTP(S)_PROXY points at.
   systemProxy = "main";
 
-  # Must stay below Tailscale's policy rules (5210-5270).
-  awgRulePriority = 5000;
-
   python = "${pkgs.python3}/bin/python3";
-  ip = "${pkgs.iproute2}/bin/ip";
 
   decodeVpn = pkgs.writeTextFile {
     name = "sing-box-decode-vpn.py";
     text = builtins.readFile ./sing-box/decode-vpn.py;
-  };
-
-  resolveCredential = pkgs.writeShellApplication {
-    name = "sing-box-resolve-credential";
-    text = builtins.readFile ./sing-box/resolve-credential.sh;
-    runtimeInputs = with pkgs; [
-      curl
-      coreutils
-      gnused
-      gnugrep
-      python3
-    ];
-  };
-
-  prepareAwg = pkgs.writeShellApplication {
-    name = "sing-box-prepare-awg";
-    text = builtins.readFile ./sing-box/prepare-awg.sh;
-    runtimeInputs = with pkgs; [
-      coreutils
-      gnugrep
-      gnused
-      gawk
-      python3
-    ];
   };
 
   singBoxCmd =
@@ -113,15 +85,7 @@ let
   ports = lib.mapAttrsToList (_: i: i.listenPort) instances;
   allUnique = xs: lib.length (lib.unique xs) == lib.length xs;
 
-  shared = {
-    inherit
-      decodeVpn
-      resolveCredential
-      prepareAwg
-      ip
-      awgRulePriority
-      ;
-  };
+  shared = { inherit decodeVpn; };
 
   kindFiles = {
     awg = ./sing-box/kinds/awg.nix;

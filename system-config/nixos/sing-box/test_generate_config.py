@@ -48,7 +48,7 @@ class BuildConfigTest(unittest.TestCase):
         link = "vless://11111111-2222-3333-4444-555555555555@h.example.test:443?type=tcp&security=tls"
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "k").write_text(link)
-            env = {**BASE, "SING_BOX_KIND": "vless", "CREDENTIALS_DIRECTORY": tmp, "SING_BOX_CREDENTIAL": "k"}
+            env = {**BASE, "SING_BOX_KIND": "vless", "CREDENTIALS_DIRECTORY": tmp, "SING_BOX_VLESS_CREDENTIAL": "k"}
             config = generate.build_config(env, DOMAINS)
         self.assertEqual(config["outbounds"][0]["type"], "vless")
         self.assertNotIn("dns", config)
@@ -62,7 +62,7 @@ class BuildConfigTest(unittest.TestCase):
         link = "vless://11111111-2222-3333-4444-555555555555@h.example.test:443?type=tcp&security=tls"
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "k").write_text(link)
-            env = {**BASE, "SING_BOX_KIND": "vless", "CREDENTIALS_DIRECTORY": tmp, "SING_BOX_CREDENTIAL": "k"}
+            env = {**BASE, "SING_BOX_KIND": "vless", "CREDENTIALS_DIRECTORY": tmp, "SING_BOX_VLESS_CREDENTIAL": "k"}
             config = generate.build_config(env, DOMAINS)
         self.assertEqual(config["inbounds"][0]["listen_port"], 2081)
         self.assertEqual(config["route"]["rules"][1], {"domain": DOMAINS, "action": "route", "outbound": "proxy"})

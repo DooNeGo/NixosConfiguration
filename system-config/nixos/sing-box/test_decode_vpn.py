@@ -1,4 +1,4 @@
-"""Tests for decode-vpn.py and its use in prepare-awg.sh, with synthetic data and fake keys."""
+"""Tests for decode-vpn.py and its use in awg-prepare.sh and vless-fetch.sh, with synthetic data and fake keys."""
 
 import base64
 import json
@@ -17,8 +17,8 @@ from kinds import vless
 
 HERE = Path(__file__).resolve().parent
 DECODER = HERE / "decode-vpn.py"
-PREPARE = HERE / "prepare-awg.sh"
-RESOLVE = HERE / "resolve-credential.sh"
+PREPARE = HERE / "kinds" / "awg-prepare.sh"
+RESOLVE = HERE / "kinds" / "vless-fetch.sh"
 UUID = "11111111-2222-3333-4444-555555555555"
 PBK = "cHVibGljLXJlYWxpdHkta2V5LTAwMDAwMDAwMDAwMDA"
 SECRET = "c2VjcmV0LXByaXZhdGUta2V5LTAwMDAwMDAwMDAwMDAwMDAwMDA="
@@ -297,8 +297,8 @@ class ResolveCredentialTest(unittest.TestCase):
             (tmp / "credential").write_text(text)
             env = {
                 **os.environ,
-                "SING_BOX_CREDENTIAL_FILE": str(tmp / "credential"),
-                "SING_BOX_KEY_FILE": str(tmp / "key"),
+                "SING_BOX_VLESS_CREDENTIAL_FILE": str(tmp / "credential"),
+                "SING_BOX_VLESS_KEY_FILE": str(tmp / "key"),
                 "SING_BOX_DECODE_VPN": str(DECODER),
             }
             result = subprocess.run(["bash", str(RESOLVE)], env=env, capture_output=True, text=True, check=False)
@@ -365,10 +365,10 @@ class PrepareAwgTest(unittest.TestCase):
             (tmp / "source").write_text(source_text)
             env = {
                 **os.environ,
-                "AWG_SOURCE_FILE": str(tmp / "source"),
-                "AWG_OUT_FILE": str(tmp / "out.conf"),
-                "AWG_ADDR_FILE": str(tmp / "address"),
-                "AWG_TABLE": "51820",
+                "SING_BOX_AWG_SOURCE_FILE": str(tmp / "source"),
+                "SING_BOX_AWG_OUT_FILE": str(tmp / "out.conf"),
+                "SING_BOX_AWG_ADDR_FILE": str(tmp / "address"),
+                "SING_BOX_AWG_TABLE": "51820",
                 "SING_BOX_DECODE_VPN": str(DECODER),
             }
             result = subprocess.run(["bash", str(PREPARE)], env=env, capture_output=True, text=True, check=False)
