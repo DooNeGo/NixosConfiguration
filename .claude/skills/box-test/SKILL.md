@@ -1,6 +1,6 @@
 ---
 name: box-test
-description: "Run a change in the test box (a NixOS container or VM with the real system and home) when a build is not enough: session order, hyprlock, a user unit, a Home Manager module. Use before any run of `tools/box/box test` or `box up`, and for 'проверь в box', 'протестируй в контейнере', 'запусти box test', 'run it in the box'. For what the owner applied with a switch use post-switch-check."
+description: "Test a change in the box (NixOS container or VM) when a build is not enough: sessions, hyprlock, user units. For 'проверь в box', 'запусти box test'. After a switch: post-switch-check."
 ---
 
 # Test a change in the box
