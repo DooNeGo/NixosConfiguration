@@ -6,99 +6,138 @@
 }:
 
 let
-  # exitNode = true (kind "awg" only, at most one instance): the Tailscale exit
-  #                 node forwards into this instance's tunnel (awg-exit-node.nix).
-  # kind = "vless": credentialFile holds a vless:// link, a subscription URL or an
-  #                 Amnezia vpn:// string with an xray container;
-  #                 the -fetch oneshot + timer resolve it into runtimeKey.
-  # kind = "awg":   credentialFile holds the server-issued AmneziaWG .conf or an
-  #                 Amnezia vpn:// string, verbatim. The -awg-prepare oneshot
-  #                 normalises it, wg-quick brings up awg.interface with routes
-  #                 in awg.table, and sing-box binds its "proxy" outbound to
-  #                 that interface.
-  instances = {
-    main = {
-      kind = "awg";
-      exitNode = true;
-      listenAddress = "127.0.0.1";
-      listenPort = 2080;
-      credentialFile = "/etc/sing-box/main-awg.conf";
-      proxyDomains = [
-        "aistudio.google.com"
-        "gemini.google.com"
-        "googleapis.com"
-        "openai.com"
-        "chatgpt.com"
-        "muse.ai"
-        "jetbrains.com"
-        "swagger.io"
-        "anthropic.com"
-        "claude.ai"
-        "claude.com"
-        "bing.com"
-        "microsoft.com"
-      ];
-      routeMatch = "domain_suffix";
-      awg = {
-        interface = "awg0";
-        table = 51820;
-      };
-    };
+  # Instance definitions: the one attrset to edit. evalModules gives them the
+  # types and defaults below without making this module's config depend on itself.
+  instances =
+    (lib.evalModules {
+      modules = [
+        {
+          options.instances = lib.mkOption { type = lib.types.attrsOf (lib.types.submodule instanceModule); };
+        }
+        {
+          instances = {
+            main = {
+              kind = "awg";
+              exitNode = true;
+              listenAddress = "127.0.0.1";
+              listenPort = 2080;
+              credentialFile = "/etc/sing-box/main-awg.conf";
+              proxyDomains = [
+                "aistudio.google.com"
+                "gemini.google.com"
+                "googleapis.com"
+                "openai.com"
+                "chatgpt.com"
+                "muse.ai"
+                "jetbrains.com"
+                "swagger.io"
+                "anthropic.com"
+                "claude.ai"
+                "claude.com"
+                "bing.com"
+                "microsoft.com"
+              ];
+              routeMatch = "domain_suffix";
+              awg = {
+                interface = "awg0";
+                table = 51820;
+              };
+            };
 
-    credits = {
-      kind = "vless";
-      listenAddress = "127.0.0.1";
-      listenPort = 2081;
-      credentialFile = "/etc/sing-box/credits-credential";
-      runtimeKey = "/etc/sing-box/credits-key";
-      proxyDomains = [
-        "gitlab.credits.com"
-        "mobileapi-stage.credits.com"
-        "chats-stage.credits.com"
-        "web-wallet-stage.credits.com"
+            credits = {
+              kind = "vless";
+              listenAddress = "127.0.0.1";
+              listenPort = 2081;
+              credentialFile = "/etc/sing-box/credits-credential";
+              proxyDomains = [
+                "gitlab.credits.com"
+                "mobileapi-stage.credits.com"
+                "chats-stage.credits.com"
+                "web-wallet-stage.credits.com"
+              ];
+              routeMatch = "domain";
+              vless = {
+                runtimeKey = "/etc/sing-box/credits-key";
+                fetchIntervalSec = 21600;
+                onBootSec = "2min";
+              };
+            };
+          };
+        }
       ];
-      routeMatch = "domain";
-      fetchIntervalSec = 21600;
-      onBootSec = "2min";
-    };
-  };
+    }).config.instances;
 
   # Instance that HTTP(S)_PROXY points at.
   systemProxy = "main";
 
-  # Must stay below Tailscale's policy rules (5210-5270).
-  awgRulePriority = 5000;
+  instanceModule = {
+    options = {
+      kind = lib.mkOption {
+        type = lib.types.enum (lib.attrNames kindFiles);
+        description = "Tunnel kind: the file sing-box/kinds/<kind>.nix.";
+      };
+      listenAddress = lib.mkOption {
+        type = lib.types.str;
+        default = "127.0.0.1";
+      };
+      listenPort = lib.mkOption { type = lib.types.port; };
+      credentialFile = lib.mkOption {
+        type = lib.types.strMatching "/etc/.+";
+        description = "Where agenix delivers the credential: vless:// link, subscription URL, AmneziaWG .conf or Amnezia vpn:// string.";
+      };
+      proxyDomains = lib.mkOption { type = lib.types.nonEmptyListOf lib.types.str; };
+      routeMatch = lib.mkOption {
+        type = lib.types.enum [
+          "domain"
+          "domain_suffix"
+        ];
+      };
+      exitNode = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "The Tailscale exit node forwards into this instance's tunnel (kinds that own an interface; at most one instance).";
+      };
+      awg = lib.mkOption {
+        description = "Settings of kind awg: the interface and routing table that wg-quick brings up.";
+        default = { };
+        type = lib.types.submodule {
+          options = {
+            interface = lib.mkOption {
+              # kernel limit: interface names are at most 15 characters
+              type = lib.types.strMatching "[a-z][a-z0-9]{0,14}";
+            };
+            table = lib.mkOption {
+              # 0 and 253-255 are reserved, 52 is Tailscale's table
+              type = lib.types.ints.between 256 2147483647;
+            };
+          };
+        };
+      };
+      vless = lib.mkOption {
+        description = "Settings of kind vless: the -fetch oneshot that resolves the credential into runtimeKey.";
+        default = { };
+        type = lib.types.submodule {
+          options = {
+            runtimeKey = lib.mkOption { type = lib.types.strMatching "/etc/.+"; };
+            fetchIntervalSec = lib.mkOption {
+              type = lib.types.ints.positive;
+              default = 21600;
+            };
+            onBootSec = lib.mkOption {
+              type = lib.types.str;
+              default = "2min";
+            };
+          };
+        };
+      };
+    };
+  };
 
   python = "${pkgs.python3}/bin/python3";
-  ip = "${pkgs.iproute2}/bin/ip";
 
   decodeVpn = pkgs.writeTextFile {
     name = "sing-box-decode-vpn.py";
     text = builtins.readFile ./sing-box/decode-vpn.py;
-  };
-
-  resolveCredential = pkgs.writeShellApplication {
-    name = "sing-box-resolve-credential";
-    text = builtins.readFile ./sing-box/resolve-credential.sh;
-    runtimeInputs = with pkgs; [
-      curl
-      coreutils
-      gnused
-      gnugrep
-      python3
-    ];
-  };
-
-  prepareAwg = pkgs.writeShellApplication {
-    name = "sing-box-prepare-awg";
-    text = builtins.readFile ./sing-box/prepare-awg.sh;
-    runtimeInputs = with pkgs; [
-      coreutils
-      gnugrep
-      gnused
-      gawk
-      python3
-    ];
   };
 
   singBoxCmd =
@@ -113,15 +152,7 @@ let
   ports = lib.mapAttrsToList (_: i: i.listenPort) instances;
   allUnique = xs: lib.length (lib.unique xs) == lib.length xs;
 
-  shared = {
-    inherit
-      decodeVpn
-      resolveCredential
-      prepareAwg
-      ip
-      awgRulePriority
-      ;
-  };
+  shared = { inherit decodeVpn; };
 
   kindFiles = {
     awg = ./sing-box/kinds/awg.nix;
@@ -154,21 +185,16 @@ let
   kindResult =
     name: inst:
     let
-      result =
-        import
-          (kindFiles.${inst.kind}
-            or (throw "sing-box instance '${name}': unknown kind '${inst.kind}', expected one of ${toString (lib.attrNames kindFiles)}")
-          )
-          {
-            inherit
-              pkgs
-              lib
-              name
-              inst
-              shared
-              ;
-            secretFile = config.age.secrets."${inst.kind}-${name}".file;
-          };
+      result = import kindFiles.${inst.kind} {
+        inherit
+          pkgs
+          lib
+          name
+          inst
+          shared
+          ;
+        secretFile = config.age.secrets."${inst.kind}-${name}".file;
+      };
       unknown = lib.attrNames (builtins.removeAttrs result (lib.attrNames kindDefaults));
     in
     if unknown == [ ] then
@@ -235,72 +261,46 @@ let
       // kind.serviceConfig;
     };
 
-  exitInstances = lib.filterAttrs (_: i: i.exitNode or false) instances;
+  exitInstances = lib.filterAttrs (_: i: i.exitNode) instances;
 
   # Values a kind claims (interface, table) must differ between all instances.
   claims = lib.zipAttrsWith (_: lib.concatLists) (map (r: r.claims) resultList);
   unitNames = lib.concatMap (r: lib.attrNames r.services) resultList;
   timerNames = lib.concatMap (r: lib.attrNames r.timers) resultList;
 
-  commonAssertions =
-    let
-      each = pred: lib.filterAttrs (_: i: !pred i) instances;
-      bad = lib.attrNames;
-    in
-    [
-      {
-        assertion = allUnique ports;
-        message = "sing-box.nix: listenPort must differ between instances, got ${toString ports}";
-      }
-      {
-        assertion = allUnique (unitNames ++ map (n: "sing-box-${n}") (lib.attrNames instances));
-        message = "sing-box.nix: two instances define the same systemd unit";
-      }
-      {
-        assertion = allUnique timerNames;
-        message = "sing-box.nix: two instances define the same systemd timer";
-      }
-      {
-        assertion = lib.all (n: (builtins.match "[a-z][a-z0-9_-]*" n) != null) (lib.attrNames instances);
-        message = "sing-box.nix: instance names must match [a-z][a-z0-9_-]*, got ${toString (lib.attrNames instances)}";
-      }
-      {
-        assertion = each (i: i.proxyDomains != [ ]) == { };
-        message = "sing-box.nix: proxyDomains is empty in ${
-          toString (bad (each (i: i.proxyDomains != [ ])))
-        }";
-      }
-      {
-        assertion =
-          each (
-            i:
-            builtins.elem i.routeMatch [
-              "domain"
-              "domain_suffix"
-            ]
-          ) == { };
-        message = "sing-box.nix: routeMatch must be domain or domain_suffix";
-      }
-      {
-        assertion = each (i: lib.hasPrefix "/etc/" i.credentialFile) == { };
-        message = "sing-box.nix: credentialFile must be under /etc/";
-      }
-      {
-        assertion = lib.length (lib.attrNames exitInstances) <= 1;
-        message = "sing-box.nix: at most one instance may set exitNode, got ${toString (lib.attrNames exitInstances)}";
-      }
-      {
-        assertion = lib.all (n: results.${n}.exitTunnel != null) (lib.attrNames exitInstances);
-        message = "sing-box.nix: exitNode is set on an instance whose kind owns no kernel interface: ${
-          toString (lib.attrNames (lib.filterAttrs (n: _: results.${n}.exitTunnel == null) exitInstances))
-        }";
-      }
-    ]
-    ++ lib.mapAttrsToList (claim: values: {
-      assertion = allUnique values;
-      message = "sing-box.nix: ${claim} must differ between instances, got ${toString values}";
-    }) claims
-    ++ lib.concatMap (r: r.assertions) resultList;
+  commonAssertions = [
+    {
+      assertion = allUnique ports;
+      message = "sing-box.nix: listenPort must differ between instances, got ${toString ports}";
+    }
+    {
+      assertion = allUnique (unitNames ++ map (n: "sing-box-${n}") (lib.attrNames instances));
+      message = "sing-box.nix: two instances define the same systemd unit";
+    }
+    {
+      assertion = allUnique timerNames;
+      message = "sing-box.nix: two instances define the same systemd timer";
+    }
+    {
+      assertion = lib.all (n: (builtins.match "[a-z][a-z0-9_-]*" n) != null) (lib.attrNames instances);
+      message = "sing-box.nix: instance names must match [a-z][a-z0-9_-]*, got ${toString (lib.attrNames instances)}";
+    }
+    {
+      assertion = lib.length (lib.attrNames exitInstances) <= 1;
+      message = "sing-box.nix: at most one instance may set exitNode, got ${toString (lib.attrNames exitInstances)}";
+    }
+    {
+      assertion = lib.all (n: results.${n}.exitTunnel != null) (lib.attrNames exitInstances);
+      message = "sing-box.nix: exitNode is set on an instance whose kind owns no kernel interface: ${
+        toString (lib.attrNames (lib.filterAttrs (n: _: results.${n}.exitTunnel == null) exitInstances))
+      }";
+    }
+  ]
+  ++ lib.mapAttrsToList (claim: values: {
+    assertion = allUnique values;
+    message = "sing-box.nix: ${claim} must differ between instances, got ${toString values}";
+  }) claims
+  ++ lib.concatMap (r: r.assertions) resultList;
 in
 {
   options.services.sing-box-tunnels.exitTunnel = lib.mkOption {

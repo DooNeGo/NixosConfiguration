@@ -25,7 +25,7 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(result["dns"]["servers"][0]["server"], "1.1.1.1")
 
     def test_tunnel_dns_override(self):
-        result = self.build("10.8.1.2", SING_BOX_TUNNEL_DNS="9.9.9.9")
+        result = self.build("10.8.1.2", SING_BOX_AWG_TUNNEL_DNS="9.9.9.9")
         self.assertEqual(result["dns"]["servers"][0]["server"], "9.9.9.9")
 
     def test_refusals(self):

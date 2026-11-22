@@ -54,7 +54,7 @@ class BuildTest(unittest.TestCase):
     def build(self, text):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "k-key").write_text(text + "\n")
-            return vless.build({"CREDENTIALS_DIRECTORY": tmp, "SING_BOX_CREDENTIAL": "k-key"})
+            return vless.build({"CREDENTIALS_DIRECTORY": tmp, "SING_BOX_VLESS_CREDENTIAL": "k-key"})
 
     def test_result_shape(self):
         result = self.build(REALITY)

@@ -5,10 +5,13 @@ awg      print the AmneziaWG .conf text of the selected container
 xray     print one vless:// link for the selected xray container (tcp + reality only)
 inspect  print key paths and value types of the decoded data, never values
 
+--passthrough: input that does not start with vpn:// is copied to stdout unchanged.
+
 Exit codes: 0 ok, 1 bad data, 2 bad usage. Messages never repeat input values.
 """
 
 import base64
+import io
 import json
 import re
 import struct
@@ -250,9 +253,16 @@ def run(mode, text):
 
 
 def main(argv):
-    if len(argv) != 1 or argv[0] not in MODES:
-        print(f"usage: decode-vpn.py {{{'|'.join(MODES)}}} < vpn-string", file=sys.stderr)
+    passthrough = argv[1:] == ["--passthrough"]
+    if not argv or argv[0] not in MODES or (argv[1:] and not passthrough):
+        print(f"usage: decode-vpn.py {{{'|'.join(MODES)}}} [--passthrough] < vpn-string", file=sys.stderr)
         return 2
+    if passthrough:
+        raw = sys.stdin.buffer.read()
+        if not raw.lstrip().startswith(b"vpn://"):
+            sys.stdout.buffer.write(raw)
+            return 0
+        sys.stdin = io.StringIO(raw.decode("utf-8", "replace"))
     text = sys.stdin.read(MAX_INPUT + 1)
     if len(text) > MAX_INPUT:
         print("decode-vpn: input is too large", file=sys.stderr)

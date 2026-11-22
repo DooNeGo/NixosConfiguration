@@ -58,15 +58,15 @@ def q(params, name, default=None):
 
 def read_vless(env):
     """The runtime key must already be a raw vless:// link (the -fetch oneshot
-    guarantees this -- see resolve-credential.sh). No network, no decoding here."""
+    guarantees this -- see vless-fetch.sh). No network, no decoding here."""
     secret_file = os.path.join(
         env.get("CREDENTIALS_DIRECTORY", "/run/credentials/sing-box.service"),
-        env.get("SING_BOX_CREDENTIAL", "vless-key"),
+        env.get("SING_BOX_VLESS_CREDENTIAL", "vless-key"),
     )
     with open(secret_file, encoding="utf-8") as fh:
         raw = fh.read().strip()
     if not raw.startswith("vless://"):
-        unit = "sing-box-" + env.get("SING_BOX_CREDENTIAL", "vless-key").removesuffix("-key") + "-fetch"
+        unit = "sing-box-" + env.get("SING_BOX_VLESS_CREDENTIAL", "vless-key").removesuffix("-key") + "-fetch"
         raise SystemExit(
             "credential is not a vless:// link; the -fetch oneshot failed or the "
             f"agenix secret holds an un-fetched https:// URL - run systemctl start {unit} first"
@@ -135,5 +135,5 @@ def build_outbound(vless, transport_override=""):
 
 
 def build(env):
-    outbound = build_outbound(read_vless(env), env.get("SING_BOX_TRANSPORT_OVERRIDE", ""))
+    outbound = build_outbound(read_vless(env), env.get("SING_BOX_VLESS_TRANSPORT_OVERRIDE", ""))
     return {"outbound": outbound, "dns": None, "default_domain_resolver": None}

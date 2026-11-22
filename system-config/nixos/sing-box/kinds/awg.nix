@@ -3,6 +3,7 @@
 # wg-quick brings up awg.interface with routes in awg.table, and sing-box binds
 # its "proxy" outbound to that interface.
 {
+  pkgs,
   name,
   inst,
   secretFile,
@@ -12,7 +13,22 @@
 
 let
   inherit (inst.awg) interface table;
-  inherit (shared) ip;
+  ip = "${pkgs.iproute2}/bin/ip";
+
+  prepareAwg = pkgs.writeShellApplication {
+    name = "sing-box-awg-prepare";
+    text = builtins.readFile ./awg-prepare.sh;
+    runtimeInputs = with pkgs; [
+      coreutils
+      gnugrep
+      gnused
+      gawk
+      python3
+    ];
+  };
+
+  # Must stay below Tailscale's policy rules (5210-5270).
+  rulePriority = "5000";
 
   prepare = "sing-box-${name}-awg-prepare";
   wgUnit = "wg-quick-${interface}";
@@ -23,7 +39,6 @@ let
   addrFile = "${runDir}/address"; # 0644, tunnel IPv4
 
   tableStr = toString table;
-  prio = toString shared.awgRulePriority;
 in
 {
   services = {
@@ -33,10 +48,10 @@ in
       before = [ "${wgUnit}.service" ];
       restartTriggers = [ secretFile ];
       environment = {
-        AWG_SOURCE_FILE = inst.credentialFile;
-        AWG_OUT_FILE = confFile;
-        AWG_ADDR_FILE = addrFile;
-        AWG_TABLE = tableStr;
+        SING_BOX_AWG_SOURCE_FILE = inst.credentialFile;
+        SING_BOX_AWG_OUT_FILE = confFile;
+        SING_BOX_AWG_ADDR_FILE = addrFile;
+        SING_BOX_AWG_TABLE = tableStr;
         SING_BOX_DECODE_VPN = "${shared.decodeVpn}";
       };
       serviceConfig = {
@@ -51,7 +66,7 @@ in
         RuntimeDirectory = "sing-box-awg-${interface}";
         RuntimeDirectoryMode = "0755";
         RuntimeDirectoryPreserve = "yes";
-        ExecStart = "${shared.prepareAwg}/bin/sing-box-prepare-awg";
+        ExecStart = "${prepareAwg}/bin/sing-box-awg-prepare";
       };
     };
 
@@ -63,12 +78,12 @@ in
       restartTriggers = [ secretFile ];
       postStart = ''
         addr=$(cat ${addrFile})
-        ${ip} -4 rule del from "$addr" lookup ${tableStr} priority ${prio} 2>/dev/null || true
-        ${ip} -4 rule add from "$addr" lookup ${tableStr} priority ${prio}
+        ${ip} -4 rule del from "$addr" lookup ${tableStr} priority ${rulePriority} 2>/dev/null || true
+        ${ip} -4 rule add from "$addr" lookup ${tableStr} priority ${rulePriority}
       '';
       postStop = ''
         if [ -r ${addrFile} ]; then
-          ${ip} -4 rule del from "$(cat ${addrFile})" lookup ${tableStr} priority ${prio} 2>/dev/null || true
+          ${ip} -4 rule del from "$(cat ${addrFile})" lookup ${tableStr} priority ${rulePriority} 2>/dev/null || true
         fi
       '';
     };
@@ -104,17 +119,4 @@ in
     interface = [ interface ];
     table = [ table ];
   };
-
-  assertions = [
-    {
-      # kernel limit: interface names are at most 15 characters
-      assertion = builtins.match "[a-z][a-z0-9]{0,14}" interface != null;
-      message = "sing-box instance '${name}': awg.interface '${interface}' must match [a-z][a-z0-9]{0,14}";
-    }
-    {
-      # 0 and 253-255 are reserved, 52 is Tailscale's table
-      assertion = builtins.isInt table && table > 255;
-      message = "sing-box instance '${name}': awg.table must be an integer above 255";
-    }
-  ];
 }
