@@ -8,8 +8,7 @@ let
     platformVersions = [
       "29"
       "33"
-      "36"
-      "37.2"
+      "37"
     ];
     buildToolsVersions = [ "latest" ];
     abiVersions = [ "x86_64" ];
