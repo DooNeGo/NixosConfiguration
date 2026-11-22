@@ -17,6 +17,10 @@ Home Manager writes `~/.config/hypr/hyprland.lua` with one `require("hyprland.<n
 
 A file is added in `hyprland.nix` and, if it is new, with `git add -N`.
 
+## Login screen
+
+SDDM runs its greeter under the same Hyprland (`sddm.nix`, `start-hyprland -- -c /etc/sddm/hyprland.lua`) with its own config `system-config/nixos/sddm-hyprland.lua`. Without a config the greeter's Hyprland drew its "config missing" banner and the default wallpaper, and showed them for about a second after the login. The monitor mode and the layouts are copied from `monitors.lua` and `layouts.nix` (another flake), so change them together. The theme is still catppuccin; the look of `style/` is not applied to it.
+
 ## Look
 
 - Gaps 5/10, rounding 15 (the bar islands use 20), blur 4x3, inactive windows at 0.85 opacity. The window shadow is light and very soft, without offset: range 40, render power 2, black at alpha 0.2 when focused and 0.1 when not. It tells the window edge better than a border did, and an offset shadow drew a lobe under the window; the values are tuned by eye.
