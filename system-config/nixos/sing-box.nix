@@ -69,9 +69,6 @@ let
   # Must stay below Tailscale's policy rules (5210-5270).
   awgRulePriority = 5000;
 
-  vlessInstances = lib.filterAttrs (_: i: i.kind == "vless") instances;
-  awgInstances = lib.filterAttrs (_: i: i.kind == "awg") instances;
-
   python = "${pkgs.python3}/bin/python3";
   ip = "${pkgs.iproute2}/bin/ip";
 
@@ -109,42 +106,74 @@ let
     ];
   };
 
-  # Runtime files of one AWG interface (written by the -awg-prepare oneshot).
-  awgRunDir = inst: "/run/sing-box-awg-${inst.awg.interface}";
-  awgConfFile = inst: "${awgRunDir inst}/${inst.awg.interface}.conf"; # 0600 root
-  awgAddrFile = inst: "${awgRunDir inst}/address"; # 0644, tunnel IPv4
-  awgUnit = inst: "wg-quick-${inst.awg.interface}.service";
-  awgSecret = name: config.age.secrets."awg-${name}".file;
-
   singBoxCmd =
     name:
     "${pkgs.sing-box}/bin/sing-box -D /var/lib/sing-box/${name} -C /etc/sing-box -c /run/sing-box/${name}/config.json";
 
-  proxyInst = instances.${systemProxy};
+  proxyInst =
+    instances.${systemProxy} or (throw "sing-box.nix: systemProxy '${systemProxy}' is not an instance");
   proxyUrl = "http://${proxyInst.listenAddress}:${toString proxyInst.listenPort}";
   noProxy = "localhost,127.0.0.1,::1,100.64.0.0/10,.ts.net,192.168.0.0/16,10.0.0.0/8";
 
   ports = lib.mapAttrsToList (_: i: i.listenPort) instances;
-  awgIfaces = lib.mapAttrsToList (_: i: i.awg.interface) awgInstances;
-  awgTables = lib.mapAttrsToList (_: i: i.awg.table) awgInstances;
   allUnique = xs: lib.length (lib.unique xs) == lib.length xs;
+
+  shared = {
+    inherit
+      decodeVpn
+      resolveCredential
+      prepareAwg
+      ip
+      awgRulePriority
+      ;
+  };
+
+  kindFiles = {
+    awg = ./sing-box/kinds/awg.nix;
+    vless = ./sing-box/kinds/vless.nix;
+  };
+
+  kindDefaults = {
+    services = { };
+    timers = { };
+    extraConfig = { };
+    deps = [ ];
+    restartTriggers = [ ];
+    environment = { };
+    serviceConfig = { };
+    failureUnits = [ ];
+    exitTunnel = null;
+    claims = { };
+    assertions = [ ];
+  };
+
+  kindResult =
+    name: inst:
+    kindDefaults
+    //
+      import
+        (kindFiles.${inst.kind}
+          or (throw "sing-box instance '${name}': unknown kind '${inst.kind}', expected one of ${toString (lib.attrNames kindFiles)}")
+        )
+        {
+          inherit
+            pkgs
+            lib
+            name
+            inst
+            shared
+            ;
+          secretFile = config.age.secrets."${inst.kind}-${name}".file;
+        };
+
+  results = lib.mapAttrs kindResult instances;
+  resultList = lib.attrValues results;
 
   mkService =
     name: inst:
     let
-      isAwg = inst.kind == "awg";
-      deps = [
-        "network-online.target"
-      ]
-      ++ (
-        if isAwg then
-          [
-            "sing-box-${name}-awg-prepare.service"
-            (awgUnit inst)
-          ]
-        else
-          [ "sing-box-${name}-fetch.service" ]
-      );
+      kind = results.${name};
+      deps = [ "network-online.target" ] ++ kind.deps;
     in
     lib.nameValuePair "sing-box-${name}" {
       description = "sing-box instance '${name}' [${inst.kind}] (${toString (builtins.length inst.proxyDomains)} domains -> port ${toString inst.listenPort})";
@@ -153,8 +182,7 @@ let
       wants = deps;
       after = deps;
       wantedBy = [ "multi-user.target" ];
-      # the generator bakes the tunnel address into config.json
-      restartTriggers = lib.optional isAwg (awgSecret name);
+      inherit (kind) restartTriggers;
       environment = {
         SING_BOX_KIND = inst.kind;
         SING_BOX_OUT_FILE = "/run/sing-box/${name}/config.json";
@@ -163,18 +191,7 @@ let
         SING_BOX_PROXY_DOMAINS = builtins.toJSON inst.proxyDomains;
         SING_BOX_ROUTE_MATCH = inst.routeMatch;
       }
-      // (
-        if isAwg then
-          {
-            SING_BOX_AWG_INTERFACE = inst.awg.interface;
-            SING_BOX_AWG_ADDR_FILE = awgAddrFile inst;
-          }
-        else
-          {
-            SING_BOX_CREDENTIAL = "${name}-key";
-            SING_BOX_TRANSPORT_OVERRIDE = "";
-          }
-      );
+      // kind.environment;
       serviceConfig = {
         Type = "simple";
         User = "sing-box";
@@ -205,116 +222,71 @@ let
           "AF_NETLINK"
         ];
       }
-      // lib.optionalAttrs (!isAwg) {
-        LoadCredential = "${name}-key:${inst.runtimeKey}";
-      };
+      // kind.serviceConfig;
     };
 
-  mkFetch =
-    name: inst:
-    lib.nameValuePair "sing-box-${name}-fetch" {
-      description = "Resolve sing-box credential for instance '${name}' into the runtime key";
-      wantedBy = [ "multi-user.target" ];
-      wants = [ "network-online.target" ];
-      after = [ "network-online.target" ];
-      environment = {
-        SING_BOX_CREDENTIAL_FILE = inst.credentialFile;
-        SING_BOX_KEY_FILE = inst.runtimeKey;
-        SING_BOX_DECODE_VPN = "${decodeVpn}";
-      };
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = "yes";
-        ExecStart = "${resolveCredential}/bin/sing-box-resolve-credential";
-      };
-    };
-
-  mkAwgPrepare =
-    name: inst:
-    lib.nameValuePair "sing-box-${name}-awg-prepare" {
-      description = "Normalise the AmneziaWG config of sing-box instance '${name}' for ${inst.awg.interface}";
-      requiredBy = [ (awgUnit inst) ];
-      before = [ (awgUnit inst) ];
-      restartTriggers = [ (awgSecret name) ];
-      environment = {
-        AWG_SOURCE_FILE = inst.credentialFile;
-        AWG_OUT_FILE = awgConfFile inst;
-        AWG_ADDR_FILE = awgAddrFile inst;
-        AWG_TABLE = toString inst.awg.table;
-        SING_BOX_DECODE_VPN = "${decodeVpn}";
-      };
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = "yes";
-        # parses an untrusted string as root, needs no network and writes only its RuntimeDirectory
-        NoNewPrivileges = true;
-        PrivateTmp = true;
-        PrivateNetwork = true;
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        RuntimeDirectory = "sing-box-awg-${inst.awg.interface}";
-        RuntimeDirectoryMode = "0755";
-        RuntimeDirectoryPreserve = "yes";
-        ExecStart = "${prepareAwg}/bin/sing-box-prepare-awg";
-      };
-    };
-
-  # Extends the unit generated by networking.wg-quick: ordering plus the
-  # policy rule that sends packets sourced from the tunnel address to awg.table.
-  mkAwgIface =
-    name: inst:
-    let
-      prepare = "sing-box-${name}-awg-prepare.service";
-      table = toString inst.awg.table;
-      prio = toString awgRulePriority;
-      addrFile = awgAddrFile inst;
-    in
-    lib.nameValuePair "wg-quick-${inst.awg.interface}" {
-      requires = [ prepare ];
-      after = [ prepare ];
-      restartTriggers = [ (awgSecret name) ];
-      postStart = ''
-        addr=$(cat ${addrFile})
-        ${ip} -4 rule del from "$addr" lookup ${table} priority ${prio} 2>/dev/null || true
-        ${ip} -4 rule add from "$addr" lookup ${table} priority ${prio}
-      '';
-      postStop = ''
-        if [ -r ${addrFile} ]; then
-          ${ip} -4 rule del from "$(cat ${addrFile})" lookup ${table} priority ${prio} 2>/dev/null || true
-        fi
-      '';
-    };
-  # A new tunnel kind that owns a kernel interface joins by adding a branch to tunnelOf.
-  exitCapableKinds = [ "awg" ];
   exitInstances = lib.filterAttrs (_: i: i.exitNode or false) instances;
-  tunnelOf = inst: if inst.kind == "awg" then { inherit (inst.awg) interface table; } else null;
+
+  # Values a kind claims (interface, table) must differ between all instances.
+  claims = lib.zipAttrsWith (_: lib.concatLists) (map (r: r.claims) resultList);
+  unitNames = lib.concatMap (r: lib.attrNames r.services) resultList;
+
+  commonAssertions =
+    let
+      each = pred: lib.filterAttrs (_: i: !pred i) instances;
+      bad = lib.attrNames;
+    in
+    [
+      {
+        assertion = allUnique ports;
+        message = "sing-box.nix: listenPort must differ between instances, got ${toString ports}";
+      }
+      {
+        assertion = allUnique (unitNames ++ map (n: "sing-box-${n}") (lib.attrNames instances));
+        message = "sing-box.nix: two instances define the same systemd unit";
+      }
+      {
+        assertion = lib.all (n: (builtins.match "[a-z][a-z0-9_-]*" n) != null) (lib.attrNames instances);
+        message = "sing-box.nix: instance names must match [a-z][a-z0-9_-]*, got ${toString (lib.attrNames instances)}";
+      }
+      {
+        assertion = each (i: i.proxyDomains != [ ]) == { };
+        message = "sing-box.nix: proxyDomains is empty in ${
+          toString (bad (each (i: i.proxyDomains != [ ])))
+        }";
+      }
+      {
+        assertion =
+          each (
+            i:
+            builtins.elem i.routeMatch [
+              "domain"
+              "domain_suffix"
+            ]
+          ) == { };
+        message = "sing-box.nix: routeMatch must be domain or domain_suffix";
+      }
+      {
+        assertion = each (i: lib.hasPrefix "/etc/" i.credentialFile) == { };
+        message = "sing-box.nix: credentialFile must be under /etc/";
+      }
+      {
+        assertion = lib.length (lib.attrNames exitInstances) <= 1;
+        message = "sing-box.nix: at most one instance may set exitNode, got ${toString (lib.attrNames exitInstances)}";
+      }
+      {
+        assertion = lib.all (n: results.${n}.exitTunnel != null) (lib.attrNames exitInstances);
+        message = "sing-box.nix: exitNode is set on an instance whose kind owns no kernel interface: ${
+          toString (lib.attrNames (lib.filterAttrs (n: _: results.${n}.exitTunnel == null) exitInstances))
+        }";
+      }
+    ]
+    ++ lib.mapAttrsToList (claim: values: {
+      assertion = allUnique values;
+      message = "sing-box.nix: ${claim} must differ between instances, got ${toString values}";
+    }) claims
+    ++ lib.concatMap (r: r.assertions) resultList;
 in
-assert allUnique ports;
-assert lib.all (i: i.proxyDomains != [ ]) (lib.attrValues instances);
-assert lib.all (n: (builtins.match "[a-z][a-z0-9_-]*" n) != null) (lib.attrNames instances);
-assert lib.all (
-  i:
-  builtins.elem i.routeMatch [
-    "domain"
-    "domain_suffix"
-  ]
-) (lib.attrValues instances);
-assert lib.all (
-  i:
-  builtins.elem i.kind [
-    "vless"
-    "awg"
-  ]
-) (lib.attrValues instances);
-assert lib.all (i: lib.hasPrefix "/etc/" i.credentialFile) (lib.attrValues instances);
-assert lib.all (i: lib.hasPrefix "/etc/" i.runtimeKey) (lib.attrValues vlessInstances);
-assert builtins.hasAttr systemProxy instances;
-# kernel limit: interface names are at most 15 characters
-assert lib.all (n: (builtins.match "[a-z][a-z0-9]{0,14}" n) != null) awgIfaces;
-assert allUnique awgIfaces;
-# 0 and 253-255 are reserved, 52 is Tailscale's table
-assert lib.all (t: builtins.isInt t && t > 255) awgTables;
-assert allUnique awgTables;
 {
   options.services.sing-box-tunnels.exitTunnel = lib.mkOption {
     type = lib.types.nullOr (
@@ -330,81 +302,53 @@ assert allUnique awgTables;
     description = "Interface and routing table of the tunnel that carries Tailscale exit-node traffic, or null.";
   };
 
-  config = {
-    assertions = [
+  config = lib.mkMerge (
+    [
       {
-        assertion = lib.length (lib.attrNames exitInstances) <= 1;
-        message = "sing-box.nix: at most one instance may set exitNode, got ${toString (lib.attrNames exitInstances)}";
-      }
-      {
-        assertion = lib.all (i: lib.elem i.kind exitCapableKinds) (lib.attrValues exitInstances);
-        message = "sing-box.nix: exitNode is only supported for the kinds ${toString exitCapableKinds}";
-      }
-    ];
+        assertions = commonAssertions;
 
-    services.sing-box-tunnels.exitTunnel =
-      if exitInstances == { } then null else tunnelOf (lib.head (lib.attrValues exitInstances));
+        services.sing-box-tunnels.exitTunnel =
+          if exitInstances == { } then null else results.${lib.head (lib.attrNames exitInstances)}.exitTunnel;
 
-    environment.systemPackages = [ pkgs.sing-box ];
+        environment.systemPackages = [ pkgs.sing-box ];
 
-    users.users."sing-box" = {
-      isSystemUser = true;
-      group = "sing-box";
-      home = "/var/lib/sing-box";
-    };
-    users.groups."sing-box" = { };
-
-    environment.variables = {
-      HTTP_PROXY = proxyUrl;
-      HTTPS_PROXY = proxyUrl;
-      NO_PROXY = noProxy;
-      http_proxy = proxyUrl;
-      https_proxy = proxyUrl;
-      no_proxy = noProxy;
-    };
-
-    # A tunnel that fails to come up would otherwise only reach the journal.
-    services.failure-notify.units =
-      map (iface: "wg-quick-${iface}") awgIfaces
-      ++ lib.mapAttrsToList (name: _: "sing-box-${name}-awg-prepare") awgInstances;
-
-    # type = "amneziawg" pulls in the kernel module and amneziawg-tools.
-    networking.wg-quick.interfaces = lib.mapAttrs' (
-      _: inst:
-      lib.nameValuePair inst.awg.interface {
-        type = "amneziawg";
-        configFile = awgConfFile inst;
-      }
-    ) awgInstances;
-
-    systemd.services = lib.listToAttrs (
-      lib.mapAttrsToList mkService instances
-      ++ lib.mapAttrsToList mkFetch vlessInstances
-      ++ lib.mapAttrsToList mkAwgPrepare awgInstances
-      ++ lib.mapAttrsToList mkAwgIface awgInstances
-    );
-
-    systemd.timers = lib.mapAttrs' (
-      name: inst:
-      lib.nameValuePair "sing-box-${name}-fetch" {
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnBootSec = inst.onBootSec;
-          OnUnitActiveSec = toString inst.fetchIntervalSec;
-          Unit = "sing-box-${name}-fetch.service";
+        users.users."sing-box" = {
+          isSystemUser = true;
+          group = "sing-box";
+          home = "/var/lib/sing-box";
         };
-      }
-    ) vlessInstances;
+        users.groups."sing-box" = { };
 
-    # vless-<name>.age: link, subscription URL or vpn:// string; awg-<name>.age: AmneziaWG .conf or vpn:// string
-    age.secrets = lib.mapAttrs' (
-      name: inst:
-      lib.nameValuePair "${inst.kind}-${name}" {
-        enable = true;
-        mode = "0600";
-        file = ../../secrets/${inst.kind}-${name}.age;
-        path = inst.credentialFile;
+        environment.variables = {
+          HTTP_PROXY = proxyUrl;
+          HTTPS_PROXY = proxyUrl;
+          NO_PROXY = noProxy;
+          http_proxy = proxyUrl;
+          https_proxy = proxyUrl;
+          no_proxy = noProxy;
+        };
+
+        # A tunnel that fails to come up would otherwise only reach the journal.
+        services.failure-notify.units = lib.concatMap (r: r.failureUnits) resultList;
+
+        systemd.services = lib.mkMerge (
+          [ (lib.mapAttrs' mkService instances) ] ++ map (r: r.services) resultList
+        );
+
+        systemd.timers = lib.mkMerge (map (r: r.timers) resultList);
+
+        # vless-<name>.age: link, subscription URL or vpn:// string; awg-<name>.age: AmneziaWG .conf or vpn:// string
+        age.secrets = lib.mapAttrs' (
+          name: inst:
+          lib.nameValuePair "${inst.kind}-${name}" {
+            enable = true;
+            mode = "0600";
+            file = ../../secrets/${inst.kind}-${name}.age;
+            path = inst.credentialFile;
+          }
+        ) instances;
       }
-    ) instances;
-  };
+    ]
+    ++ map (r: r.extraConfig) resultList
+  );
 }
