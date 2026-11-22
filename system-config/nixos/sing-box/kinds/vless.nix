@@ -2,7 +2,6 @@
 # Amnezia vpn:// string with an xray container; the -fetch oneshot and its timer
 # resolve it into runtimeKey, which sing-box reads through LoadCredential.
 {
-  lib,
   pkgs,
   name,
   inst,
@@ -33,7 +32,7 @@ in
     after = [ "network-online.target" ];
     environment = {
       SING_BOX_VLESS_CREDENTIAL_FILE = inst.credentialFile;
-      SING_BOX_VLESS_KEY_FILE = inst.runtimeKey;
+      SING_BOX_VLESS_KEY_FILE = inst.vless.runtimeKey;
       SING_BOX_DECODE_VPN = "${shared.decodeVpn}";
     };
     serviceConfig = {
@@ -46,8 +45,8 @@ in
   timers.${fetch} = {
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnBootSec = inst.onBootSec;
-      OnUnitActiveSec = toString inst.fetchIntervalSec;
+      OnBootSec = inst.vless.onBootSec;
+      OnUnitActiveSec = toString inst.vless.fetchIntervalSec;
       Unit = "${fetch}.service";
     };
   };
@@ -61,12 +60,5 @@ in
 
   failureUnits = [ fetch ];
 
-  serviceConfig.LoadCredential = "${name}-key:${inst.runtimeKey}";
-
-  assertions = [
-    {
-      assertion = lib.hasPrefix "/etc/" inst.runtimeKey;
-      message = "sing-box instance '${name}': runtimeKey must be under /etc/, got ${inst.runtimeKey}";
-    }
-  ];
+  serviceConfig.LoadCredential = "${name}-key:${inst.vless.runtimeKey}";
 }

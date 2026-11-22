@@ -119,17 +119,4 @@ in
     interface = [ interface ];
     table = [ table ];
   };
-
-  assertions = [
-    {
-      # kernel limit: interface names are at most 15 characters
-      assertion = builtins.match "[a-z][a-z0-9]{0,14}" interface != null;
-      message = "sing-box instance '${name}': awg.interface '${interface}' must match [a-z][a-z0-9]{0,14}";
-    }
-    {
-      # 0 and 253-255 are reserved, 52 is Tailscale's table
-      assertion = builtins.isInt table && table > 255;
-      message = "sing-box instance '${name}': awg.table must be an integer above 255";
-    }
-  ];
 }

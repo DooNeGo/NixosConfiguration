@@ -12,7 +12,7 @@ How the tunnels and the exit node work and why. The units and rules are in `syst
 
 ## Kinds: one definition per tunnel kind
 
-`sing-box.nix` holds `instances` (the one attrset to edit), the checks common to all kinds, the main unit `sing-box-<name>`, the user and the merge. Everything that differs per kind is in `sing-box/kinds/<kind>.nix` (a plain function, not a module) and `sing-box/kinds/<kind>.py`; `generate-config.py` keeps the shared part of `config.json` and the `KINDS` registry. The generator is copied (`install -D`) into one store directory, because Python imports `kinds` from the real directory of the script.
+`sing-box.nix` holds `instances` (the one attrset to edit; its fields are typed, so a wrong port, `kind` or path fails with the option name, and the settings of one kind sit in a sub-attrset of the same name: `awg = { interface; table; }`, `vless = { runtimeKey; fetchIntervalSec; onBootSec; }`, required only for instances of that kind), the checks common to all kinds, the main unit `sing-box-<name>`, the user and the merge. Everything that differs per kind is in `sing-box/kinds/<kind>.nix` (a plain function, not a module) and `sing-box/kinds/<kind>.py`; `generate-config.py` keeps the shared part of `config.json` and the `KINDS` registry. The generator is copied (`install -D`) into one store directory, because Python imports `kinds` from the real directory of the script.
 
 A kind file takes `{ pkgs, lib, name, inst, secretFile, shared, ... }` (`secretFile` is the agenix file, `shared` the common helpers) and returns any of these; the dispatcher fills the rest with defaults:
 
