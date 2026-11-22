@@ -10,6 +10,27 @@ How the tunnels and the exit node work and why. The units and rules are in `syst
 - The server `.conf` is stored verbatim; `prepare-awg.sh` derives the runtime config: it drops `DNS` (would replace the system resolver) and hooks (a third-party file must not run commands as root), puts the routes into table 51820 so `main` stays untouched, and keeps IPv4 only.
 - Source-address policy rule `from <tunnel address> lookup 51820` (priority 5000) is what sends sing-box's bound sockets into the tunnel.
 
+## Kinds: one definition per tunnel kind
+
+`sing-box.nix` holds `instances` (the one attrset to edit), the checks common to all kinds, the main unit `sing-box-<name>`, the user and the merge. Everything that differs per kind is in `sing-box/kinds/<kind>.nix` (a plain function, not a module) and `sing-box/kinds/<kind>.py`; `generate-config.py` keeps the shared part of `config.json` and the `KINDS` registry. The generator is copied (`install -D`) into one store directory, because Python imports `kinds` from the real directory of the script.
+
+A kind file takes `{ pkgs, lib, name, inst, secretFile, shared, ... }` (`secretFile` is the agenix file, `shared` the common helpers) and returns any of these; the dispatcher fills the rest with defaults:
+
+| Field | Meaning |
+|---|---|
+| `services`, `timers` | units the kind owns, keyed by unit name; may extend a generated one (`wg-quick-<iface>`) |
+| `extraConfig` | other NixOS config of the kind, merged with `lib.mkMerge` |
+| `deps`, `restartTriggers` | added to `wants`/`after` and `restartTriggers` of `sing-box-<name>` |
+| `environment`, `serviceConfig` | additions to the main unit (`SING_BOX_<KIND>_*`, `LoadCredential`) |
+| `failureUnits` | names for `services.failure-notify.units` |
+| `exitTunnel` | `null`, or `{ interface, table }` when the kind owns a kernel interface and a table |
+| `claims` | values that must differ between instances (`interface`, `table`) |
+| `assertions` | kind-specific checks with messages |
+
+The Python side exposes `build(env)` returning `{ outbound, dns, default_domain_resolver }` (`None` where the kind adds nothing).
+
+Adding a kind: a line in `kindFiles` of `sing-box.nix`, `kinds/<kind>.nix`, `kinds/<kind>.py` with an entry in `KINDS`, and `kinds/test_<kind>.py`. A test fails when `kindFiles`, `kinds/*.nix`, `kinds/*.py` and `KINDS` disagree; a kind that returns a field not in the table is an evaluation error. Unit names are fixed in the kind file once; `deps` and `failureUnits` use the same names, and the box module disables some of them by name.
+
 ## Accepted secret formats
 
 - `awg-<name>.age` holds either the server `.conf` or an Amnezia `vpn://` string (the share string of the Amnezia app). `prepare-awg.sh` takes the first non-blank line: with the `vpn://` prefix the string goes through `sing-box/decode-vpn.py awg` (stdin only), anything else is used as a `.conf`. From there on both take the same path, so the same tunnel gives the same runtime config either way.
@@ -30,7 +51,7 @@ How the tunnels and the exit node work and why. The units and rules are in `syst
 ## Exit node for the phone
 
 - One AmneziaWG key allows one connection, and both the host and the phone need it. The phone selects this host as a Tailscale exit node and the host forwards that traffic into the same `awg0`: one WireGuard peer, no second key. With a second key, add a second interface and table instead.
-- The instance that carries the exit node sets `exitNode = true` in `instances` (only kind `awg`, at most one: a failed assertion names the offenders). `sing-box.nix` derives the interface and table into `services.sing-box-tunnels.exitTunnel`, and `awg-exit-node.nix` and `tailscale.nix` read only that option. A new tunnel kind with its own kernel interface joins by adding a branch to `tunnelOf` and its name to `exitCapableKinds`.
+- The instance that carries the exit node sets `exitNode = true` in `instances` (only a kind that returns `exitTunnel`, today `awg`; at most one: a failed assertion names the offenders). `sing-box.nix` derives the interface and table into `services.sing-box-tunnels.exitTunnel`, and `awg-exit-node.nix` and `tailscale.nix` read only that option. A kind that owns a kernel interface and a table returns `exitTunnel` from its definition (see below); any other kind refuses `exitNode` through an assertion.
 - Without such an instance the module adds no rule, blackhole or nft table, and `tailscale.nix` sets `--advertise-exit-node=false`: the flags of `tailscale set` are sticky, so only the explicit false form withdraws an earlier advertisement.
 - `iif tailscale0 lookup <table>` has priority 5280, after Tailscale's `5270 lookup 52`: tailnet-to-tailnet traffic stays in the tailnet. Packets for the host itself (its tailnet and LAN addresses) hit the `local` table first, so murmur, Sunshine and the headless session work while the exit node is on. Other LAN devices are not reachable through it; add a `192.168.0.0/16` rule before 5280 if that is ever needed. Community reports say the order of Tailscale's own rules (5210-5270) can change between boots with the start order of services; check `ip rule` after a reboot.
 - A `blackhole default` in the table keeps the phone's traffic from falling through to `main` (the real uplink and address) while the tunnel is down. `awg-exit-node.service` therefore does not depend on `wg-quick-<interface>`: the rule and the blackhole stay when the tunnel stops or fails, and only a stop of `awg-exit-node` itself removes them (`wg-quick` deletes only the routes of the interface).

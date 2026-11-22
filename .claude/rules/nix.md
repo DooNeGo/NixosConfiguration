@@ -18,3 +18,4 @@ paths:
 - `mcp__nixos` searches the upstream channels, not the pinned release: use it to find packages, and check an option against the local manual below.
 - Look an option up before using or changing it. The local NixOS manual describes every option of the built release: `grep -o '/nix/store[^ ]*index.html' $(which nixos-help)` gives the path, and `options.html` beside it has an `opt-<option path>` anchor (strip tags with `sed 's/<[^>]*>//g'`).
 - The manual does not say what a module enables or for whom (`services.sunshine.autoStart` starts the unit for every user), so also read the module: `nix eval --raw ./system-config/nixos#nixosConfigurations.nixos.pkgs.path` is the nixpkgs tree, the file is the `Declared by` path under `nixos/modules/`.
+- `system-config/nixos/sing-box/kinds/*.nix` are plain functions called by `sing-box.nix`, not modules: do not add them to `imports`; the shape is in `docs/sing-box-tunnels.md`.
