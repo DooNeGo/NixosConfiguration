@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Turn the server-issued AmneziaWG .conf (AWG_SOURCE_FILE, kept verbatim in
-# agenix) into the runtime config that awg-quick gets (AWG_OUT_FILE):
+# Turn the server-issued AmneziaWG .conf or Amnezia vpn:// string (AWG_SOURCE_FILE,
+# kept verbatim in agenix; a vpn:// string is decoded by SING_BOX_DECODE_VPN)
+# into the runtime config that awg-quick gets (AWG_OUT_FILE):
 #   * DNS is dropped        -- awg-quick would make it the system resolver;
 #   * hooks are dropped     -- a third-party file must not run commands as root;
 #   * Table = AWG_TABLE     -- routes go to a private table, main stays intact;
@@ -13,13 +14,19 @@ SRC="${AWG_SOURCE_FILE:?AWG_SOURCE_FILE is not set}"
 OUT="${AWG_OUT_FILE:?AWG_OUT_FILE is not set}"
 ADDR_OUT="${AWG_ADDR_FILE:?AWG_ADDR_FILE is not set}"
 TABLE="${AWG_TABLE:?AWG_TABLE is not set}"
+DECODER="${SING_BOX_DECODE_VPN:?SING_BOX_DECODE_VPN is not set}"
 
 die() { echo "prepare-awg: $*" >&2; exit 1; }
 
 [ -r "$SRC" ] || die "cannot read $SRC"
 case "$TABLE" in ''|*[!0-9]*) die "AWG_TABLE must be a number, got '$TABLE'" ;; esac
 
-conf=$(tr -d '\r' < "$SRC" | sed 's/[[:space:]]*#.*$//')   # awg-quick ignores trailing comments too
+first=$(grep -m1 -v '^[[:space:]]*$' "$SRC" | tr -d '[:space:]' || true)
+case "$first" in
+  vpn://*) text=$(python3 -I "$DECODER" awg < "$SRC") || die "cannot decode the vpn:// string" ;;
+  *) text=$(cat "$SRC") ;;
+esac
+conf=$(printf '%s\n' "$text" | tr -d '\r' | sed 's/[[:space:]]*#.*$//')   # awg-quick ignores trailing comments too
 
 count() { printf '%s\n' "$conf" | grep -ciE "$1" || true; }
 [ "$(count '^[[:space:]]*\[interface\]')" = 1 ] || die "expected exactly one [Interface] section"

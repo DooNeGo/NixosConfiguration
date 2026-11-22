@@ -6,7 +6,7 @@ let
     "awg-exit-node"
     "btrbk-home"
     "btrbk-system"
-    "sing-box-credits-git-fetch"
+    "sing-box-credits-fetch"
     "sing-box-main-awg-prepare"
   ];
 in

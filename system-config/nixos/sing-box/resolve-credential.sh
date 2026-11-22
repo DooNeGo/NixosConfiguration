@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Resolve SING_BOX_CREDENTIAL_FILE (vless:// or https://) into SING_BOX_KEY_FILE.
+# Resolve SING_BOX_CREDENTIAL_FILE (vless://, an Amnezia vpn:// xray string or https://) into SING_BOX_KEY_FILE.
 # Every curl carries --noproxy '*': this host exports HTTP(S)_PROXY=127.0.0.1:2080.
 set -euo pipefail
 
 CRED_FILE="${SING_BOX_CREDENTIAL_FILE:?SING_BOX_CREDENTIAL_FILE is not set}"
 KEY_FILE="${SING_BOX_KEY_FILE:?SING_BOX_KEY_FILE is not set}"
+DECODER="${SING_BOX_DECODE_VPN:?SING_BOX_DECODE_VPN is not set}"
 UA=v2rayNG/1.8.5
 
 [ -r "$CRED_FILE" ] || { echo "resolve-credential: cannot read $CRED_FILE" >&2; exit 1; }
-src=$(grep -m1 -v '^[[:space:]]*$' "$CRED_FILE" | tr -d '\r\n')
+src=$(grep -m1 -v '^[[:space:]]*$' "$CRED_FILE" | tr -d '[:space:]')
 
 # Extract the first vless:// line from a subscription body (base64 if needed).
 extract() {
@@ -20,6 +21,10 @@ link=""
 case "$src" in
   vless://*)
     link="$src"
+    ;;
+  vpn://*)
+    link=$(printf '%s' "$src" | python3 -I "$DECODER" xray) \
+      || { echo "resolve-credential: cannot decode the vpn:// string" >&2; exit 1; }
     ;;
   https://*|http://*)
     host=$(printf '%s' "$src" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
@@ -41,7 +46,7 @@ case "$src" in
     link=$(extract "$body")
     ;;
   *)
-    echo "resolve-credential: $CRED_FILE is neither vless:// nor http(s):// -- refusing" >&2
+    echo "resolve-credential: $CRED_FILE is neither vless://, vpn:// nor http(s):// -- refusing" >&2
     exit 1
     ;;
 esac
