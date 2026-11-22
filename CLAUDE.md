@@ -55,7 +55,7 @@ To test what the owner's `switch` cannot check safely (session order, hyprlock, 
 
 | Changed path | Build |
 |---|---|
-| `system-config/nixos/` | the system `toplevel` (first command above) |
+| `system-config/nixos/` | the system `toplevel` (first command above); for `sing-box/` also `python3 -B -m unittest discover -s system-config/nixos/sing-box -p 'test_*.py'` |
 | `tools/box/` | `tools/box/box build --system nixos --home mathew` (and `--backend vm`), `python3 -m unittest discover -s tools/box/tests -t tools/box` and `scripts/lint.sh` (ruff) |
 | `system-config/darwin/` | the darwin eval: `nix eval --raw ./system-config/darwin#darwinConfigurations.macbook-air-m1.config.system.build.toplevel.drvPath` (evaluation only) |
 | `system-config/shared/` | the system `toplevel` and the darwin eval |
@@ -76,6 +76,6 @@ In a review (`/code-review`), report what causes wrong behaviour, a failing chec
 - Garbage collection (`nh`), generation count, journal limits, nix-daemon `TMPDIR`: `docs/nix-maintenance.md`.
 - Btrfs mounts, backups and settled decisions: `.claude/rules/btrfs.md` (loads with those files); measurements and the runbook: `docs/btrfs.md`.
 - Before hand-writing a systemd unit, check whether the pinned nixpkgs already has an upstream module/option for it. Other conventions for `.nix` files (failure reporting, logic in `.sh`, layering, shared modules): `.claude/rules/nix.md`.
-- Secrets use agenix (`secrets.nix` lists recipients, encrypted files are `secrets/*.age`): never print or commit plaintext secrets. Creating one and the generated `sing-box` config: `.claude/rules/secrets.md`; AmneziaWG under sing-box and the Tailscale exit node: `docs/sing-box-awg.md`.
+- Secrets use agenix (`secrets.nix` lists recipients, encrypted files are `secrets/*.age`): never print or commit plaintext secrets. Creating one and the generated `sing-box` config: `.claude/rules/secrets.md`; AmneziaWG under sing-box and the Tailscale exit node: `docs/sing-box-tunnels.md`.
 - `git status` may show lock-file changes you didn't make (e.g. `flake.lock`); report them separately rather than folding them into your change.
 - The repo is shared by group `users` (`mathew` and `openclaw-npm`). If commits or branch switches fail with a permission error, `.git` has lost group write: `chmod -R g+w .git`. `system-config/nixos/shared-repo-acl.nix` gives the group a recursive default ACL on the repo, so new files stay writable for both users.
