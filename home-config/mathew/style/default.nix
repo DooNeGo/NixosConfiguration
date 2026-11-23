@@ -18,17 +18,14 @@ rec {
 
   # Two fill opacities, the same in both modes: a window (the terminal, every layer of the file manager) and a floating
   # panel (the bar islands, the launcher, notifications, the lock field). The panels are the thinner glass, the
-  # windows hold more text and need the denser fill. A thin border at the panel alpha and a blur (Hyprland) make the
-  # glass.
+  # windows hold more text and need the denser fill.
   windowAlpha = 0.8;
   panelAlpha = 0.5;
   borderWidth = 1;
+  borderAlpha = 0.28;
   blurPasses = 3;
 
-  # The one parameter of the softness of the palette: matugen's contrast of the Material scheme, -1 to 1. The default
-  # 0 gives the text 14:1 to 16:1 against the background; -0.3 is the owner's choice for a softer look. No colour is
-  # adjusted anywhere else (the floors of wallpaper/contrast.py check the result).
-  paletteContrast = -0.3;
+  paletteContrast = 0.0;
 
   # The only choice that depends on the mode, used by the terminal palette (palette/kitty.conf): black stays dark
   # and white light in both modes, so a program that prints "black" stays readable. Values are matugen colour names.
@@ -62,6 +59,8 @@ rec {
 
   tokens = {
     "@font_family@" = fontFamily;
+    "@glass_border_alpha@" = toString borderAlpha;
+    "@glass_border_alpha_hex@" = hex borderAlpha;
     "@glass_border_width@" = toString borderWidth;
     "@window_alpha@" = toString windowAlpha;
     "@panel_alpha@" = toString panelAlpha;

@@ -1,51 +1,12 @@
-# Yazi, the terminal file manager (Super+R). Its colours are the ANSI palette of kitty, which follows the wallpaper
-# (docs/hyprland.md), so it has no palette file of its own. Nemo (nemo.nix) stays for drag and drop.
-{ pkgs, ... }:
+# Yazi, the terminal file manager (Super+R). Nemo (nemo.nix) stays for drag and drop.
+{ config, pkgs, ... }:
 let
-  # Glow's style with ANSI colour numbers only, so the rendered Markdown follows the wallpaper like the rest of Yazi.
-  glowStyle = pkgs.writeText "glow-style.json" (
-    builtins.toJSON {
-      document.margin = 0;
-      heading = {
-        bold = true;
-        color = "4";
-      };
-      h1 = {
-        prefix = "█ ";
-        color = "4";
-      };
-      h2.prefix = "▌ ";
-      h3.prefix = "▎ ";
-      strong.bold = true;
-      emph.italic = true;
-      code = {
-        color = "3";
-        background_color = "0";
-      };
-      code_block.margin = 1;
-      link = {
-        color = "6";
-        underline = true;
-      };
-      link_text = {
-        color = "6";
-        bold = true;
-      };
-      block_quote = {
-        color = "8";
-        indent = 1;
-        indent_token = "│ ";
-      };
-      item.block_prefix = "• ";
-      enumeration.block_prefix = ". ";
-      hr = {
-        color = "8";
-        format = "────────";
-      };
-    }
-  );
+  inherit (import ./wallpaper/common.nix { inherit config; }) paletteDir;
 in
 {
+  xdg.configFile."yazi/theme.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${paletteDir}/yazi.toml";
+
   programs.yazi = {
     enable = true;
     # `y` changes the shell directory to where yazi was left.
@@ -84,7 +45,7 @@ in
       plugin.prepend_previewers = [
         {
           url = "*.md";
-          run = ''piper -- CLICOLOR_FORCE=1 glow -s ${glowStyle} -w=$w "$1"'';
+          run = ''piper -- CLICOLOR_FORCE=1 glow -s "${paletteDir}/glow.json" -w=$w "$1"'';
         }
       ];
       preview = {

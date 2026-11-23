@@ -19,6 +19,8 @@ let
     hyprlock = "hyprlock.conf";
     rofi = "rofi.rasi";
     gtk = "gtk.css";
+    yazi = "yazi.toml";
+    glow = "glow.json";
   };
   # Kvantum: a sed script per mode recolours KvFlat (dark) or KvFlatLight (light) into the two files of the theme
   # KvMatugen; the script itself is an intermediate and is not copied.
@@ -66,11 +68,16 @@ let
       )
     );
 
-  # One directory per image with one per mode. --source-color-index picks the colour without asking on a terminal. A
-  # palette that misses a file or whose contrast falls below a floor (contrast.py) fails the build: a consumer would
-  # otherwise start without its include, or a new wallpaper would make the desktop hard to read.
-  palettes =
-    pkgs.runCommand "wallpaper-palettes"
+  # Independent derivations let Nix schedule renders using its configured build jobs.
+  renderPalette =
+    name: mode:
+    let
+      image = common.wallDir + "/${name}";
+      stem = lib.removeSuffix ".${lib.last (lib.splitString "." name)}" name;
+      kvTheme = if mode == "dark" then "KvFlat" else "KvFlatLight";
+      kv = "${kvantumRoot}/${kvTheme}/${kvTheme}";
+    in
+    pkgs.runCommand (lib.strings.sanitizeDerivationName "palette-${stem}-${mode}")
       {
         nativeBuildInputs = [
           pkgs.matugen
@@ -78,38 +85,28 @@ let
         ];
       }
       ''
-        export HOME=$TMPDIR
-        render=$TMPDIR/render
-        mkdir -p $out
-        ${lib.concatMapStrings (
-          m: "sed \"s|@out@|$render|\" ${matugenConfig m} > $TMPDIR/matugen-${m}.toml\n"
-        ) modes}
-        ${common.findImages} -print0 > $TMPDIR/images
-        failed=
-        while IFS= read -r -d "" img; do
-          name=$(basename "$img")
-          for mode in ${lib.concatStringsSep " " modes}; do
-            case $mode in
-              dark) kv=${kvantumRoot}/KvFlat/KvFlat ;;
-              light) kv=${kvantumRoot}/KvFlatLight/KvFlatLight ;;
-            esac
-            rm -rf "$render"
-            mkdir "$render"
-            matugen -q -c $TMPDIR/matugen-$mode.toml -m $mode --contrast=${toString style.paletteContrast} -t scheme-tonal-spot --source-color-index 0 image "$img"
-            sed -f "$render/kvantum.sed" "$kv.kvconfig" > "$render/KvMatugen.kvconfig"
-            sed -f "$render/kvantum.sed" "$kv.svg" > "$render/KvMatugen.svg"
-            rm "$render/kvantum.sed"
-            for f in ${lib.concatStringsSep " " files}; do
-              [ -s "$render/$f" ] || { echo "matugen made no $f for $name ($mode)" >&2; exit 1; }
-            done
-            python3 -I ${./contrast.py} "$render" "$name ($mode)" || failed=1
-            mkdir -p "$out/$name"
-            mv "$render" "$out/$name/$mode"
-          done
-        done < $TMPDIR/images
-        [ -z "$failed" ] || { echo "the contrast of a palette is below a floor (wallpaper/contrast.py)" >&2; exit 1; }
-        [ -n "$(ls -A $out)" ] || { echo "no wallpaper image found" >&2; exit 1; }
+        export HOME="$TMPDIR"
+        mkdir -p "$out"
+        sed "s|@out@|$out|" ${matugenConfig mode} > "$TMPDIR/matugen.toml"
+        matugen -q -c "$TMPDIR/matugen.toml" -m ${mode} --contrast=${toString style.paletteContrast} -t scheme-tonal-spot --source-color-index 0 image ${lib.escapeShellArg "${image}"}
+        sed -f "$out/kvantum.sed" "${kv}.kvconfig" > "$out/KvMatugen.kvconfig"
+        sed -f "$out/kvantum.sed" "${kv}.svg" > "$out/KvMatugen.svg"
+        rm "$out/kvantum.sed"
+        for f in ${lib.concatStringsSep " " files}; do
+          [ -s "$out/$f" ] || { echo "matugen made no $f" >&2; exit 1; }
+        done
+        python3 -I ${./contrast.py} "$out" ${lib.escapeShellArg "${name} (${mode})"}
       '';
+
+  palettes = pkgs.linkFarm "wallpaper-palettes" (
+    lib.concatMap (
+      name:
+      map (mode: {
+        name = "${name}/${mode}";
+        path = renderPalette name mode;
+      }) modes
+    ) images
+  );
 
   images = lib.sort lib.lessThan (
     lib.filter (

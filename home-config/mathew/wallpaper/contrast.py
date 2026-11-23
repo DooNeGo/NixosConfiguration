@@ -26,11 +26,13 @@ def contrast(a, b):
 # (foreground, background, floor)
 PAIRS = [
     ("on_surface", "surface", 7),
+    ("on_surface", "surface_container_highest", 4.5),
     ("on_surface_variant", "surface", 4.5),
     ("primary", "surface", 4.5),
     ("error", "surface", 4.5),
     ("green", "surface", 4.5),
     ("yellow", "surface", 4.5),
+    ("on_error_container", "error_container", 4.5),
     ("on_secondary_container", "secondary_container", 4.5),
     ("outline", "surface", 3),
 ]

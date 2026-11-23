@@ -2,6 +2,7 @@
    (`on-surface`); rofi-glass.rasi picks the ones it draws. `name-panel` is the same colour with the alpha of a
    floating panel, because rasi cannot change the alpha of a variable. */
 * {
+    glass-border: #{{colors.outline_variant.default.hex_stripped}}@glass_border_alpha_hex@;
 <* for name, value in colors *>
     {{name | replace: "_", "-"}}: #{{value.default.hex_stripped}};
     {{name | replace: "_", "-"}}-panel: #{{value.default.hex_stripped}}@panel_alpha_hex@;

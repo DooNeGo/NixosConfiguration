@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# requires: session
+# requires: desktop-ready (shared)
 # theme-mode follows the sun: with a stub of sunwait that answers day or night, the automatic mode, the colour scheme and
 # GTK theme in dconf and the palette in the state directory switch together, a manual toggle is marked and `auto` ends it.
 user=${BOX_USER:-$SESSION_USER}
@@ -53,3 +53,13 @@ tm status | jq -e '.alt == "light" and (.class | index("manual"))' > /dev/null |
 tm auto
 expect dark dark
 tm status | jq -e '.alt == "dark" and (.class | index("manual") | not)' > /dev/null || fail "status still shows a manual choice: $(tm status)"
+
+# Home Manager may run without the graphical session environment.
+invocation() { box_user systemctl --user show -p InvocationID --value waybar.service; }
+before=$(invocation)
+box_user env -u XDG_RUNTIME_DIR -u DBUS_SESSION_BUS_ADDRESS "$bin" seed
+expect dark dark
+[ "$(invocation)" = "$before" ] || fail "seed restarted Waybar before the user unit transition"
+box_user env -u XDG_RUNTIME_DIR -u DBUS_SESSION_BUS_ADDRESS "$bin" reload
+after=$(invocation)
+[ -n "$after" ] && [ "$after" != "$before" ] || fail "reload did not restart Waybar"
