@@ -50,8 +50,8 @@ let
   # sunrise or sunset. `theme-mode` (wallpaper/) restarts the bar on a change, which runs the module again.
   themeMode = "${config.home.profileDirectory}/bin/theme-mode";
   themeIcons = {
-    dark = icon "";
-    light = icon "";
+    dark = icon "";
+    light = icon "";
   };
   layouts = import ./layouts.nix;
   languageMenu = pkgs.writeText "waybar-language-menu.xml" ''
