@@ -25,8 +25,8 @@ rec {
   # needs a denser fill than light text on a dark one. The `*Soften` values move the main text, the secondary text and
   # the accent colours (the accent and the ANSI hues of the terminal) along the lightness scale (matugen `lighten`,
   # percentage points of HSL lightness): the Material roles reach 14:1 to 16:1 for the text and 11:1 for the dark
-  # accent, which is harsher than the band the palette check (wallpaper/contrast.py) holds them to (text 9 to 13,
-  # secondary text 5.5 to 9, accent 4.5 to 9). The light accent is already near 6:1, so it is left alone.
+  # accent, which is harsher than the band the palette check (wallpaper/contrast.py) holds them to (text 9 to 15,
+  # secondary text 5.5 to 10, accent 4.5 to 9). The light accent is already near 6:1, so it is left alone.
   # `ansi` names the roles of the ANSI black and whites: black stays dark and white light in both modes, so a
   # program that prints "black" stays readable. Template tokens: `substMode`.
   modes = {
@@ -36,8 +36,9 @@ rec {
       # window background and the toolbars stay close to the panels.
       glassViewAlpha = 0.6;
       glassChromeAlpha = 0.6;
-      textSoften = -8;
-      dimSoften = -15;
+      # The text of the dark mode is left at the Material value: the owner found the softened one too faint.
+      textSoften = 0;
+      dimSoften = -6;
       accentSoften = -15;
       # The text on an accent fill darkens as the accent dims, to keep its contrast.
       onAccentSoften = -14;
@@ -50,14 +51,16 @@ rec {
       };
     };
     light = {
-      glassAlpha = 0.7;
-      glassViewAlpha = 0.8;
-      glassChromeAlpha = 0.7;
+      # As transparent as the dark mode (the owner's choice); a lighter fill over a dark photograph needs more to keep
+      # dark text readable, so the light mode is the one to raise first if the text gets hard to read.
+      glassAlpha = 0.3;
+      glassViewAlpha = 0.6;
+      glassChromeAlpha = 0.6;
       textSoften = 12;
       dimSoften = 6;
       accentSoften = 0;
       onAccentSoften = 0;
-      terminalOpacity = 0.85;
+      terminalOpacity = 0.65;
       # The big light areas (file list, text fields) one step below the brightest surface: less glare.
       viewBg = "surface_container_low";
       ansi = {

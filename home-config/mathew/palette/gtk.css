@@ -1,8 +1,8 @@
 /* The chrome (headerbar, toolbar, sidebar, popups) takes the container roles of the accent, so the palette shows;
    the lists and the window stay a dark neutral for the text. Named colours of adw-gtk3 and libadwaita; the theme `matugen-glass` (gtk.nix) adds the shapes and the glass on top. */
 @define-color accent_color {{colors.primary.default.hex | lighten: @accent_soften@}};
-@define-color accent_bg_color {{colors.primary.default.hex | lighten: @accent_soften@}};
-@define-color accent_fg_color {{colors.on_primary.default.hex | lighten: @on_accent_soften@}};
+@define-color accent_bg_color {{colors.primary_container.default.hex}};
+@define-color accent_fg_color {{colors.on_primary_container.default.hex}};
 @define-color destructive_color {{colors.error.default.hex}};
 @define-color destructive_bg_color {{colors.error.default.hex}};
 @define-color destructive_fg_color {{colors.on_error.default.hex}};

@@ -36,12 +36,12 @@ def main():
 
     # (name, foreground, background, lowest, highest)
     bands = [
-        ("text", css["fg"], surface, 9, 13),
-        ("secondary text", css["fg_dim"], surface, 5.5, 9),
+        ("text", css["fg"], surface, 9, 15),
+        ("secondary text", css["fg_dim"], surface, 5.5, 10),
         ("accent", css["accent"], surface, 4.5, 9),
         ("error", css["error"], surface, 3.5, 9.5),
-        ("text on the accent", css["on_primary"], css["accent"], 4.5, 21),
-        ("prompt pill text (slot 16 on ANSI blue)", kitty["color16"], kitty["color4"], 4.5, 21),
+        ("text on the accent container", css["on_accent_container"], css["accent_container"], 4.5, 21),
+        ("prompt pill text (slot 16 on slot 17)", kitty["color16"], kitty["color17"], 4.5, 21),
         ("ANSI 8 and the suggestions", kitty["color8"], surface, 3, 9),
     ]
     names = {1: "red", 2: "green", 3: "yellow", 4: "blue", 5: "magenta", 6: "cyan"}

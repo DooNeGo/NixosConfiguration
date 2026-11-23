@@ -37,8 +37,8 @@ window#waybar {
 }
 
 #workspaces button.active {
-  background: @accent;
-  color: @on_primary;
+  background: @accent_container;
+  color: @on_accent_container;
 }
 
 #workspaces .taskbar-window {

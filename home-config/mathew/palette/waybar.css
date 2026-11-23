@@ -1,5 +1,6 @@
 @define-color surface {{colors.surface.default.hex}};
-@define-color on_primary {{colors.on_primary.default.hex | lighten: @on_accent_soften@}};
+@define-color accent_container {{colors.primary_container.default.hex}};
+@define-color on_accent_container {{colors.on_primary_container.default.hex}};
 @define-color error {{colors.error.default.hex | lighten: @accent_soften@}};
 @define-color fg {{colors.@role_text@.default.hex | lighten: @text_soften@}};
 @define-color fg_dim {{colors.@role_text_dim@.default.hex | lighten: @dim_soften@}};
