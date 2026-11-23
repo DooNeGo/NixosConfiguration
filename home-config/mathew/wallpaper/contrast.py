@@ -36,8 +36,8 @@ def main():
 
     # (name, foreground, background, lowest, highest)
     bands = [
-        ("text", css["fg"], surface, 9, 15),
-        ("secondary text", css["fg_dim"], surface, 5.5, 10),
+        ("text", css["fg"], surface, 9, 21),
+        ("secondary text", css["fg_dim"], surface, 5.5, 21),
         ("accent", css["accent"], surface, 4.5, 9),
         ("error", css["error"], surface, 3.5, 9.5),
         ("text on the accent container", css["on_accent_container"], css["accent_container"], 4.5, 21),

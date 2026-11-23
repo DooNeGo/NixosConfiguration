@@ -43,6 +43,8 @@ rec {
       # The text on an accent fill darkens as the accent dims, to keep its contrast.
       onAccentSoften = -14;
       terminalOpacity = 0.65;
+      # The bar text is pure white (dark) or black (light): it sits on a thin translucent fill over any wallpaper.
+      barText = "#ffffff";
       viewBg = "surface";
       ansi = {
         black = "surface_container_highest";
@@ -61,6 +63,7 @@ rec {
       accentSoften = 0;
       onAccentSoften = 0;
       terminalOpacity = 0.65;
+      barText = "#000000";
       # The big light areas (file list, text fields) one step below the brightest surface: less glare.
       viewBg = "surface_container_low";
       ansi = {
@@ -116,6 +119,7 @@ rec {
 
   # The tokens that depend on the mode.
   modeTokens = mode: {
+    "@bar_text@" = modes.${mode}.barText;
     "@glass_alpha@" = toString modes.${mode}.glassAlpha;
     "@glass_alpha_hex@" = hex modes.${mode}.glassAlpha;
     "@glass_view_alpha@" = toString modes.${mode}.glassViewAlpha;
