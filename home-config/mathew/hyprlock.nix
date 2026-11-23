@@ -9,7 +9,7 @@ in
     package = null;
     sourceFirst = true;
     settings = {
-      # Defines $glass_fill, $glass_border and the palette colours (wallpaper/).
+      # Defines every colour of the wallpaper palette as $<matugen name> (wallpaper/).
       source = "${config.home.homeDirectory}/.local/state/wallpaper-palette/hyprlock.conf";
 
       general.hide_cursor = true;
@@ -36,7 +36,7 @@ in
           text = "$TIME";
           font_size = 72;
           font_family = style.fontFamily;
-          color = "$text";
+          color = "$on_surface";
           position = "0, 120";
           halign = "center";
           valign = "center";
@@ -51,11 +51,11 @@ in
           valign = "center";
           rounding = style.radius;
           outline_thickness = style.borderWidth;
-          outer_color = "$glass_border";
-          inner_color = "$glass_fill";
-          font_color = "$text";
+          outer_color = "$outline_variant";
+          inner_color = "$surface_container_high_panel";
+          font_color = "$on_surface";
           font_family = style.fontFamily;
-          check_color = "$glass_border";
+          check_color = "$outline_variant";
           fail_color = "$error";
           fade_on_empty = false;
           placeholder_text = "Пароль";

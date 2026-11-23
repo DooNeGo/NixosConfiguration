@@ -15,7 +15,7 @@ Files: `home-config/mathew/waybar.nix` (modules), `waybar.css` (geometry and col
 
 ## Palette from the wallpaper
 
-How the palette is built, written and reloaded: `docs/hyprland.md`. `waybar.css` imports `~/.local/state/wallpaper-palette/waybar.css` and uses only the colour names `glass_fill` (island background), `glass_border`, `fg`, `fg_dim`, `accent`, `surface`, `on_primary`, `error`; a new name needs a line in `palette/waybar.css`. `--source-color-index 0` takes the most dominant colour of the image, which follows what the eye sees; `--prefer saturation` takes the most vivid one, an accent that the picture barely shows.
+How the palette is built, written and reloaded: `docs/hyprland.md`. `waybar.css` imports `~/.local/state/wallpaper-palette/waybar.css`, which defines every matugen colour as `@define-color <matugen name>`; `waybar.css` picks them: `on_surface` for the text and icons, `on_surface_variant` for inactive workspaces and separators, `primary` for the accent, `secondary_container` with `on_secondary_container` for the active workspace and hover, `surface_container_high` (at the panel alpha) with `outline_variant` for the islands, `error`. `--source-color-index 0` takes the most dominant colour of the image, which follows what the eye sees; `--prefer saturation` takes the most vivid one, an accent that the picture barely shows.
 
 ## Modules and indicators
 

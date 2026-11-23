@@ -40,8 +40,8 @@ let
     );
 
   # @out@ is the render directory of the build script: a fixed path, so no wallpaper name is ever spliced into the file.
-  # Green and yellow keep their own hue (`blend = false`): blended towards the wallpaper, a yellow turned olive and
-  # a green turned teal. Red is the Material error colour.
+  # Green and yellow are custom colours harmonised to the wallpaper (`blend = true`); red is the Material error
+  # colour. The softness of the whole palette is one matugen parameter, `--contrast` (style/).
   matugenConfig =
     mode:
     pkgs.writeText "matugen-${mode}.toml" (
@@ -49,10 +49,10 @@ let
         [config]
         [config.custom_colors.green]
         color = "#50fa7b"
-        blend = false
+        blend = true
         [config.custom_colors.yellow]
         color = "#f1fa8c"
-        blend = false
+        blend = true
         [templates.kvantum]
         input_path = "${kvantumSed mode}"
         output_path = "@out@/kvantum.sed"
@@ -67,7 +67,7 @@ let
     );
 
   # One directory per image with one per mode. --source-color-index picks the colour without asking on a terminal. A
-  # palette that misses a file or whose contrast leaves its band (contrast.py) fails the build: a consumer would
+  # palette that misses a file or whose contrast falls below a floor (contrast.py) fails the build: a consumer would
   # otherwise start without its include, or a new wallpaper would make the desktop hard to read.
   palettes =
     pkgs.runCommand "wallpaper-palettes"
@@ -95,7 +95,7 @@ let
             esac
             rm -rf "$render"
             mkdir "$render"
-            matugen -q -c $TMPDIR/matugen-$mode.toml -m $mode -t scheme-tonal-spot --source-color-index 0 image "$img"
+            matugen -q -c $TMPDIR/matugen-$mode.toml -m $mode --contrast=${toString style.paletteContrast} -t scheme-tonal-spot --source-color-index 0 image "$img"
             sed -f "$render/kvantum.sed" "$kv.kvconfig" > "$render/KvMatugen.kvconfig"
             sed -f "$render/kvantum.sed" "$kv.svg" > "$render/KvMatugen.svg"
             rm "$render/kvantum.sed"
@@ -107,7 +107,7 @@ let
             mv "$render" "$out/$name/$mode"
           done
         done < $TMPDIR/images
-        [ -z "$failed" ] || { echo "the contrast of a palette is outside its band (wallpaper/contrast.py)" >&2; exit 1; }
+        [ -z "$failed" ] || { echo "the contrast of a palette is below a floor (wallpaper/contrast.py)" >&2; exit 1; }
         [ -n "$(ls -A $out)" ] || { echo "no wallpaper image found" >&2; exit 1; }
       '';
 

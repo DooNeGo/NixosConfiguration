@@ -1,50 +1,47 @@
-/* The chrome (headerbar, toolbar, sidebar, popups) takes the container roles of the accent, so the palette shows;
-   the lists and the window stay a dark neutral for the text. Named colours of adw-gtk3 and libadwaita; the theme `matugen-glass` (gtk.nix) adds the shapes and the glass on top. */
-@define-color accent_color {{colors.primary.default.hex | lighten: @accent_soften@}};
-@define-color accent_bg_color {{colors.primary_container.default.hex}};
-@define-color accent_fg_color {{colors.on_primary_container.default.hex}};
-@define-color destructive_color {{colors.error.default.hex}};
-@define-color destructive_bg_color {{colors.error.default.hex}};
-@define-color destructive_fg_color {{colors.on_error.default.hex}};
-@define-color success_color {{colors.green.default.hex}};
-@define-color success_bg_color {{colors.green.default.hex}};
-@define-color success_fg_color {{colors.surface.default.hex}};
-@define-color warning_color {{colors.yellow.default.hex}};
-@define-color warning_bg_color {{colors.yellow.default.hex}};
-@define-color warning_fg_color {{colors.surface.default.hex}};
-@define-color error_color {{colors.error.default.hex}};
-@define-color error_bg_color {{colors.error.default.hex}};
-@define-color error_fg_color {{colors.on_error.default.hex}};
-@define-color window_bg_color {{colors.surface_container.default.hex}};
-@define-color window_fg_color {{colors.on_surface.default.hex | lighten: @text_soften@}};
-@define-color view_bg_color {{colors.@role_view_bg@.default.hex}};
-@define-color view_fg_color {{colors.on_surface.default.hex | lighten: @text_soften@}};
-@define-color headerbar_bg_color {{colors.primary_container.default.hex}};
-@define-color headerbar_fg_color {{colors.on_primary_container.default.hex}};
-@define-color headerbar_border_color {{colors.primary.default.hex}};
-@define-color headerbar_backdrop_color {{colors.secondary_container.default.hex}};
-@define-color headerbar_shade_color {{colors.shadow.default.hex}};
-@define-color card_bg_color {{colors.surface_container_high.default.hex}};
-@define-color card_fg_color {{colors.on_surface.default.hex | lighten: @text_soften@}};
-@define-color card_shade_color {{colors.shadow.default.hex}};
-@define-color dialog_bg_color {{colors.secondary_container.default.hex}};
-@define-color dialog_fg_color {{colors.on_secondary_container.default.hex}};
-@define-color popover_bg_color {{colors.secondary_container.default.hex}};
-@define-color popover_fg_color {{colors.on_secondary_container.default.hex}};
-@define-color sidebar_bg_color {{colors.secondary_container.default.hex}};
-@define-color sidebar_fg_color {{colors.on_secondary_container.default.hex}};
-@define-color sidebar_backdrop_color {{colors.secondary_container.default.hex}};
-@define-color sidebar_shade_color {{colors.shadow.default.hex}};
-@define-color secondary_sidebar_bg_color {{colors.secondary_container.default.hex}};
-@define-color secondary_sidebar_fg_color {{colors.on_secondary_container.default.hex}};
-@define-color shade_color {{colors.shadow.default.hex}};
-@define-color scrollbar_outline_color {{colors.outline_variant.default.hex}};
-@define-color borders {{colors.outline_variant.default.hex}};
-@define-color unfocused_borders {{colors.outline_variant.default.hex}};
-/* The glass of the bar islands and the launcher, for the translucent areas of the file manager (gtk/theme.css). */
-@define-color glass_fill {{colors.@role_glass_fill@.default.hex}};
-@define-color glass_border {{colors.@role_glass_border@.default.hex}};
-/* Nemo (gtk/theme.css): the fills of the window, the lists and the bars; the alpha depends on the mode (style/). */
-@define-color nemo_chrome_fill alpha(@sidebar_bg_color, @glass_chrome_alpha@);
-@define-color nemo_bar_fill alpha(@headerbar_bg_color, @glass_chrome_alpha@);
-@define-color nemo_view_fill alpha(@view_bg_color, @glass_view_alpha@);
+/* Every colour of the wallpaper palette under its matugen name (the style files pick the ones they draw), then the
+   named colours of adw-gtk3 and libadwaita as a table of matugen names; the theme `matugen-glass` (gtk.nix) adds the
+   shapes and the glass on top. */
+<* for name, value in colors *>
+@define-color {{name}} {{value.default.hex}};
+<* endfor *>
+@define-color accent_color @primary;
+@define-color accent_bg_color @secondary_container;
+@define-color accent_fg_color @on_secondary_container;
+@define-color destructive_color @error;
+@define-color destructive_bg_color @error;
+@define-color destructive_fg_color @on_error;
+@define-color success_color @green;
+@define-color success_bg_color @green;
+@define-color success_fg_color @on_green;
+@define-color warning_color @yellow;
+@define-color warning_bg_color @yellow;
+@define-color warning_fg_color @on_yellow;
+@define-color error_color @error;
+@define-color error_bg_color @error_container;
+@define-color error_fg_color @on_error_container;
+@define-color window_bg_color @surface;
+@define-color window_fg_color @on_surface;
+@define-color view_bg_color @surface;
+@define-color view_fg_color @on_surface;
+@define-color headerbar_bg_color @secondary_container;
+@define-color headerbar_fg_color @on_secondary_container;
+@define-color headerbar_border_color @outline_variant;
+@define-color headerbar_backdrop_color @secondary_container;
+@define-color headerbar_shade_color @shadow;
+@define-color card_bg_color @surface_container;
+@define-color card_fg_color @on_surface;
+@define-color card_shade_color @shadow;
+@define-color dialog_bg_color @surface_container_high;
+@define-color dialog_fg_color @on_surface;
+@define-color popover_bg_color @surface_container_high;
+@define-color popover_fg_color @on_surface;
+@define-color sidebar_bg_color @surface_container_high;
+@define-color sidebar_fg_color @on_surface;
+@define-color sidebar_backdrop_color @surface_container_high;
+@define-color sidebar_shade_color @shadow;
+@define-color secondary_sidebar_bg_color @surface_container_high;
+@define-color secondary_sidebar_fg_color @on_surface;
+@define-color shade_color @shadow;
+@define-color scrollbar_outline_color @outline_variant;
+@define-color borders @outline_variant;
+@define-color unfocused_borders @outline_variant;

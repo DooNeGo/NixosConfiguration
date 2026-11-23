@@ -1,10 +1,4 @@
-@define-color surface {{colors.surface.default.hex}};
-@define-color accent_container {{colors.primary_container.default.hex}};
-@define-color on_accent_container {{colors.on_primary_container.default.hex}};
-@define-color error {{colors.error.default.hex | lighten: @accent_soften@}};
-@define-color fg @bar_text@;
-@define-color fg_dim @bar_text@;
-@define-color accent {{colors.@role_accent@.default.hex | lighten: @accent_soften@}};
-@define-color glass_fill {{colors.@role_glass_fill@.default.hex}};
-@define-color glass_fill_a alpha(@glass_fill, @glass_alpha@);
-@define-color glass_border {{colors.@role_glass_border@.default.hex}};
+/* Every colour of the wallpaper palette under its matugen name; waybar.css picks the ones it draws. */
+<* for name, value in colors *>
+@define-color {{name}} {{value.default.hex}};
+<* endfor *>

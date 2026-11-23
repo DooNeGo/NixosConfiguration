@@ -15,48 +15,48 @@ menu,
 popover.background > contents,
 menu,
 .menu {
-  border: @glass_border_width@px solid alpha(@window_fg_color, @glass_border_alpha@);
+  border: @glass_border_width@px solid @outline_variant;
 }
 
-/* Nemo: the glass of the bar islands (one fill colour, a thin light border) over the blur Hyprland draws behind a
-   translucent window. The list is a little denser than the window and the sidebar. The selection keeps the accent
-   fill, and the text stays opaque because only the background colours carry the alpha. */
+/* Nemo: a translucent window (one alpha for every layer, @window_alpha@ of style/) over the blur Hyprland draws
+   behind it. The selection keeps the accent fill, and the text stays opaque because only the background colours
+   carry the alpha. */
 .nemo-window {
   font-family: "@font_family@", "Noto Sans", sans-serif;
   font-size: 13pt;
 }
 
 window.background.nemo-window {
-  background-color: @nemo_chrome_fill;
+  background-color: alpha(@window_bg_color, @window_alpha@);
 }
 
 .nemo-window .sidebar,
 .nemo-window .sidebar .view,
 .nemo-window .sidebar scrolledwindow {
-  background-color: @nemo_chrome_fill;
+  background-color: alpha(@sidebar_bg_color, @window_alpha@);
 }
 
 .nemo-window toolbar,
 .nemo-window .toolbar,
 .nemo-window .primary-toolbar,
 .nemo-window headerbar {
-  background-color: @nemo_bar_fill;
+  background-color: alpha(@headerbar_bg_color, @window_alpha@);
 }
 
 .nemo-window statusbar {
-  background-color: @nemo_bar_fill;
+  background-color: alpha(@headerbar_bg_color, @window_alpha@);
 }
 
 .nemo-window .view:not(:selected),
 .nemo-window iconview:not(:selected),
 .nemo-window treeview.view:not(:selected) {
-  background-color: @nemo_view_fill;
+  background-color: alpha(@view_bg_color, @window_alpha@);
 }
 
 .nemo-window .sidebar,
 .nemo-window statusbar,
 .nemo-window .primary-toolbar {
-  border-color: alpha(@glass_border, @glass_border_alpha@);
+  border-color: @outline_variant;
 }
 
 /* Room: the rows, the buttons and the path bar are bigger than the adw-gtk3 default. */

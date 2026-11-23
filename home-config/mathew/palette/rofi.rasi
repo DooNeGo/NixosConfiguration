@@ -1,8 +1,8 @@
+/* Every colour of the wallpaper palette under its matugen name; rofi-glass.rasi picks the ones it draws. `name_panel` is
+   the same colour with the alpha of a floating panel, because rasi cannot change the alpha of a variable. */
 * {
-    glass: #{{colors.@role_glass_fill@.default.hex_stripped}}@glass_alpha_hex@;
-    glass-border: #{{colors.@role_glass_border@.default.hex_stripped}}@glass_border_hex@;
-    fg: #{{colors.@role_text@.default.hex_stripped | lighten: @text_soften@}};
-    fg-dim: #{{colors.@role_text_dim@.default.hex_stripped | lighten: @dim_soften@}};
-    accent: #{{colors.@role_accent@.default.hex_stripped | lighten: @accent_soften@}};
-    accent-soft: #{{colors.@role_accent@.default.hex_stripped | lighten: @accent_soften@}}33;
+<* for name, value in colors *>
+    {{name}}: #{{value.default.hex_stripped}};
+    {{name}}_panel: #{{value.default.hex_stripped}}@panel_alpha_hex@;
+<* endfor *>
 }

@@ -63,20 +63,20 @@ s/#1ea1e6/#{{colors.primary.default.hex_stripped}}/Ig
 s/#39ace9/#{{colors.primary.default.hex_stripped}}/Ig
 s/#3daee9/#{{colors.primary.default.hex_stripped}}/Ig
 s/#006edc/#{{colors.primary.default.hex_stripped}}/Ig
-s/#194b64/#{{colors.on_primary_container.default.hex_stripped}}/Ig
+s/#194b64/#{{colors.on_secondary_container.default.hex_stripped}}/Ig
 s/#0057ae/#{{colors.primary.default.hex_stripped}}/Ig
 s/#452886/#{{colors.tertiary.default.hex_stripped}}/Ig
-s/#73c4ef/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#77a8c9/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#58acff/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#39f\b/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#7deaff/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#41e0ff/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#41c3ff/#{{colors.primary_container.default.hex_stripped}}/Ig
+s/#73c4ef/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#77a8c9/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#58acff/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#39f\b/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#7deaff/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#41e0ff/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#41c3ff/#{{colors.secondary_container.default.hex_stripped}}/Ig
 s/#f02200/#{{colors.error.default.hex_stripped}}/Ig
 s/#b74aff/#{{colors.tertiary.default.hex_stripped}}/Ig
 # Text of the kvconfig: black is the foreground and white sits on the accent; the alpha variants keep their alpha.
-s/^\([a-z.]*text\.[a-z]*color\)=black/\1=#{{colors.on_surface.default.hex_stripped | lighten: @text_soften@}}/
+s/^\([a-z.]*text\.[a-z]*color\)=black/\1=#{{colors.on_surface.default.hex_stripped}}/
 s/^\([a-z.]*text\.[a-z]*color\)=white/\1=#{{colors.on_primary.default.hex_stripped}}/
 s/=#000000\([0-9a-f][0-9a-f]\)$/=#{{colors.on_surface.default.hex_stripped}}\1/I
 s/=#ffffff\([0-9a-f][0-9a-f]\)$/=#{{colors.on_primary.default.hex_stripped}}\1/I

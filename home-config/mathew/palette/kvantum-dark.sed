@@ -41,15 +41,15 @@ s/#d2d2d2/#{{colors.on_surface_variant.default.hex_stripped}}/Ig
 s/#e6e6e6/#{{colors.on_surface.default.hex_stripped}}/Ig
 s/#f0f0f0/#{{colors.on_surface.default.hex_stripped}}/Ig
 s/#fff\b/#{{colors.on_surface.default.hex_stripped}}/Ig
-s/#233a5d/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#253d61/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#29436b/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#2e4c7a/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#345588/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#35588d/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#395e97/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#3e67a6/#{{colors.primary_container.default.hex_stripped}}/Ig
-s/#3f67a5/#{{colors.primary_container.default.hex_stripped}}/Ig
+s/#233a5d/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#253d61/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#29436b/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#2e4c7a/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#345588/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#35588d/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#395e97/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#3e67a6/#{{colors.secondary_container.default.hex_stripped}}/Ig
+s/#3f67a5/#{{colors.secondary_container.default.hex_stripped}}/Ig
 s/#1270a2/#{{colors.primary.default.hex_stripped}}/Ig
 s/#1376ab/#{{colors.primary.default.hex_stripped}}/Ig
 s/#147cb4/#{{colors.primary.default.hex_stripped}}/Ig
@@ -67,5 +67,5 @@ s/#2eb8e6/#{{colors.tertiary.default.hex_stripped}}/Ig
 s/#ff6666/#{{colors.secondary.default.hex_stripped}}/Ig
 s/#b74aff/#{{colors.tertiary.default.hex_stripped}}/Ig
 # Text of the kvconfig: white is the foreground, except on the highlight.
-s/^\([a-z.]*text\.[a-z]*color\)=white/\1=#{{colors.on_surface.default.hex_stripped | lighten: @text_soften@}}/
-s/^\(highlight\.text\.color\)=.*/\1=#{{colors.on_primary_container.default.hex_stripped}}/
+s/^\([a-z.]*text\.[a-z]*color\)=white/\1=#{{colors.on_surface.default.hex_stripped}}/
+s/^\(highlight\.text\.color\)=.*/\1=#{{colors.on_secondary_container.default.hex_stripped}}/
