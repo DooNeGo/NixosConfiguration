@@ -29,6 +29,7 @@
       shellcheck
       ruff
       uv
+      mcp-nixos
     ];
 
     sessionVariables = {

@@ -1,0 +1,51 @@
+[mcp_servers.nixos]
+command = "mcp-nixos"
+
+# Sites
+[[skills.config]]
+name = "sites"
+enabled = false
+
+[[skills.config]]
+name = "sites-remix"
+enabled = false
+
+# Pages
+[[skills.config]]
+name = "maintain-space"
+enabled = false
+
+[[skills.config]]
+name = "manage-schedules"
+enabled = false
+
+[[skills.config]]
+name = "organize-space"
+enabled = false
+
+[[skills.config]]
+name = "write-page"
+enabled = false
+
+# Work Pets
+[[skills.config]]
+name = "create-pet"
+enabled = false
+
+[[skills.config]]
+name = "pets"
+enabled = false
+
+[[skills.config]]
+name = "update-pet"
+enabled = false
+
+# Hosted apps bundled with Sites, Pages, and Work Pets.
+[apps.connector_20205bf7d4e99a89d7154bb849718324]
+enabled = false
+
+[apps.connector_openai_pages]
+enabled = false
+
+[apps.connector_openai_chatgpt_pets]
+enabled = false
