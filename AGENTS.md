@@ -8,7 +8,7 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, except for a simple, quick change (adding a package, changing one setting), which goes straight to `main`. Build-verify. On a branch, commit a finished group without asking; on `main`, only when asked. Change `main` (merge into it, rebase or reset it, `branch -f`), push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. To look at an older commit use `git switch --detach <hash>`; to compare with a clean tree use `git worktree add --detach <dir> HEAD`, not `git stash` (it fails on `git add -N` entries and hides your work). The Codex Git hook blocks protected operations, including push, updates to `main`, and commands that discard work (`reset --hard`, `clean`, `checkout .`, `restore .`). After reviewing and authorizing a protected operation, the owner runs it from their terminal. Force pushes are prohibited. See `docs/codex-harness.md`.
+Work on a branch, except for a simple, quick change (adding a package, changing one setting), which goes straight to `main`. On a branch, commit a finished group without asking; on `main`, only when asked. Change `main` (merge into it, rebase or reset it, `branch -f`), push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. To look at an older commit use `git switch --detach <hash>`; to compare with a clean tree use `git worktree add --detach <dir> HEAD`, not `git stash` (it fails on `git add -N` entries and hides your work). The Codex Git hook blocks protected operations, including push, updates to `main`, and commands that discard work (`reset --hard`, `clean`, `checkout .`, `restore .`). After reviewing and authorizing a protected operation, the owner runs it from their terminal. Force pushes are prohibited. See `docs/codex-harness.md`.
 
 ## Where things go
 
@@ -69,7 +69,7 @@ To test what the owner's `switch` cannot check safely (session order, hyprlock, 
 
 When a build fails, rerun it without output redirection and read `2>&1 | tail -30`. Report to the owner the exact `switch` commands and what could not be verified without running (a service start, a session, a mount).
 
-In a review (`/code-review`), report what causes wrong behaviour, a failing check or a misleading result; leave out pure style and naming.
+In a review (code-review skill), leave out pure style and naming.
 
 ## Conventions and gotchas
 
