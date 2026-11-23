@@ -34,17 +34,18 @@ let
     }
   );
 
-  # Type=simple counts as started at once; a hyprlock that died in the first second must fail the unit.
-  checkAlive = lib.getExe (
-    pkgs.writeShellApplication {
-      name = "check-hyprlock-alive";
-      runtimeInputs = [ pkgs.coreutils ];
-      text = ''
-        sleep 1
-        kill -0 "$MAINPID"
-      '';
-    }
-  );
+  hyprlockReady = pkgs.hyprlock.overrideAttrs (old: {
+    buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.systemd ];
+    postPatch = (old.postPatch or "") + ''
+            substituteInPlace src/core/hyprlock.cpp \
+              --replace-fail '#include "hyprlock.hpp"' '#include "hyprlock.hpp"
+      #include <systemd/sd-daemon.h>' \
+              --replace-fail 'm_sLockState.locked = true;' 'm_sLockState.locked = true; sd_notify(0, "READY=1");'
+            substituteInPlace CMakeLists.txt \
+              --replace-fail 'target_link_libraries(hyprlock PRIVATE ' 'target_link_libraries(hyprlock PRIVATE systemd '
+    '';
+  });
+
 in
 {
   systemd.user.services.hyprlock-initial = {
@@ -60,10 +61,13 @@ in
     };
     Service = {
       ExecStartPre = waitDesktop;
-      ExecStart = "/run/current-system/sw/bin/hyprlock";
-      ExecStartPost = checkAlive;
+      Type = "notify";
+      NotifyAccess = "main";
+      TimeoutStartSec = 45;
+      ExecStart = "${hyprlockReady}/bin/hyprlock";
       # Exit 0 after an unlock does not restart it; a crash does, and the new hyprlock takes over the lock.
       Restart = "on-failure";
+      RestartMode = "direct";
       RestartSec = 1;
     };
     Install.WantedBy = [ "graphical-session.target" ];
