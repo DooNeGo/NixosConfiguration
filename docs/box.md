@@ -72,9 +72,12 @@ A layer holds `fixtures/<name>/{setup,teardown,requires}` and `checks/<name>.sh`
 |---|---|---|
 | `no-failed-units` | `systems/nixos` | no unit failed after boot |
 | `no-failed-user-units` | `homes/mathew` | no user unit of the desktop session failed |
-| `session-order` | `homes/mathew` | `hyprlock-initial` started after `hyprpaper` and `waybar` |
+| `session-order` | `homes/mathew` | `hyprlock-initial` started after `hyprpaper` and `waybar`, and the theme daemon started after the wallpaper |
+| `sunshine-lock-failure` | `homes/mathew` | Sunshine cannot start when the initial lock fails |
+| `sunshine-unlock` | `homes/mathew` | Sunshine stays active after the initial lock is released (container) |
 | `unlock-frame` | `homes/mathew` | no flat frame after the unlock |
-| `theme-mode` | `homes/mathew` | with a stub of `sunwait` (day, night), `theme-mode auto` switches the mode, the dconf colour scheme and GTK theme and the palette together; a toggle is marked manual and `auto` ends it |
+| `theme-mode` | `homes/mathew` | with a stub of `sunwait` (day, night), `theme-mode auto` switches the mode, the dconf colour scheme and GTK theme and the palette together; a toggle is marked manual and `auto` ends it; the activation commands find the user bus without session variables and restart Waybar only after seeding |
+| `audacious` | `homes/mathew` | the window has the desktop entry's class and the playlist switches from light to dark after a full restart |
 | `session-frame` | `systems/nixos` | the session draws: a frame with a deviation of 6 or more within 60 s |
 
 Commands of the session user in a script go through `box_user`. `box exec 'box_shot COUNT DELAY'` takes grim frames of `HEADLESS-1` into `<state>/<name>/out` (replacing the previous ones; a frame grim did not write is an error) and prints the pixel standard deviation of each. The desktop is drawn some seconds after the session starts, so the first frames are empty (deviation below 6): look at frames once `hyprlock-initial` is active. A flat frame (a lock or crossfade glitch) has a deviation below about 6; the mean brightness cannot tell it, because a blur keeps the mean. `box fixture session setup|teardown|restart` runs a fixture of the layers by hand. `box exec` runs a command in the container with the `lib.sh` helpers of the layers (`box_shot`, `wait_output`) defined.

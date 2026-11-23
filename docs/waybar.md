@@ -11,6 +11,7 @@ Files: `home-config/mathew/waybar.nix` (modules), `waybar.css` (geometry and col
 - The clock shows `HH:MM · 15 ноября`: `locale = "ru_RU.UTF-8"` (enabled in `locale.nix`) and the `L` prefix in the format are both needed, otherwise the month is in English.
 - A click on a window icon runs `hyprctl dispatch 'hl.dsp.focus({ window = "address:..." })'` (`on-click-window`). The Lua config has no legacy dispatcher names, so `focuswindow` would fail.
 - A window icon in the workspace taskbar comes from a desktop entry whose file name equals the window class (`hyprctl clients`, field `class`). An app whose entry has another name shows no icon. Rider's entry in `home-config/shared/rider.nix` is named `jetbrains-rider` for this reason.
+- Audacious 4.6.2 sends an empty Wayland app ID with Qt 6. Its package sets the desktop file name to `audacious` so the taskbar can find its icon.
 - Icons come from JetBrainsMono Nerd Font (`system-config/nixos/hyprland.nix`).
 
 ## Palette from the wallpaper

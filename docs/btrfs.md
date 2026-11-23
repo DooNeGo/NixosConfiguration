@@ -173,6 +173,8 @@ sudo btrbk -c /etc/btrbk/home.conf dryrun                     # preview what the
 A failed `btrbk-home` or `btrbk-system` run (missing HDD included) or a failed scrub is recorded by `system-config/nixos/failure-notify.nix`
 in `/var/lib/failure-notify/`: the graphical session shows a critical notification, every zsh lists open records at start and prints a
 new one before the next prompt. The record disappears with the next successful run.
+Concurrent reports for the same record share a lock when they read and update its timestamps; the regression test runs
+with `python3 -B -m unittest discover -s system-config/nixos/failure-notify -p 'test_*.py'` from the repository root.
 
 ### Restoring
 
@@ -217,6 +219,8 @@ Measured with `sudo compsize -x` on 2026-11-07/08. Games are already compressed 
 options are shared by all subvolumes) with each option, writes the game to `/home` and records time and size
 (`--report` rebuilds the tables from the CSV). Single runs, so differences below ~15% are noise; the source is in
 RAM, reads and decompression were not measured.
+The `--dest` and `--ram` directories are parents for unique temporary work directories; existing files there are not
+removed. The benchmark refuses a parent that overlaps a dataset or the other temporary parent.
 
 | Phasmophobia, 20 GiB | on disk | write speed, 1 writer |
 |---|---|---|
