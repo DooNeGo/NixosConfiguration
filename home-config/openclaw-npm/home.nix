@@ -30,6 +30,7 @@
       ruff
       uv
       mcp-nixos
+      bubblewrap
     ];
 
     sessionVariables = {
