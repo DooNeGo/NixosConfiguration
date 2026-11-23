@@ -8,6 +8,7 @@ in
     enableGitIntegration = true;
 
     settings = lib.mkAfter {
+      env = "MATHEW_KITTY_PALETTE=1";
       font_family = style.fontFamily;
       font_size = 13;
       window_padding_width = style.gapInner;

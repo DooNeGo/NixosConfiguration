@@ -22,10 +22,7 @@ let
         color = "3";
         background_color = "0";
       };
-      code_block = {
-        color = "7";
-        margin = 1;
-      };
+      code_block.margin = 1;
       link = {
         color = "6";
         underline = true;
