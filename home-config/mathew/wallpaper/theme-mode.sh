@@ -105,17 +105,28 @@ status() {
     '{alt: $alt, class: ($class | split(" ") | map(select(. != ""))), tooltip: $tip}'
 }
 
+change_mode() (
+  local action=$1 mode
+  mkdir -p "$state"
+  exec 9>"$state/lock"
+  flock -w 10 9
+  case $action in
+    apply) apply "${2:-}" ;;
+    toggle)
+      if [[ $(current_mode) == dark ]]; then mode=light; else mode=dark; fi
+      : > "$state/manual"
+      apply "$mode"
+      ;;
+    auto)
+      mode=$(sun_mode)
+      rm -f "$state/manual"
+      apply "$mode"
+      ;;
+  esac
+)
+
 case ${1:-status} in
-  apply) apply "${2:-}" ;;
-  toggle)
-    if [[ $(current_mode) == dark ]]; then new=light; else new=dark; fi
-    : > "$state/manual"
-    apply "$new"
-    ;;
-  auto)
-    rm -f "$state/manual"
-    apply "$(sun_mode)"
-    ;;
+  apply | toggle | auto) change_mode "$@" ;;
   status) status ;;
   daemon)
     # `sunwait wait` sleeps until the next sunrise or sunset and exits with an error when it has nothing to wait for
@@ -123,7 +134,7 @@ case ${1:-status} in
     while true; do
       "$sunwait" wait "$THEME_LAT" "$THEME_LON" || sleep 300
       sleep 5
-      "$0" auto || sleep 60
+      until "$0" auto; do sleep 60; done
     done
     ;;
   *)

@@ -29,6 +29,7 @@ let
       procps
       sunwait
       systemd
+      util-linux
     ];
     runtimeEnv = {
       THEME_PALETTES = "${palettes}";
