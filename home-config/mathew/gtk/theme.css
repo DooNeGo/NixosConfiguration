@@ -27,24 +27,30 @@ menu,
 }
 
 window.background.nemo-window {
-  background-color: alpha(@glass_fill, @glass_chrome_alpha@);
+  background-color: alpha(@sidebar_bg_color, @glass_chrome_alpha@);
 }
 
 .nemo-window .sidebar,
 .nemo-window .sidebar .view,
-.nemo-window .sidebar scrolledwindow,
+.nemo-window .sidebar scrolledwindow {
+  background-color: alpha(@sidebar_bg_color, @glass_chrome_alpha@);
+}
+
 .nemo-window toolbar,
 .nemo-window .toolbar,
 .nemo-window .primary-toolbar,
-.nemo-window headerbar,
+.nemo-window headerbar {
+  background-color: alpha(@headerbar_bg_color, @glass_chrome_alpha@);
+}
+
 .nemo-window statusbar {
-  background-color: transparent;
+  background-color: alpha(@headerbar_bg_color, @glass_chrome_alpha@);
 }
 
 .nemo-window .view:not(:selected),
 .nemo-window iconview:not(:selected),
 .nemo-window treeview.view:not(:selected) {
-  background-color: alpha(@glass_fill, @glass_view_alpha@);
+  background-color: alpha(@view_bg_color, @glass_view_alpha@);
 }
 
 .nemo-window .sidebar,
