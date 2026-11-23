@@ -86,7 +86,6 @@ apply() {
   copy_palette "$mode"
   if has_session_bus; then
     set_desktop_settings "$mode"
-    reload_consumers
   else
     echo "No user session: the consumers and the GTK settings take the mode when they next start."
   fi
@@ -126,7 +125,10 @@ change_mode() (
 )
 
 case ${1:-status} in
-  apply | toggle | auto) change_mode "$@" ;;
+  apply | toggle | auto)
+    change_mode "$@"
+    if has_session_bus; then reload_consumers; fi
+    ;;
   status) status ;;
   daemon)
     # `sunwait wait` sleeps until the next sunrise or sunset and exits with an error when it has nothing to wait for

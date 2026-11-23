@@ -83,6 +83,7 @@ in
   systemd.user.services.theme-mode = {
     Unit = {
       Description = "Light or dark theme by the sun";
+      PartOf = [ "graphical-session.target" ];
       After = [ "random-wallpaper.service" ];
       Before = [ "waybar.service" ];
     };
