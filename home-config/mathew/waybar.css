@@ -8,14 +8,14 @@
 
 window#waybar {
   background: transparent;
-  color: @fg;
+  color: @on_surface;
 }
 
 .modules-left,
 .modules-center,
 .modules-right {
-  background: alpha(@glass_fill, @glass_alpha@);
-  border: @glass_border_width@px solid alpha(@glass_border, @glass_border_alpha@);
+  background: alpha(@surface_container_high, @panel_alpha@);
+  border: @glass_border_width@px solid alpha(@outline_variant, @panel_alpha@);
   border-radius: @radius@px;
   padding: 0 2px;
 }
@@ -24,7 +24,7 @@ window#waybar {
   padding: 0 8px;
   margin: 4px 2px;
   background: transparent;
-  color: @fg_dim;
+  color: @on_surface_variant;
   border-radius: @radius_inner@px;
   border: none;
   box-shadow: none;
@@ -32,13 +32,13 @@ window#waybar {
 }
 
 #workspaces button:hover {
-  background: alpha(@accent, 0.25);
-  color: @fg;
+  background: @secondary_container;
+  color: @on_secondary_container;
 }
 
 #workspaces button.active {
-  background: @accent;
-  color: @on_primary;
+  background: @secondary_container;
+  color: @on_secondary_container;
 }
 
 #workspaces .taskbar-window {
@@ -58,21 +58,23 @@ window#waybar {
 #wireplumber,
 #custom-failed,
 #custom-mic,
+#custom-theme,
 #custom-media,
 #idle_inhibitor,
 #tray {
   padding: 0 5px;
-  color: @fg;
+  color: @on_surface;
 }
 
 #custom-sep,
 #custom-failed-dot {
   padding: 0;
-  color: @fg_dim;
+  color: @on_surface_variant;
 }
 
-#idle_inhibitor.activated {
-  color: @accent;
+#idle_inhibitor.activated,
+#custom-theme.manual {
+  color: @primary;
 }
 
 #custom-failed {
@@ -81,7 +83,7 @@ window#waybar {
 
 #custom-mic.muted,
 #custom-media.paused {
-  color: @fg_dim;
+  color: @on_surface_variant;
 }
 
 .image-button {
@@ -89,11 +91,11 @@ window#waybar {
 }
 
 #wireplumber.muted {
-  color: @fg_dim;
+  color: @on_surface_variant;
 }
 
 #network.disconnected {
-  color: @fg_dim;
+  color: @on_surface_variant;
 }
 
 #idle_inhibitor,
@@ -137,9 +139,9 @@ tooltip decoration {
 
 menu,
 tooltip.background {
-  background: alpha(@glass_fill, @glass_alpha@);
-  color: @fg;
-  border: @glass_border_width@px solid alpha(@glass_border, @glass_border_alpha@);
+  background: alpha(@surface_container_high, @panel_alpha@);
+  color: @on_surface;
+  border: @glass_border_width@px solid alpha(@outline_variant, @panel_alpha@);
   border-radius: @radius@px;
 }
 
@@ -163,5 +165,6 @@ menuitem {
 }
 
 menuitem:hover {
-  background: alpha(@accent, 0.3);
+  background: @secondary_container;
+  color: @on_secondary_container;
 }

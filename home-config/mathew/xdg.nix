@@ -19,8 +19,10 @@
         browser = "firefox.desktop";
       in
       {
+        "inode/directory" = "nemo.desktop";
+
         "image/png" = "org.kde.gwenview.desktop";
-        "image/jpg" = "org.kde.gwenview.desktop";
+        "image/jpeg" = "org.kde.gwenview.desktop";
 
         "text/html" = browser;
         "x-scheme-handler/http" = browser;

@@ -1,8 +1,9 @@
-# The look of the desktop in one place: fonts, the "glass" surface, corners, gaps and the palette roles that colour them.
+# The look of the desktop in one place: fonts, the "glass" surface, corners, gaps and the contrast of the palette.
 # `tokens` are the `@name@` placeholders of the style files; `subst` fills them in, so a template, a CSS, a theme or a
 # Lua file carries the token instead of its own copy of the number. Consumers: `waybar.nix`, `rofi.nix`, `mako.nix`,
 # `hyprlock.nix`, `kitty.nix`, `hyprland.nix` (the Lua files) and `wallpaper/palettes.nix` (the matugen templates).
-# Colours themselves are not here: they come from the wallpaper palette, and only the role names are fixed here.
+# Colours themselves are not here: they come from the wallpaper palette under their matugen names, and each style
+# file picks the ones it needs.
 lib:
 let
   hex =
@@ -15,12 +16,34 @@ in
 rec {
   fontFamily = "JetBrainsMono Nerd Font";
 
-  # The glass surface of the bar islands, notifications, the launcher panels and the lock field: a translucent fill
-  # over a blurred background with a thin light border.
-  alpha = 0.3;
-  borderAlpha = 0.16;
+  # Two fill opacities, the same in both modes: a window (the terminal, every layer of the file manager) and a floating
+  # panel (the bar islands, the launcher, notifications, the lock field). The panels are the thinner glass, the
+  # windows hold more text and need the denser fill. A thin border at the panel alpha and a blur (Hyprland) make the
+  # glass.
+  windowAlpha = 0.8;
+  panelAlpha = 0.5;
   borderWidth = 1;
   blurPasses = 3;
+
+  # The one parameter of the softness of the palette: matugen's contrast of the Material scheme, -1 to 1. The default
+  # 0 gives the text 14:1 to 16:1 against the background; -0.3 is the owner's choice for a softer look. No colour is
+  # adjusted anywhere else (the floors of wallpaper/contrast.py check the result).
+  paletteContrast = -0.3;
+
+  # The only choice that depends on the mode, used by the terminal palette (palette/kitty.conf): black stays dark
+  # and white light in both modes, so a program that prints "black" stays readable. Values are matugen colour names.
+  ansi = {
+    dark = {
+      black = "surface_container_highest";
+      white = "on_surface_variant";
+      brightWhite = "on_surface";
+    };
+    light = {
+      black = "on_surface";
+      white = "surface_container_highest";
+      brightWhite = "surface_container_lowest";
+    };
+  };
   # Layer namespaces that get the blur rule (hyprland/rules.lua).
   glassLayers = [
     "waybar"
@@ -37,22 +60,12 @@ rec {
   gap = 10;
   gapInner = 5;
 
-  # Material roles of the wallpaper palette (see wallpaper/palettes.nix) that colour each part.
-  roles = {
-    glassFill = "surface_container_high";
-    glassBorder = "on_surface";
-    text = "on_surface";
-    textDim = "on_surface_variant";
-    accent = "primary";
-  };
-
   tokens = {
     "@font_family@" = fontFamily;
-    "@glass_alpha@" = toString alpha;
-    "@glass_alpha_hex@" = hex alpha;
-    "@glass_border_alpha@" = toString borderAlpha;
-    "@glass_border_hex@" = hex borderAlpha;
     "@glass_border_width@" = toString borderWidth;
+    "@window_alpha@" = toString windowAlpha;
+    "@panel_alpha@" = toString panelAlpha;
+    "@panel_alpha_hex@" = hex panelAlpha;
     "@blur_passes@" = toString blurPasses;
     "@glass_layers@" = lib.concatMapStringsSep ", " (n: ''"${n}"'') glassLayers;
     "@radius@" = toString radius;
@@ -60,22 +73,28 @@ rec {
     "@radius_window@" = toString radiusWindow;
     "@gap@" = toString gap;
     "@gap_inner@" = toString gapInner;
-    "@role_glass_fill@" = roles.glassFill;
-    "@role_glass_border@" = roles.glassBorder;
-    "@role_text@" = roles.text;
-    "@role_text_dim@" = roles.textDim;
-    "@role_accent@" = roles.accent;
+  };
+
+  # The tokens that depend on the mode.
+  modeTokens = mode: {
+    "@ansi_black@" = ansi.${mode}.black;
+    "@ansi_white@" = ansi.${mode}.white;
+    "@ansi_bright_white@" = ansi.${mode}.brightWhite;
   };
 
   # Fills the tokens of a text and fails the build on a `@name@` that is left over (a typo or a missing token); a
-  # caller fills its own placeholders before calling.
-  subst =
-    text:
+  # caller fills its own placeholders before calling. `subst` knows only the tokens that do not depend on the mode:
+  # a file that needs the others is a palette template (`substMode`), which wallpaper/palettes.nix renders once for
+  # each mode.
+  substWith =
+    toks: text:
     let
-      out = builtins.replaceStrings (lib.attrNames tokens) (lib.attrValues tokens) text;
+      out = builtins.replaceStrings (lib.attrNames toks) (lib.attrValues toks) text;
       left = lib.unique (
         map builtins.head (lib.filter builtins.isList (builtins.split "(@[a-z_]+@)" out))
       );
     in
     if left == [ ] then out else throw "style: unknown token ${lib.concatStringsSep ", " left}";
+  subst = substWith tokens;
+  substMode = mode: substWith (tokens // modeTokens mode);
 }

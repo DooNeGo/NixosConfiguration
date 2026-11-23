@@ -29,6 +29,8 @@
       shellcheck
       ruff
       uv
+      mcp-nixos
+      bubblewrap
     ];
 
     sessionVariables = {

@@ -8,11 +8,12 @@ in
     enableGitIntegration = true;
 
     settings = lib.mkAfter {
+      env = "MATHEW_KITTY_PALETTE=1";
       font_family = style.fontFamily;
       font_size = 13;
-      background_opacity = 0.65;
       window_padding_width = style.gapInner;
       confirm_os_window_close = 0;
+      background_opacity = style.windowAlpha;
     };
 
     # Colours of the wallpaper palette (wallpaper/); SIGUSR1 reloads running windows.

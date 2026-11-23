@@ -1,0 +1,84 @@
+/* matugen-glass: adw-gtk3-dark (colours from the wallpaper palette, loaded by the user gtk.css of GTK 3 and 4) with the shapes of
+   the desktop on top. The values come from style/ through the style tokens. */
+
+button,
+entry,
+spinbutton,
+combobox button,
+.card,
+popover.background > contents,
+menu,
+.menu {
+  border-radius: @radius_inner@px;
+}
+
+popover.background > contents,
+menu,
+.menu {
+  border: @glass_border_width@px solid @outline_variant;
+}
+
+/* Nemo: a translucent window (one alpha for every layer, @window_alpha@ of style/) over the blur Hyprland draws
+   behind it. The selection keeps the accent fill, and the text stays opaque because only the background colours
+   carry the alpha. */
+.nemo-window {
+  font-family: "@font_family@", "Noto Sans", sans-serif;
+  font-size: 13pt;
+}
+
+window.background.nemo-window {
+  background-color: alpha(@window_bg_color, @window_alpha@);
+}
+
+.nemo-window .sidebar,
+.nemo-window .sidebar .view,
+.nemo-window .sidebar scrolledwindow {
+  background-color: alpha(@sidebar_bg_color, @window_alpha@);
+}
+
+.nemo-window toolbar,
+.nemo-window .toolbar,
+.nemo-window .primary-toolbar,
+.nemo-window headerbar {
+  background-color: alpha(@headerbar_bg_color, @window_alpha@);
+}
+
+.nemo-window statusbar {
+  background-color: alpha(@headerbar_bg_color, @window_alpha@);
+}
+
+.nemo-window .view:not(:selected),
+.nemo-window iconview:not(:selected),
+.nemo-window treeview.view:not(:selected) {
+  background-color: alpha(@view_bg_color, @window_alpha@);
+}
+
+.nemo-window .sidebar,
+.nemo-window statusbar,
+.nemo-window .primary-toolbar {
+  border-color: @outline_variant;
+}
+
+/* Room: the rows, the buttons and the path bar are bigger than the adw-gtk3 default. */
+.nemo-window .sidebar row {
+  min-height: 30px;
+  padding: 0 @gap_inner@px;
+  margin: 1px @gap_inner@px;
+  border-radius: @radius_inner@px;
+}
+
+.nemo-window .primary-toolbar button,
+.nemo-window toolbar button {
+  min-height: 30px;
+  min-width: 30px;
+  margin: @gap_inner@px 2px;
+}
+
+.nemo-window .view:selected,
+.nemo-window iconview:selected {
+  border-radius: @radius_inner@px;
+}
+
+.nemo-window statusbar {
+  min-height: 30px;
+}

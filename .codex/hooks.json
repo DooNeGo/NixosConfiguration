@@ -1,0 +1,42 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/guard-git.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking Git command"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/prepare-patch.sh\"",
+            "timeout": 60,
+            "statusMessage": "Preparing changed files for Nix"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/lint-on-stop.sh\"",
+            "timeout": 300,
+            "statusMessage": "Linting repository changes"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -8,6 +8,8 @@
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
     ./hyprland.nix
     ./theme.nix
+    ./gtk.nix
+    ./qt.nix
     ./env.nix
     ./mako.nix
     ./mangohud.nix
@@ -28,6 +30,8 @@
     ../shared/maui-dev.nix
     ../shared/ssh.nix
     ./rofi.nix
+    ./nemo.nix
+    ./yazi.nix
     ./xdg.nix
     ./obs-studio.nix
     ./podman.nix
@@ -49,7 +53,6 @@
       discord
       spotify
       google-chrome
-      nemo
       kdePackages.gwenview
       gpu-screen-recorder-gtk
       polychromatic

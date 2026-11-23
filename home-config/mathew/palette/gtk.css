@@ -1,0 +1,47 @@
+/* Every colour of the wallpaper palette under its matugen name (the style files pick the ones they draw), then the
+   named colours of adw-gtk3 and libadwaita as a table of matugen names; the theme `matugen-glass` (gtk.nix) adds the
+   shapes and the glass on top. */
+<* for name, value in colors *>
+@define-color {{name}} {{value.default.hex}};
+<* endfor *>
+@define-color accent_color @primary;
+@define-color accent_bg_color @secondary_container;
+@define-color accent_fg_color @on_secondary_container;
+@define-color destructive_color @error;
+@define-color destructive_bg_color @error;
+@define-color destructive_fg_color @on_error;
+@define-color success_color @green;
+@define-color success_bg_color @green;
+@define-color success_fg_color @on_green;
+@define-color warning_color @yellow;
+@define-color warning_bg_color @yellow;
+@define-color warning_fg_color @on_yellow;
+@define-color error_color @error;
+@define-color error_bg_color @error_container;
+@define-color error_fg_color @on_error_container;
+@define-color window_bg_color @surface;
+@define-color window_fg_color @on_surface;
+@define-color view_bg_color @surface;
+@define-color view_fg_color @on_surface;
+@define-color headerbar_bg_color @secondary_container;
+@define-color headerbar_fg_color @on_secondary_container;
+@define-color headerbar_border_color @outline_variant;
+@define-color headerbar_backdrop_color @secondary_container;
+@define-color headerbar_shade_color @shadow;
+@define-color card_bg_color @surface_container;
+@define-color card_fg_color @on_surface;
+@define-color card_shade_color @shadow;
+@define-color dialog_bg_color @surface_container_high;
+@define-color dialog_fg_color @on_surface;
+@define-color popover_bg_color @surface_container_high;
+@define-color popover_fg_color @on_surface;
+@define-color sidebar_bg_color @surface_container_high;
+@define-color sidebar_fg_color @on_surface;
+@define-color sidebar_backdrop_color @surface_container_high;
+@define-color sidebar_shade_color @shadow;
+@define-color secondary_sidebar_bg_color @surface_container_high;
+@define-color secondary_sidebar_fg_color @on_surface;
+@define-color shade_color @shadow;
+@define-color scrollbar_outline_color @outline_variant;
+@define-color borders @outline_variant;
+@define-color unfocused_borders @outline_variant;

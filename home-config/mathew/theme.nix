@@ -16,24 +16,4 @@
     name = "rose-pine-hyprcursor";
     size = 30;
   };
-
-  gtk = {
-    enable = true;
-
-    iconTheme = {
-      package = pkgs.paper-icon-theme;
-      name = "Paper-Mono-Dark";
-    };
-
-    font = {
-      name = "Sans";
-      size = 11;
-    };
-  };
-
-  qt = {
-    enable = true;
-    platformTheme.name = "gtk3";
-    style.name = "gtk3";
-  };
 }

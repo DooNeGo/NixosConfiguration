@@ -15,11 +15,11 @@ Files: `home-config/mathew/waybar.nix` (modules), `waybar.css` (geometry and col
 
 ## Palette from the wallpaper
 
-How the palette is built, written and reloaded: `docs/hyprland.md`. `waybar.css` imports `~/.local/state/wallpaper-palette/waybar.css` and uses only the colour names `glass_fill` (island background), `glass_border`, `fg`, `fg_dim`, `accent`, `surface`, `on_primary`, `error`; a new name needs a line in `palette/waybar.css`. `--source-color-index 0` takes the most dominant colour of the image, which follows what the eye sees; `--prefer saturation` takes the most vivid one, an accent that the picture barely shows.
+How the palette is built, written and reloaded: `docs/hyprland.md`. `waybar.css` imports `~/.local/state/wallpaper-palette/waybar.css`, which defines every matugen colour as `@define-color <matugen name>`; `waybar.css` picks them: `on_surface` for the text and icons, `on_surface_variant` for inactive workspaces and separators, `primary` for the accent, `secondary_container` with `on_secondary_container` for the active workspace and hover, `surface_container_high` (at the panel alpha) with `outline_variant` for the islands, `error`. `--source-color-index 0` takes the most dominant colour of the image, which follows what the eye sees; `--prefer saturation` takes the most vivid one, an accent that the picture barely shows.
 
 ## Modules and indicators
 
-- Right island, in order: layout, network, sound, microphone (`custom/mic`), `custom/failed`, `idle_inhibitor`, tray. Dots separate every module, the tray included.
+- Right island, in order: layout, network, sound, microphone (`custom/mic`), the light/dark button (`custom/theme`, `theme-mode status`; left click toggles, right click returns to the sun: `docs/hyprland.md`, Light and dark mode), `custom/failed`, `idle_inhibitor`, tray. Dots separate every module, the tray included.
 - `custom/failed`: the number of open `failure-notify` records, hidden when there are none (empty output hides a custom module); the dot before it is a module of its own, `custom/failed-dot`, with the same condition, so no separator is left behind and every gap is built the same way (module padding 5px, `spacing` 5px, dot padding 0). Buttons (`idle_inhibitor`, tray items) get their GTK padding, border and minimum width reset for the same reason; the offsets of `idle_inhibitor` (extra 5px on the right) and `#tray` in `waybar.css` were measured on a screenshot, not derived. A click lists the records in kitty. A failed start of `wg-quick-awg0` or of its `-awg-prepare` unit is recorded through `services.failure-notify` in `sing-box.nix`, so the tunnel has no indicator of its own.
 - Indicator glyphs use one Pango size (`icon` helper in `waybar.nix`, `x-large`), so they match each other and the 20px tray icons; plain text is 15px and is raised with `rise` (`text` helper) to share the glyph's vertical centre; if the text looks too high or low, change the `rise` value.
 - `custom/mic` (`waybar-mic.sh`) shows a physical microphone only (`alsa_input`/`bluez_input` source) and hides without one. It is event-driven: `pactl subscribe` reports every source change, so a mute from another app or a plugged-in headset updates the bar at once, with no polling. `audio.nix` defines the always-present virtual source `Virtual-Mumble-Microphone`, and PipeWire adds a null source when no device exists, so a source-type `wireplumber` module that follows the default source never hid. A click mutes the microphone.
@@ -30,7 +30,7 @@ How the palette is built, written and reloaded: `docs/hyprland.md`. `waybar.css`
 
 ## Night colour
 
-`wlsunset.nix` (Minsk coordinates, 6500 K by day, 3500 K at night) derives sunrise and sunset from latitude and longitude; `hyprsunset` has only fixed times. 3500 K is a judgement call between the common defaults (3400 K f.lux evening, 3500 K Redshift, 4000 K wlsunset); change `temperature.night` to taste.
+`wlsunset.nix` (Minsk coordinates, 6500 K by day, 4500 K at night) derives sunrise and sunset from latitude and longitude; `hyprsunset` has only fixed times. 4500 K is a mild shift: the owner found 3500 K (the Redshift default; f.lux evening is 3400 K, wlsunset's own default 4000 K) too warm when it switches on; change `temperature.night` to taste.
 
 ## Blur
 

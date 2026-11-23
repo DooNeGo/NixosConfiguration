@@ -3,12 +3,14 @@
 local mod = "SUPER"
 local terminal = "kitty"
 local menu = "sh -c 'pkill -x rofi || rofi -show drun'"
-local fileManager = "nemo"
+local fileManager = "kitty --class yazi yazi"
+local fileManagerGui = "nemo"
 
 hl.bind(mod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mod .. " + Q", hl.dsp.window.close())
 hl.bind(mod .. " + M", hl.dsp.exit())
 hl.bind(mod .. " + R", hl.dsp.exec_cmd(fileManager))
+hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd(fileManagerGui))
 hl.bind(mod .. " + T", hl.dsp.window.float())
 hl.bind(mod .. " + E", hl.dsp.exec_cmd(menu))
 hl.bind(mod .. " + P", hl.dsp.window.pseudo())
