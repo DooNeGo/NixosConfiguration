@@ -127,6 +127,7 @@ case $cmd in
     # Shown raw in terminals: no control characters.
     message=$(printf '%s' "$*" | tr '\n\t' '  ' | tr -d '\000-\037\177')
     prune
+    lock || lock_failed
     now=$(date +%s)
     since=$now
     notified=0
@@ -140,7 +141,6 @@ case $cmd in
       notify=1
       notified=$now
     fi
-    lock || lock_failed
     printf '%s\n%s\n%s\n%s\n' "$since" "$expires" "$notified" "$message" >"$dir/.tmp.$$"
     chmod 644 "$dir/.tmp.$$"
     mv "$dir/.tmp.$$" "$dir/$id"
