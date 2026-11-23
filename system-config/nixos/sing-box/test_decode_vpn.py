@@ -312,6 +312,80 @@ class DecodeXrayTest(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("bash"), "bash is needed")
 class ResolveCredentialTest(unittest.TestCase):
+    def test_subscription_and_changed_key(self):
+        link = f"vless://{UUID}@host.test:443?type=tcp"
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            curl = tmp / "curl"
+            curl.write_text("""#!/bin/sh
+printf '%s\\n' "$*" >> "$CALLS"
+case "$*" in
+  *dns-query*) echo '{"Answer":[{"data":"192.0.2.1"}]}' ;;
+  *--resolve*) printf '%s\\n' "$BODY" ;;
+  *) [ "${FAIL_FIRST:-0}" = 0 ] && printf '%s\\n' "$BODY" ;;
+esac
+""")
+            ctl = tmp / "systemctl"
+            ctl.write_text('#!/bin/sh\nprintf "restart\\n" >> "$RESTARTS"\n')
+            curl.chmod(0o755)
+            ctl.chmod(0o755)
+            (tmp / "credential").write_text("https://sub.example.test:8443/list\n")
+            env = {
+                **os.environ,
+                "PATH": f"{tmp}:{os.environ['PATH']}",
+                "SING_BOX_VLESS_CREDENTIAL_FILE": str(tmp / "credential"),
+                "SING_BOX_VLESS_KEY_FILE": str(tmp / "key"),
+                "SING_BOX_DECODE_VPN": str(DECODER),
+                "SING_BOX_VLESS_PARSER": str(HERE / "kinds" / "vless.py"),
+                "SING_BOX_VLESS_SERVICE": "sing-box-test.service",
+                "CALLS": str(tmp / "calls"),
+                "RESTARTS": str(tmp / "restarts"),
+                "BODY": link,
+            }
+            for body, fail in ((link, "0"), (base64.b64encode(link.encode()).decode(), "0"), (link + "#new", "1")):
+                env.update(BODY=body, FAIL_FIRST=fail)
+                result = subprocess.run(["bash", str(RESOLVE)], env=env, capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((tmp / "key").read_text(), link + "#new\n")
+            self.assertEqual((tmp / "restarts").read_text().splitlines(), ["restart", "restart"])
+            self.assertIn("--resolve sub.example.test:8443:192.0.2.1", (tmp / "calls").read_text())
+
+    def test_invalid_update_and_restart_failure_keep_working_key(self):
+        link = f"vless://{UUID}@host.test:443?type=tcp"
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            (tmp / "credential").write_text(link + "#new\n")
+            (tmp / "key").write_text(link + "\n")
+            ctl = tmp / "systemctl"
+            ctl.write_text('#!/bin/sh\nprintf "restart\\n" >> "$RESTARTS"\n[ -e "$ALLOW" ]\n')
+            ctl.chmod(0o755)
+            env = {
+                **os.environ,
+                "PATH": f"{tmp}:{os.environ['PATH']}",
+                "SING_BOX_VLESS_CREDENTIAL_FILE": str(tmp / "credential"),
+                "SING_BOX_VLESS_KEY_FILE": str(tmp / "key"),
+                "SING_BOX_DECODE_VPN": str(DECODER),
+                "SING_BOX_VLESS_PARSER": str(HERE / "kinds" / "vless.py"),
+                "SING_BOX_VLESS_SERVICE": "sing-box-test.service",
+                "RESTARTS": str(tmp / "restarts"),
+                "ALLOW": str(tmp / "allow"),
+            }
+
+            def fetch():
+                return subprocess.run(["bash", str(RESOLVE)], env=env, capture_output=True, text=True, check=False)
+
+            (tmp / "credential").write_text(link.replace("type=tcp", "type=grpc"))
+            self.assertNotEqual(fetch().returncode, 0)
+            self.assertEqual((tmp / "key").read_text(), link + "\n")
+            self.assertFalse((tmp / "restarts").exists())
+            (tmp / "credential").write_text(link + "#new\n")
+            self.assertNotEqual(fetch().returncode, 0)
+            (tmp / "allow").touch()
+            self.assertEqual(fetch().returncode, 0)
+            self.assertEqual(fetch().returncode, 0)
+            self.assertEqual((tmp / "restarts").read_text().splitlines(), ["restart", "restart"])
+            self.assertEqual((tmp / "key").read_text(), link + "#new\n")
+
     def run_resolve(self, text):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -321,6 +395,7 @@ class ResolveCredentialTest(unittest.TestCase):
                 "SING_BOX_VLESS_CREDENTIAL_FILE": str(tmp / "credential"),
                 "SING_BOX_VLESS_KEY_FILE": str(tmp / "key"),
                 "SING_BOX_DECODE_VPN": str(DECODER),
+                "SING_BOX_VLESS_PARSER": str(HERE / "kinds" / "vless.py"),
             }
             result = subprocess.run(["bash", str(RESOLVE)], env=env, capture_output=True, text=True, check=False)
             key = tmp / "key"
@@ -391,6 +466,7 @@ class PrepareAwgTest(unittest.TestCase):
                 "SING_BOX_AWG_ADDR_FILE": str(tmp / "address"),
                 "SING_BOX_AWG_TABLE": "51820",
                 "SING_BOX_DECODE_VPN": str(DECODER),
+                "SING_BOX_VLESS_PARSER": str(HERE / "kinds" / "vless.py"),
             }
             result = subprocess.run(["bash", str(PREPARE)], env=env, capture_output=True, text=True, check=False)
             if result.returncode != 0:
