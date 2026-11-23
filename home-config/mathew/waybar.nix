@@ -46,6 +46,13 @@ let
     };
     text = builtins.readFile ./waybar-mic.sh;
   };
+  # The light/dark button: the glyph is the current mode, the class `manual` marks a choice that lasts until the next
+  # sunrise or sunset. `theme-mode` (wallpaper/) restarts the bar on a change, which runs the module again.
+  themeMode = "${config.home.profileDirectory}/bin/theme-mode";
+  themeIcons = {
+    dark = icon "";
+    light = icon "";
+  };
   layouts = import ./layouts.nix;
   languageMenu = pkgs.writeText "waybar-language-menu.xml" ''
     <?xml version="1.0" encoding="UTF-8"?>
@@ -101,6 +108,7 @@ in
           "custom/sep#2"
           "wireplumber"
           "custom/mic"
+          "custom/theme"
           "custom/failed-dot"
           "custom/failed"
           "custom/sep#3"
@@ -191,6 +199,16 @@ in
           exec = "${mic}/bin/waybar-mic";
           return-type = "json";
           on-click = "${mic}/bin/waybar-mic toggle";
+        };
+
+        "custom/theme" = {
+          exec = "${themeMode} status";
+          return-type = "json";
+          format = "{icon}";
+          format-icons = themeIcons;
+          interval = 3600;
+          on-click = "${themeMode} toggle";
+          on-click-right = "${themeMode} auto";
         };
 
         wireplumber = {

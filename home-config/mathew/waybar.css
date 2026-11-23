@@ -14,7 +14,7 @@ window#waybar {
 .modules-left,
 .modules-center,
 .modules-right {
-  background: alpha(@glass_fill, @glass_alpha@);
+  background: @glass_fill_a;
   border: @glass_border_width@px solid alpha(@glass_border, @glass_border_alpha@);
   border-radius: @radius@px;
   padding: 0 2px;
@@ -58,6 +58,7 @@ window#waybar {
 #wireplumber,
 #custom-failed,
 #custom-mic,
+#custom-theme,
 #custom-media,
 #idle_inhibitor,
 #tray {
@@ -71,7 +72,8 @@ window#waybar {
   color: @fg_dim;
 }
 
-#idle_inhibitor.activated {
+#idle_inhibitor.activated,
+#custom-theme.manual {
   color: @accent;
 }
 
@@ -137,7 +139,7 @@ tooltip decoration {
 
 menu,
 tooltip.background {
-  background: alpha(@glass_fill, @glass_alpha@);
+  background: @glass_fill_a;
   color: @fg;
   border: @glass_border_width@px solid alpha(@glass_border, @glass_border_alpha@);
   border-radius: @radius@px;

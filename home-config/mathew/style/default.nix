@@ -16,15 +16,57 @@ rec {
   fontFamily = "JetBrainsMono Nerd Font";
 
   # The glass surface of the bar islands, notifications, the launcher panels and the lock field: a translucent fill
-  # over a blurred background with a thin light border.
-  alpha = 0.3;
+  # over a blurred background with a thin border. The fill alpha depends on the mode (`modes`).
   borderAlpha = 0.16;
   borderWidth = 1;
-  # GTK file manager (gtk.nix): a file list needs more fill than a panel to stay readable over the blur, while the
-  # window background and the toolbars stay close to the panels.
-  glassViewAlpha = 0.6;
-  glassChromeAlpha = 0.6;
   blurPasses = 3;
+
+  # What differs between the dark and the light palette. A light panel is mostly the wallpaper, so dark text on it
+  # needs a denser fill than light text on a dark one. The `*Soften` values move the main text, the secondary text and
+  # the accent colours (the accent and the ANSI hues of the terminal) along the lightness scale (matugen `lighten`,
+  # percentage points of HSL lightness): the Material roles reach 14:1 to 16:1 for the text and 11:1 for the dark
+  # accent, which is harsher than the band the palette check (wallpaper/contrast.py) holds them to (text 9 to 13,
+  # secondary text 5.5 to 9, accent 4.5 to 9). The light accent is already near 6:1, so it is left alone.
+  # `ansi` names the roles of the ANSI black and whites: black stays dark and white light in both modes, so a
+  # program that prints "black" stays readable. Template tokens: `substMode`.
+  modes = {
+    dark = {
+      glassAlpha = 0.3;
+      # GTK file manager (gtk.nix): a file list needs more fill than a panel to stay readable over the blur, while the
+      # window background and the toolbars stay close to the panels.
+      glassViewAlpha = 0.6;
+      glassChromeAlpha = 0.6;
+      textSoften = -8;
+      dimSoften = -15;
+      accentSoften = -15;
+      # The text on an accent fill darkens as the accent dims, to keep its contrast.
+      onAccentSoften = -14;
+      terminalOpacity = 0.65;
+      viewBg = "surface";
+      ansi = {
+        black = "surface_container_highest";
+        white = "on_surface_variant";
+        brightWhite = "on_surface";
+      };
+    };
+    light = {
+      glassAlpha = 0.7;
+      glassViewAlpha = 0.8;
+      glassChromeAlpha = 0.7;
+      textSoften = 12;
+      dimSoften = 6;
+      accentSoften = 0;
+      onAccentSoften = 0;
+      terminalOpacity = 0.85;
+      # The big light areas (file list, text fields) one step below the brightest surface: less glare.
+      viewBg = "surface_container_low";
+      ansi = {
+        black = "on_surface";
+        white = "surface_container_highest";
+        brightWhite = "surface_container_lowest";
+      };
+    };
+  };
   # Layer namespaces that get the blur rule (hyprland/rules.lua).
   glassLayers = [
     "waybar"
@@ -52,13 +94,9 @@ rec {
 
   tokens = {
     "@font_family@" = fontFamily;
-    "@glass_alpha@" = toString alpha;
-    "@glass_alpha_hex@" = hex alpha;
     "@glass_border_alpha@" = toString borderAlpha;
     "@glass_border_hex@" = hex borderAlpha;
     "@glass_border_width@" = toString borderWidth;
-    "@glass_view_alpha@" = toString glassViewAlpha;
-    "@glass_chrome_alpha@" = toString glassChromeAlpha;
     "@blur_passes@" = toString blurPasses;
     "@glass_layers@" = lib.concatMapStringsSep ", " (n: ''"${n}"'') glassLayers;
     "@radius@" = toString radius;
@@ -73,15 +111,36 @@ rec {
     "@role_accent@" = roles.accent;
   };
 
+  # The tokens that depend on the mode.
+  modeTokens = mode: {
+    "@glass_alpha@" = toString modes.${mode}.glassAlpha;
+    "@glass_alpha_hex@" = hex modes.${mode}.glassAlpha;
+    "@glass_view_alpha@" = toString modes.${mode}.glassViewAlpha;
+    "@glass_chrome_alpha@" = toString modes.${mode}.glassChromeAlpha;
+    "@text_soften@" = toString modes.${mode}.textSoften;
+    "@dim_soften@" = toString modes.${mode}.dimSoften;
+    "@accent_soften@" = toString modes.${mode}.accentSoften;
+    "@on_accent_soften@" = toString modes.${mode}.onAccentSoften;
+    "@role_view_bg@" = modes.${mode}.viewBg;
+    "@role_ansi_black@" = modes.${mode}.ansi.black;
+    "@role_ansi_white@" = modes.${mode}.ansi.white;
+    "@role_ansi_bright_white@" = modes.${mode}.ansi.brightWhite;
+    "@terminal_opacity@" = toString modes.${mode}.terminalOpacity;
+  };
+
   # Fills the tokens of a text and fails the build on a `@name@` that is left over (a typo or a missing token); a
-  # caller fills its own placeholders before calling.
-  subst =
-    text:
+  # caller fills its own placeholders before calling. `subst` knows only the tokens that do not depend on the mode:
+  # a file that needs the others is a palette template (`substMode`), which wallpaper/palettes.nix renders once for
+  # each mode.
+  substWith =
+    toks: text:
     let
-      out = builtins.replaceStrings (lib.attrNames tokens) (lib.attrValues tokens) text;
+      out = builtins.replaceStrings (lib.attrNames toks) (lib.attrValues toks) text;
       left = lib.unique (
         map builtins.head (lib.filter builtins.isList (builtins.split "(@[a-z_]+@)" out))
       );
     in
     if left == [ ] then out else throw "style: unknown token ${lib.concatStringsSep ", " left}";
+  subst = substWith tokens;
+  substMode = mode: substWith (tokens // modeTokens mode);
 }

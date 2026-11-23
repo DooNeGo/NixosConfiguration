@@ -1,9 +1,8 @@
 {
-  # Latitude and longitude of Minsk (the machine's time zone); wlsunset derives sunrise and sunset from them.
+  # Sunrise and sunset come from the coordinates (location.nix); the theme follows the same sun (wallpaper/).
   services.wlsunset = {
     enable = true;
-    latitude = 53.9;
-    longitude = 27.56;
+    inherit (import ./location.nix) latitude longitude;
     temperature = {
       day = 6500;
       night = 4500;
