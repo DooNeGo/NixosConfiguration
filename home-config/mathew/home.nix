@@ -3,6 +3,18 @@
   inputs,
   ...
 }:
+let
+  patchAudacious =
+    package:
+    package.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace src/libaudqt/audqt.cc \
+          --replace-fail 'qapp->setApplicationName("Audacious");' \
+            'qapp->setDesktopFileName("audacious"); qapp->setApplicationName("Audacious");'
+      '';
+    });
+  audaciousBare = patchAudacious pkgs.audacious-bare;
+in
 {
   imports = [
     inputs.nix-flatpak.homeManagerModules.nix-flatpak
@@ -61,7 +73,12 @@
       libreoffice
       crosspipe
       pwvucontrol
-      audacious
+      (patchAudacious (
+        audacious-bare.override {
+          withPlugins = true;
+          audacious-plugins = audacious-plugins.override { audacious-bare = audaciousBare; };
+        }
+      ))
       smartmontools
       flatpak
       qbittorrent

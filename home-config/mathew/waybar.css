@@ -15,7 +15,7 @@ window#waybar {
 .modules-center,
 .modules-right {
   background: alpha(@surface_container_high, @panel_alpha@);
-  border: @glass_border_width@px solid alpha(@outline_variant, @panel_alpha@);
+  border: @glass_border_width@px solid alpha(@outline_variant, @glass_border_alpha@);
   border-radius: @radius@px;
   padding: 0 2px;
 }
@@ -141,7 +141,7 @@ menu,
 tooltip.background {
   background: alpha(@surface_container_high, @panel_alpha@);
   color: @on_surface;
-  border: @glass_border_width@px solid alpha(@outline_variant, @panel_alpha@);
+  border: @glass_border_width@px solid alpha(@outline_variant, @glass_border_alpha@);
   border-radius: @radius@px;
 }
 

@@ -108,9 +108,6 @@ def targets_from(args) -> tuple[Target, Target | None]:
 
 @dataclass
 class Prepared:
-    inst: Instance
-    system: Target
-    home: Target | None
     layers: list[Layer]
     flake_dir: Path
 
@@ -157,7 +154,7 @@ def prepare(inst: Instance, system: Target, home: Target | None, args) -> Prepar
             REPO, BOX_DIR, system, home, layers, system_extras, home_extras, inst.backend, inst.dir / "out"
         )
     )
-    return Prepared(inst, system, home, layers, flake_dir)
+    return Prepared(layers, flake_dir)
 
 
 def bring_up(host: Host, args, cleanup: bool):

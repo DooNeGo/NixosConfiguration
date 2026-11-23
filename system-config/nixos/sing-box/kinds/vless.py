@@ -78,12 +78,16 @@ def build_outbound(vless, transport_override=""):
     uuid, host, port, params = parse_vless(vless)
 
     # transport + security from the link's own params; an override pin wins.
-    stype = (transport_override or q(params, "type", "tcp")).lower()
+    stype = (transport_override if transport_override == "ws" else q(params, "type", "tcp")).lower()
     security = q(params, "security", "")
     if transport_override == "ws":
         stype = "ws"
     elif transport_override == "reality":
         security = "reality"
+    if stype == "raw":
+        stype = "tcp"
+    if stype not in ("tcp", "ws"):
+        raise SystemExit(f"unsupported VLESS transport: {stype}")
     if not security:
         # fallback for links without security= (reality iff pbk present):
         security = "reality" if q(params, "pbk") else "tls"
@@ -119,7 +123,7 @@ def build_outbound(vless, transport_override=""):
 
     # transport -- ws (the common non-tcp case). V2Ray schema: type is const
     # "ws" (NOT "websocket"), path=upgrade path, Host goes in headers.
-    if stype in ("ws", "http", "httpupgrade"):
+    if stype == "ws":
         transport = {"type": "ws"}
         path = q(params, "path")
         if path:
@@ -137,3 +141,12 @@ def build_outbound(vless, transport_override=""):
 def build(env):
     outbound = build_outbound(read_vless(env), env.get("SING_BOX_VLESS_TRANSPORT_OVERRIDE", ""))
     return {"outbound": outbound, "dns": None, "default_domain_resolver": None}
+
+
+if __name__ == "__main__":
+    import sys
+
+    try:
+        build_outbound(sys.stdin.read().strip())
+    except (SystemExit, ValueError, IndexError):
+        sys.exit(1)

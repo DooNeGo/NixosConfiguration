@@ -11,8 +11,8 @@
 #   --dataset SPEC   NAME|SOURCE|MAX_GIB, repeatable (default: Phasmophobia, 20 GiB, and World of Tanks Blitz)
 #   --common DIR     directory of the default datasets (default: /games/SteamLibrary/steamapps/common)
 #   --mount PATH     filesystem to remount and write to (default: /home)
-#   --dest DIR       where the data is written (default: ~/compress-test)
-#   --ram DIR        tmpfs staging area (default: /tmp/compress-test-src)
+#   --dest DIR       parent for temporary output (default: ~/compress-test)
+#   --ram DIR        parent for temporary staging (default: /tmp/compress-test-src)
 #   --csv FILE       raw results (default: ~/compress-test.csv)
 #   --md FILE        markdown tables (default: ~/compress-test.md)
 #   --report         rebuild the markdown tables from the CSV and exit
@@ -105,6 +105,17 @@ if [[ -z $DEST ]]; then
   if ((DRY)); then DEST=/dev/shm/compress-test-dest; else DEST=$HOME/compress-test; fi
 fi
 
+dest_parent=$(realpath -m -- "$DEST")
+ram_parent=$(realpath -m -- "$RAM")
+overlap() { [[ $1 == "$2" || $1 == "$2"/* || $2 == "$1"/* || $1 == / || $2 == / ]]; }
+overlap "$dest_parent" "$ram_parent" && usage "--dest and --ram must not overlap"
+while IFS='|' read -r _ds _src _cap; do
+  src=$(realpath -m -- "$_src")
+  if overlap "$dest_parent" "$src" || overlap "$ram_parent" "$src"; then
+    usage "temporary directories must not overlap dataset $_src"
+  fi
+done <<<"$DATASETS"
+
 # Markdown tables from the CSV (awk only: the benchmark user has no python in PATH)
 report() {
   awk -F, '
@@ -161,16 +172,26 @@ fi
 echo "mount option to restore on exit: $ORIG"
 
 sudo_keepalive_pid=""
+dest_work=""
+ram_work=""
+remounted=0
 restore() {
   [[ -n $sudo_keepalive_pid ]] && kill "$sudo_keepalive_pid" 2>/dev/null || true
   jobs -p | xargs -r kill 2>/dev/null || true
-  if [[ $DRY != 1 ]]; then
+  if [[ $remounted == 1 ]]; then
     sudo mount -o "remount,$ORIG" "$MNT" || echo "RESTORE FAILED: run: sudo mount -o remount,$ORIG $MNT" >&2
   fi
-  rm -rf "$DEST" "$RAM" "$RAM".*
+  [[ -z $dest_work ]] || rm -rf -- "$dest_work"
+  [[ -z $ram_work ]] || rm -rf -- "$ram_work" "$ram_work".*
 }
 trap restore EXIT
 trap 'exit 130' INT TERM
+
+mkdir -p -- "$dest_parent" "$ram_parent"
+dest_work=$(mktemp -d "$dest_parent/benchmark.XXXXXXXX")
+ram_work=$(mktemp -d "$ram_parent/benchmark.XXXXXXXX")
+DEST=$dest_work
+RAM=$ram_work
 
 if [[ $DRY != 1 ]]; then
   sudo -v
@@ -181,6 +202,7 @@ fi
 remount() {
   local opt=$1
   [[ $DRY == 1 ]] && return 0
+  remounted=1
   sudo mount -o "remount,$opt" "$MNT"
   local now
   now=$(findmnt -no OPTIONS "$MNT")
@@ -233,7 +255,7 @@ timed() { # prints elapsed seconds of "$@"; a ticker on stderr shows what is run
   wait "$tick" 2>/dev/null || true
   printf '\r\033[K' >&2
   t1=$(date +%s.%N)
-  awk -v a="$t0" -v b="$t1" 'BEGIN { printf "%.2f", b - a }'
+  awk -v a="$t0" -v b="$t1" 'BEGIN { d = b - a; printf "%.6f", (d > 0.000001 ? d : 0.000001) }'
   return $rc
 }
 

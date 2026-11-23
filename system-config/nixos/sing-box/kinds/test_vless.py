@@ -49,6 +49,14 @@ class OutboundTest(unittest.TestCase):
     def test_override_pins_transport(self):
         self.assertEqual(vless.build_outbound(REALITY, "ws")["transport"]["type"], "ws")
 
+    def test_unsupported_transport_is_rejected(self):
+        for transport in ("http", "httpupgrade", "grpc"):
+            with self.subTest(transport=transport), self.assertRaisesRegex(SystemExit, "unsupported VLESS transport"):
+                vless.build_outbound(f"vless://{UUID}@host:443?type={transport}")
+
+    def test_raw_is_tcp(self):
+        self.assertNotIn("transport", vless.build_outbound(REALITY.replace("type=tcp", "type=raw")))
+
 
 class BuildTest(unittest.TestCase):
     def build(self, text):

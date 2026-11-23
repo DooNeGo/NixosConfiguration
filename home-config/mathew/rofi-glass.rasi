@@ -33,7 +33,7 @@ mainbox {
 inputbar {
     background-color: @surface-container-high-panel;
     border: @glass_border_width@px;
-    border-color: @outline-variant-panel;
+    border-color: @glass-border;
     border-radius: @radius@px;
     padding: 12px 18px;
     spacing: 10px;
@@ -55,7 +55,7 @@ entry {
 listview {
     background-color: @surface-container-high-panel;
     border: @glass_border_width@px;
-    border-color: @outline-variant-panel;
+    border-color: @glass-border;
     border-radius: @radius@px;
     padding: 8px;
     lines: 8;
@@ -73,8 +73,8 @@ element {
 }
 
 element selected.normal {
-    background-color: @primary;
-    text-color: @on-primary;
+    background-color: @secondary-container;
+    text-color: @on-secondary-container;
 }
 
 element-icon {

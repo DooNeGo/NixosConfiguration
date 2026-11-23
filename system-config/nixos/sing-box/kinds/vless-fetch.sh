@@ -15,8 +15,9 @@ src=$(printf '%s\n' "$decoded" | grep -m1 -v '^[[:space:]]*$' | tr -d '[:space:]
 
 # Extract the first vless:// line from a subscription body (base64 if needed).
 extract() {
-  printf '%s\n' "$1" | { base64 -d 2>/dev/null || cat; } \
-    | grep -m1 -o '^vless://.*' || true
+  local body
+  body=$(printf '%s\n' "$1" | base64 -d 2>/dev/null) || body=$1
+  printf '%s\n' "$body" | grep -m1 -o '^vless://.*' || true
 }
 
 link=""
@@ -26,7 +27,7 @@ case "$src" in
     ;;
   https://*|http://*)
     host=$(printf '%s' "$src" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
-    port=$(printf '%s' "$src" | sed -nE 's#^http://.*#80#p; s#^https://.*#443#p')
+    port=$(python3 -c 'import sys, urllib.parse; u = urllib.parse.urlsplit(sys.argv[1]); print(u.port or (443 if u.scheme == "https" else 80))' "$src")
     # fetch() -- the --noproxy '*' on EVERY request is the loop guard.
     fetch() { curl -sfL --noproxy '*' -A "$UA" --max-time 30 "$@"; }
     body=$(fetch "$src" || {
@@ -54,7 +55,21 @@ if [ -z "$link" ]; then
   exit 1
 fi
 
+printf '%s\n' "$link" | python3 -I "${SING_BOX_VLESS_PARSER:?SING_BOX_VLESS_PARSER is not set}" \
+  || { echo "vless-fetch: invalid or unsupported VLESS link" >&2; exit 1; }
+
 umask 077
 printf '%s\n' "$link" > "${KEY_FILE}.tmp"
-mv "${KEY_FILE}.tmp" "$KEY_FILE"           # atomic: same dir, never a half-written key
-echo "vless-fetch: ${KEY_FILE} updated (${#link} bytes)"
+if cmp -s "${KEY_FILE}.tmp" "$KEY_FILE"; then
+  rm "${KEY_FILE}.tmp"
+else
+  if [ -n "${SING_BOX_VLESS_SERVICE:-}" ]; then
+    : > "${KEY_FILE}.restart-pending"
+  fi
+  mv "${KEY_FILE}.tmp" "$KEY_FILE"
+  echo "vless-fetch: ${KEY_FILE} updated (${#link} bytes)"
+fi
+if [ -e "${KEY_FILE}.restart-pending" ] && [ -n "${SING_BOX_VLESS_SERVICE:-}" ]; then
+  systemctl try-restart --no-block "$SING_BOX_VLESS_SERVICE"
+  rm "${KEY_FILE}.restart-pending"
+fi

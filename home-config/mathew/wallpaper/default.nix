@@ -67,15 +67,28 @@ in
 
     # Every switch refreshes the files from the palette of the current wallpaper and mode (new templates and colour
     # roles reach the state directory), or from the default wallpaper before the script ever ran.
-    activation.seedWallpaperPalette = lib.hm.dag.entryAfter [ "writeBoundary" "dconfSettings" ] ''
-      name=$(cat ${paletteDir}/wallpaper 2>/dev/null || true)
-      run mkdir -p ${paletteDir}
-      # The link targets a store path that a later garbage collection can remove, so it is renewed on every switch.
-      img=${common.wallDir}/"$name"
-      [ -n "$name" ] && [ -e "$img" ] || img=${common.wallDir}/${defaultWallpaper}
-      run ln -sfn "$img" ${paletteDir}/lock-background
-      run ${themeMode}/bin/theme-mode apply
-    '';
+    activation.seedWallpaperPalette =
+      lib.hm.dag.entryBetween
+        [ "reloadSystemd" ]
+        [
+          "linkGeneration"
+          "dconfSettings"
+        ]
+        ''
+          name=$(cat ${paletteDir}/wallpaper 2>/dev/null || true)
+          run mkdir -p ${paletteDir}
+          # The link targets a store path that a later garbage collection can remove, so it is renewed on every switch.
+          img=${common.wallDir}/"$name"
+          [ -n "$name" ] && [ -e "$img" ] || img=${common.wallDir}/${defaultWallpaper}
+          run ln -sfn "$img" ${paletteDir}/lock-background
+          run ${themeMode}/bin/theme-mode seed
+        '';
+
+    activation.reloadWallpaperTheme =
+      lib.hm.dag.entryAfter [ "reloadSystemd" "seedWallpaperPalette" ]
+        ''
+          run ${themeMode}/bin/theme-mode reload
+        '';
   };
 
   # The mode follows the sun like the night colour (wlsunset.nix). The first application is a pre-start step, so that
@@ -84,7 +97,10 @@ in
     Unit = {
       Description = "Light or dark theme by the sun";
       PartOf = [ "graphical-session.target" ];
-      After = [ "random-wallpaper.service" ];
+      After = [
+        "graphical-session.target"
+        "random-wallpaper.service"
+      ];
       Before = [ "waybar.service" ];
     };
     Service = {

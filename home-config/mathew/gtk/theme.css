@@ -15,7 +15,7 @@ menu,
 popover.background > contents,
 menu,
 .menu {
-  border: @glass_border_width@px solid @outline_variant;
+  border: @glass_border_width@px solid alpha(@outline_variant, @glass_border_alpha@);
 }
 
 /* Nemo: a translucent window (one alpha for every layer, @window_alpha@ of style/) over the blur Hyprland draws

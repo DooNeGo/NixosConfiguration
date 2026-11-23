@@ -19,6 +19,7 @@ let
       gnused
       gnugrep
       python3
+      systemd
     ];
   };
 
@@ -34,10 +35,11 @@ in
       SING_BOX_VLESS_CREDENTIAL_FILE = inst.credentialFile;
       SING_BOX_VLESS_KEY_FILE = inst.vless.runtimeKey;
       SING_BOX_DECODE_VPN = "${shared.decodeVpn}";
+      SING_BOX_VLESS_PARSER = "${./vless.py}";
+      SING_BOX_VLESS_SERVICE = "sing-box-${name}.service";
     };
     serviceConfig = {
       Type = "oneshot";
-      RemainAfterExit = "yes";
       ExecStart = "${vlessFetch}/bin/sing-box-vless-fetch";
     };
   };

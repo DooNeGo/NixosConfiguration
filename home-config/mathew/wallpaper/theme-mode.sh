@@ -6,6 +6,8 @@
 #                                   wallpaper, set the GTK theme and the colour scheme, reload the consumers
 #   theme-mode toggle               the other mode until the next sunrise or sunset (the daemon ends it there)
 #   theme-mode auto                 the mode of the sun now, without a manual choice
+#   theme-mode seed                refresh the current palette before Home Manager reloads user units
+#   theme-mode reload              refresh running consumers after Home Manager reloads user units
 #   theme-mode status               the state as JSON for the Waybar module
 #   theme-mode daemon               follows the sun: at every sunrise and sunset applies the mode of the sun
 #
@@ -14,6 +16,8 @@
 # theme of each mode (the monochrome one is made for a dark background); THEME_SUNWAIT: sunwait, if it is not on PATH.
 state=$THEME_STATE
 sunwait=${THEME_SUNWAIT:-sunwait}
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
 
 current_mode() {
   local mode
@@ -55,7 +59,7 @@ copy_palette() {
   mv -f "$state/mode.new" "$state/mode"
 }
 
-has_session_bus() { [[ -S ${XDG_RUNTIME_DIR:-/nonexistent}/bus ]]; }
+has_session_bus() { [[ -S $XDG_RUNTIME_DIR/bus ]]; }
 
 # Running GTK applications follow a change of the theme name and the colour scheme at once (Nemo, Chrome); a page of
 # a site reads the colour scheme as prefers-color-scheme.
@@ -70,7 +74,7 @@ set_desktop_settings() {
 # Tell every running consumer of this user to read the new palette files; none of them is required to run.
 # --no-block: waybar.service is ordered after random-wallpaper, which runs this; waiting for it would deadlock.
 reload_consumers() {
-  systemctl --user --no-block try-reload-or-restart waybar.service || true
+  systemctl --user "$@" waybar.service || true
   # makoctl asks D-Bus to start mako, which fails without a session (the unit needs a Wayland display).
   if systemctl --user is-active --quiet mako.service; then makoctl reload || true; fi
   # The Nix kitty runs as a wrapped process named .kitty-wrapped.
@@ -111,6 +115,7 @@ change_mode() (
   flock -w 10 9
   case $action in
     apply) apply "${2:-}" ;;
+    seed) apply ;;
     toggle)
       if [[ $(current_mode) == dark ]]; then mode=light; else mode=dark; fi
       : > "$state/manual"
@@ -127,8 +132,10 @@ change_mode() (
 case ${1:-status} in
   apply | toggle | auto)
     change_mode "$@"
-    if has_session_bus; then reload_consumers; fi
+    if has_session_bus; then reload_consumers --no-block try-reload-or-restart; fi
     ;;
+  seed) change_mode seed ;;
+  reload) if has_session_bus; then reload_consumers try-restart; fi ;;
   status) status ;;
   daemon)
     # `sunwait wait` sleeps until the next sunrise or sunset and exits with an error when it has nothing to wait for
@@ -140,7 +147,7 @@ case ${1:-status} in
     done
     ;;
   *)
-    echo "usage: theme-mode apply [light|dark] | toggle | auto | status | daemon" >&2
+    echo "usage: theme-mode apply [light|dark] | toggle | auto | seed | reload | status | daemon" >&2
     exit 2
     ;;
 esac
