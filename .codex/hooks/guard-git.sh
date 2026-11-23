@@ -65,7 +65,37 @@ while IFS= read -r segment; do
       reason="git push"
       ;;
     clean) reason="git clean" ;;
-    merge | rebase) on_main && reason="git $sub on main" ;;
+    merge) on_main && reason="git merge on main" ;;
+    rebase)
+      if on_main; then
+        reason="git rebase on main"
+      else
+        operands=()
+        skip_value=false
+        parse_options=true
+        for a in "${rest[@]}"; do
+          if "$skip_value"; then
+            skip_value=false
+            continue
+          fi
+          if "$parse_options"; then
+            case "$a" in
+              --) parse_options=false; continue ;;
+              --onto | --exec | -x | --strategy | -s | --strategy-option | -X | --empty)
+                skip_value=true
+                continue
+                ;;
+              -*) continue ;;
+            esac
+          fi
+          operands+=("$a")
+        done
+        if [ "${#operands[@]}" -ge 2 ]; then
+          target=${operands[-1]//[\"\']/}
+          is_main "$target" && reason="git rebase on main"
+        fi
+      fi
+      ;;
     reset)
       if [[ "$flags" == *" --hard "* ]]; then
         reason="git reset --hard (discards work)"
