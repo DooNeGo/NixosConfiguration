@@ -30,7 +30,7 @@ How the palette is built, written and reloaded: `docs/hyprland.md`. `waybar.css`
 
 ## Night colour
 
-`wlsunset.nix` (Minsk coordinates, 6500 K by day, 3500 K at night) derives sunrise and sunset from latitude and longitude; `hyprsunset` has only fixed times. 3500 K is a judgement call between the common defaults (3400 K f.lux evening, 3500 K Redshift, 4000 K wlsunset); change `temperature.night` to taste.
+`wlsunset.nix` (Minsk coordinates, 6500 K by day, 4500 K at night) derives sunrise and sunset from latitude and longitude; `hyprsunset` has only fixed times. 4500 K is a mild shift: the owner found 3500 K (the Redshift default; f.lux evening is 3400 K, wlsunset's own default 4000 K) too warm when it switches on; change `temperature.night` to taste.
 
 ## Blur
 
