@@ -1,8 +1,9 @@
-/* Every colour of the wallpaper palette under its matugen name; rofi-glass.rasi picks the ones it draws. `name_panel` is
-   the same colour with the alpha of a floating panel, because rasi cannot change the alpha of a variable. */
+/* Every colour of the wallpaper palette under its matugen name, with hyphens because rasi names have no underscore
+   (`on-surface`); rofi-glass.rasi picks the ones it draws. `name-panel` is the same colour with the alpha of a
+   floating panel, because rasi cannot change the alpha of a variable. */
 * {
 <* for name, value in colors *>
-    {{name}}: #{{value.default.hex_stripped}};
-    {{name}}_panel: #{{value.default.hex_stripped}}@panel_alpha_hex@;
+    {{name | replace: "_", "-"}}: #{{value.default.hex_stripped}};
+    {{name | replace: "_", "-"}}-panel: #{{value.default.hex_stripped}}@panel_alpha_hex@;
 <* endfor *>
 }

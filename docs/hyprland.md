@@ -37,7 +37,7 @@ SDDM runs its greeter under the same Hyprland (`sddm.nix`, `start-hyprland -- -c
 | `waybar.css` | `waybar.css` imports it: `@define-color <matugen name>` for every colour | `systemctl --user try-reload-or-restart waybar` |
 | `mako` | `include=` in the mako config | `makoctl reload` |
 | `kitty.conf` | `include` in `kitty.conf` | `SIGUSR1` to every kitty |
-| `rofi.rasi` | `@import` in `rofi-glass.rasi`: `<matugen name>` and `<name>_panel` for every colour | none: read at each start |
+| `rofi.rasi` | `@import` in `rofi-glass.rasi`: `<matugen name>` and `<name>-panel` for every colour, names with hyphens: rasi has no underscore in names | none: read at each start |
 | `hyprlock.conf` | `source=` in `hyprlock.conf`: `$<matugen name>` for every colour and `$<name>_panel` with the panel alpha (hyprlang cannot change the alpha of a variable) | read at each lock |
 | `gtk.css` | `@import` in `~/.config/gtk-3.0/gtk.css` and `gtk-4.0/gtk.css` (`gtk.nix`): the named colours of adw-gtk3 and libadwaita | none: a GTK window reads it when it opens |
 | `kvantum-dark.sed`, `kvantum-light.sed` | not copied: `palettes.nix` applies the one of the mode with `sed` to Kvantum's KvFlat (dark) or KvFlatLight (light), which gives `KvMatugen.kvconfig` and `KvMatugen.svg`; `qt.nix` links the two into `~/.config/Kvantum/KvMatugen/`, so the theme name stays the same in both modes | none: a Qt window reads them when it opens |
