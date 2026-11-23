@@ -33,7 +33,7 @@ mainbox {
 inputbar {
     background-color: @surface-container-high-panel;
     border: @glass_border_width@px;
-    border-color: @outline-variant;
+    border-color: @outline-variant-panel;
     border-radius: @radius@px;
     padding: 12px 18px;
     spacing: 10px;
@@ -55,7 +55,7 @@ entry {
 listview {
     background-color: @surface-container-high-panel;
     border: @glass_border_width@px;
-    border-color: @outline-variant;
+    border-color: @outline-variant-panel;
     border-radius: @radius@px;
     padding: 8px;
     lines: 8;

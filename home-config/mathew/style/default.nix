@@ -18,9 +18,10 @@ rec {
 
   # Two fill opacities, the same in both modes: a window (the terminal, every layer of the file manager) and a floating
   # panel (the bar islands, the launcher, notifications, the lock field). The panels are the thinner glass, the
-  # windows hold more text and need the denser fill. A thin border and a blur (Hyprland) make the glass.
-  windowAlpha = 0.65;
-  panelAlpha = 0.3;
+  # windows hold more text and need the denser fill. A thin border at the panel alpha and a blur (Hyprland) make the
+  # glass.
+  windowAlpha = 0.8;
+  panelAlpha = 0.5;
   borderWidth = 1;
   blurPasses = 3;
 

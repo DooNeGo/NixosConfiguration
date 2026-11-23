@@ -1,5 +1,5 @@
 # mako has no variables: the mapping of the palette to the notification is here.
 background-color=#{{colors.surface_container_high.default.hex_stripped}}@panel_alpha_hex@
 text-color=#{{colors.on_surface.default.hex_stripped}}
-border-color=#{{colors.outline_variant.default.hex_stripped}}
+border-color=#{{colors.outline_variant.default.hex_stripped}}@panel_alpha_hex@
 progress-color=over #{{colors.primary.default.hex_stripped}}
