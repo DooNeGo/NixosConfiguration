@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Lint every .nix file in the repo (all flakes): deadnix (unused code), statix (anti-patterns), nixfmt (formatting),
-# every tracked .sh file with shellcheck, every .zsh file with zsh -n (shellcheck cannot parse zsh) and tools/box plus the sing-box decoder with ruff. Config: statix.toml. hardware-configuration.nix is generated and excluded.
+# every tracked .sh file with shellcheck, every .zsh file with zsh -n, and Python tools and tests with ruff.
+# Config: statix.toml. hardware-configuration.nix is generated and excluded.
 # Usage: scripts/lint.sh   (the tools are installed system-wide, see system-config/nixos/configuration.nix;
 #                           until they are, it falls back to `nix shell`)
 set -euo pipefail
@@ -27,5 +28,5 @@ git ls-files -z 'tools/box/*/fixtures/*/setup' 'tools/box/*/fixtures/*/teardown'
 # tools/box/box has no .py extension: ruff lints a file named on the command line regardless.
 ruff check tools/box tools/box/box
 ruff format --check tools/box tools/box/box
-ruff check --config tools/box/ruff.toml system-config/nixos/sing-box
-ruff format --check --config tools/box/ruff.toml system-config/nixos/sing-box
+ruff check --config tools/box/ruff.toml system-config/nixos/sing-box system-config/nixos/failure-notify scripts
+ruff format --check --config tools/box/ruff.toml system-config/nixos/sing-box system-config/nixos/failure-notify scripts
