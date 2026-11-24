@@ -17,7 +17,6 @@
       firefox
       moonlight-qt
       google-chrome
-      teams
       finetune
     ];
   };
