@@ -16,6 +16,7 @@ let
     runtimeInputs = with pkgs; [
       curl
       coreutils
+      diffutils
       gnused
       gnugrep
       python3
