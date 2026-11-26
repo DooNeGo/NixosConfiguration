@@ -4,8 +4,8 @@ How the tunnels and the exit node work and why. The units and rules are in `syst
 
 ## Why AmneziaWG sits under sing-box
 
-- The `main` instance reaches the internet through a server-issued AmneziaWG `.conf` (agenix: `secrets/awg-main.age`, delivered to `/etc/sing-box/main-awg.conf`). It listens on port 2080, which `HTTP(S)_PROXY` and the Nix daemon use.
-- sing-box has no AmneziaWG outbound (upstream closed the request as not planned, and the nixpkgs build has no `with_awg`), so the kernel module (`wg-quick` with `type = "amneziawg"`) holds the tunnel and sing-box only binds its `proxy` outbound to `awg0`. What sing-box still gives: domain-based routing for `HTTP_PROXY` clients, DNS for proxied domains through the tunnel, and the same instance interface as the vless one (`credits`).
+- The `main` instance reaches the internet through a server-issued AmneziaWG `.conf` (agenix: `secrets/awg-main.age`, delivered to `/etc/sing-box/main-awg.conf`).
+- sing-box has no AmneziaWG outbound (upstream closed the request as not planned, and the nixpkgs build has no `with_awg`), so the kernel module (`wg-quick` with `type = "amneziawg"`) holds the tunnel and sing-box binds its `proxy` outbound to `awg0`. The instance handles domain routing and DNS for tunneled destinations, using the same local interface as the VLESS instance (`credits`).
 - Fail closed: `bind_interface` makes a matched domain fail when the tunnel is down instead of leaving through `eno1`.
 - The server `.conf` is stored verbatim; `awg-prepare.sh` derives the runtime config: it drops `DNS` (would replace the system resolver) and hooks (a third-party file must not run commands as root), puts the routes into table 51820 so `main` stays untouched, and keeps IPv4 only.
 - Source-address policy rule `from <tunnel address> lookup 51820` (priority 5000) is what sends sing-box's bound sockets into the tunnel.
@@ -46,13 +46,13 @@ Adding a kind: a line in `kindFiles` of `sing-box.nix`, `kinds/<kind>.nix`, `kin
 
 ## Data path
 
-- A client that honours `HTTP(S)_PROXY` connects to `main` on 127.0.0.1. sing-box matches the name from the proxy request and opens a new socket: bound to `awg0` for a matched domain, or through `eno1` for the rest. `NO_PROXY` and `no_proxy` include the domains of other instances with a TUN so clients that honour these variables reach the corresponding TUN through the system resolver. An explicit proxy for `credits` is available on port 2081.
-- Traffic that does not use the proxy and does not resolve a `proxyDomains` name leaves through `eno1` unchanged and never reaches sing-box. A name in `proxyDomains` reaches it through the TUN (next section), with or without `HTTP(S)_PROXY`.
+- Clients use the system resolver. Names in `proxyDomains` reach the matching instance through its Fake-IP TUN. Other internet traffic follows the default route through `eno1`.
+- Clients can set `HTTP_PROXY` and `HTTPS_PROXY` per process to use a local mixed proxy port. `main` listens on `127.0.0.1:2080` and `credits` on `127.0.0.1:2081`.
 - The exit-node path (below) is plain kernel forwarding from `tailscale0` into the tunnel; sing-box is not on it.
 
-## Fake-IP TUN: programs that ignore the proxy variables
+## Fake-IP TUN
 
-An instance with `tun` set (both do) gets a second inbound next to the proxy port, so Steam, Electron apps, `go` and `dotnet` tools reach its `proxyDomains` without per-program settings. The proxy port and `HTTP(S)_PROXY` stay as they were.
+An instance with `tun` set (both do) gets a TUN inbound next to its proxy port, so Steam, Electron apps, `go` and `dotnet` tools that use the system resolver reach its `proxyDomains` without per-program settings.
 
 - **Link.** `systemd-networkd` creates a persistent `tun` link per instance (`sbtun-<instance name>`, at most 15 characters, owned by the `sing-box` user) and configures it: the address, a route of the fake range into it, and resolved's `DNS=` (the other host of the link's /30) with routing domains `~<proxyDomain>`. sing-box only attaches to the link (`CAP_NET_ADMIN` in the unit). It sets `auto_route = false`, so it installs no default route and nothing outside the fake range can enter it.
 - **Names.** resolved sends only the `proxyDomains` (and their subdomains) to the DNS address of the link (the other host of the /30 of `address`); sing-box hijacks that DNS and the `fakeip` server answers A and AAAA with an address from `fakeRange`; any other query type (HTTPS, SVCB, TXT) gets an empty NOERROR from a second rule, because the `fakeip` server fails on it and the client would wait for a timeout. Both rules sit before the rules of the kind. Every other name uses the link DNS of the uplink and never touches sing-box. The DNS rule matches only the `tun-in` inbound, so the resolvers a kind uses for its own outbound stay as they are. The rule is a suffix match and sits first, before any rule of the kind. With a `tun` the route rule matches by suffix too, whatever `routeMatch` says: resolved sends every subdomain of a routing domain to sing-box, and a subdomain that stayed direct would be dialled through the system resolver, which answers with a fake address again. The proxy port matches the same way then. `store_fakeip` keeps the fake addresses over a restart.

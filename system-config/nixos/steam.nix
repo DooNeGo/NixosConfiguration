@@ -20,8 +20,6 @@
           PROTON_DLSS_UPGRADE = "1";
           PROTON_ENABLE_HDR = "1";
           DXVK_HDR = "1";
-          HTTP_PROXY = "";
-          HTTPS_PROXY = "";
         };
       };
     };

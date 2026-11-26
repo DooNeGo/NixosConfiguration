@@ -75,9 +75,6 @@ let
       ];
     }).config.instances;
 
-  # Instance that HTTP(S)_PROXY points at.
-  systemProxy = "main";
-
   instanceModule = {
     options = {
       kind = lib.mkOption {
@@ -184,16 +181,6 @@ let
   singBoxCmd =
     name:
     "${pkgs.sing-box}/bin/sing-box -D /var/lib/sing-box/${name} -C /etc/sing-box -c /run/sing-box/${name}/config.json";
-
-  proxyInst =
-    instances.${systemProxy} or (throw "sing-box.nix: systemProxy '${systemProxy}' is not an instance");
-  proxyUrl = "http://${proxyInst.listenAddress}:${toString proxyInst.listenPort}";
-  otherTunDomains = lib.concatMap (inst: inst.proxyDomains) (
-    lib.attrValues (builtins.removeAttrs tunInstances [ systemProxy ])
-  );
-  noProxy = lib.concatStringsSep "," (
-    [ "localhost,127.0.0.1,::1,100.64.0.0/10,.ts.net,192.168.0.0/16,10.0.0.0/8" ] ++ otherTunDomains
-  );
 
   ports = lib.mapAttrsToList (_: i: i.listenPort) instances;
   allUnique = xs: lib.length (lib.unique xs) == lib.length xs;
@@ -451,15 +438,6 @@ in
 
         environment = {
           systemPackages = [ pkgs.sing-box ];
-
-          variables = {
-            HTTP_PROXY = proxyUrl;
-            HTTPS_PROXY = proxyUrl;
-            NO_PROXY = noProxy;
-            http_proxy = proxyUrl;
-            https_proxy = proxyUrl;
-            no_proxy = noProxy;
-          };
 
           # Browser DoH bypasses the system resolver, so the fake addresses would never reach the browser.
           # Firefox reads /etc/firefox/policies/policies.json, Google Chrome /etc/opt/chrome/policies/managed.
