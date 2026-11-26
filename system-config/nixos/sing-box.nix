@@ -188,7 +188,12 @@ let
   proxyInst =
     instances.${systemProxy} or (throw "sing-box.nix: systemProxy '${systemProxy}' is not an instance");
   proxyUrl = "http://${proxyInst.listenAddress}:${toString proxyInst.listenPort}";
-  noProxy = "localhost,127.0.0.1,::1,100.64.0.0/10,.ts.net,192.168.0.0/16,10.0.0.0/8";
+  otherTunDomains = lib.concatMap (inst: inst.proxyDomains) (
+    lib.attrValues (builtins.removeAttrs tunInstances [ systemProxy ])
+  );
+  noProxy = lib.concatStringsSep "," (
+    [ "localhost,127.0.0.1,::1,100.64.0.0/10,.ts.net,192.168.0.0/16,10.0.0.0/8" ] ++ otherTunDomains
+  );
 
   ports = lib.mapAttrsToList (_: i: i.listenPort) instances;
   allUnique = xs: lib.length (lib.unique xs) == lib.length xs;
