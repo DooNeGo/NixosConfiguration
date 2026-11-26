@@ -12,7 +12,7 @@ How the Nix store, generations, journal and boot menu are kept in bounds, and wh
 ## nix-daemon environment
 
 - `TMPDIR=/var/tmp`: `/tmp` is a tmpfs of half the RAM (`boot.nix`), too small for CUDA and other large builds. `/var/tmp` lives on `@root`, which is snapshotted and backed up; scratch data of a build running at snapshot time is kept until the snapshot expires. Accepted by the owner.
-- `HTTP_PROXY` / `HTTPS_PROXY` are read from `config.environment.variables`, set in `sing-box.nix`. `NO_PROXY` is not passed on purpose.
+- Downloads use the system resolver and routes. Destinations covered by a sing-box routing domain use its Fake-IP TUN.
 
 ## Journal
 

@@ -8,12 +8,15 @@ from kinds import awg
 
 
 class BuildTest(unittest.TestCase):
-    def build(self, addr_text, **extra):
+    def build(self, addr_text):
         with tempfile.TemporaryDirectory() as tmp:
             addr = Path(tmp) / "address"
             if addr_text is not None:
                 addr.write_text(addr_text)
-            env = {"SING_BOX_AWG_INTERFACE": "awg0", "SING_BOX_AWG_ADDR_FILE": str(addr), **extra}
+            env = {
+                "SING_BOX_AWG_INTERFACE": "awg0",
+                "SING_BOX_AWG_ADDR_FILE": str(addr),
+            }
             return awg.build(env)
 
     def test_binds_to_interface_and_address(self):
@@ -22,11 +25,21 @@ class BuildTest(unittest.TestCase):
         self.assertEqual((out["type"], out["tag"]), ("direct", "proxy"))
         self.assertEqual((out["bind_interface"], out["inet4_bind_address"]), ("awg0", "10.8.1.2"))
         self.assertEqual(result["default_domain_resolver"], "dns-local")
-        self.assertEqual(result["dns"]["servers"][0]["server"], "1.1.1.1")
 
-    def test_tunnel_dns_override(self):
-        result = self.build("10.8.1.2", SING_BOX_AWG_TUNNEL_DNS="9.9.9.9")
-        self.assertEqual(result["dns"]["servers"][0]["server"], "9.9.9.9")
+    def test_tunnel_dns_uses_doh_via_proxy(self):
+        result = self.build("10.8.1.2")
+        out = result["outbound"]
+        self.assertEqual(out["domain_resolver"], {"server": "dns-tunnel", "strategy": "ipv4_only"})
+        self.assertEqual(
+            result["dns"]["servers"][0],
+            {
+                "type": "https",
+                "tag": "dns-tunnel",
+                "server": "1.1.1.1",
+                "tls": {"server_name": "cloudflare-dns.com"},
+                "detour": "proxy",
+            },
+        )
 
     def test_refusals(self):
         for text in (None, "not-an-address", "10.8.1"):

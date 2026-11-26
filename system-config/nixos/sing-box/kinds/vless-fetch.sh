@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Resolve SING_BOX_VLESS_CREDENTIAL_FILE (vless://, an Amnezia vpn:// xray string or https://) into SING_BOX_VLESS_KEY_FILE.
-# Every curl carries --noproxy '*': this host exports HTTP(S)_PROXY=127.0.0.1:2080.
+# Every curl carries --noproxy '*' to avoid a loop if a proxy is configured externally.
 set -euo pipefail
 
 CRED_FILE="${SING_BOX_VLESS_CREDENTIAL_FILE:?SING_BOX_VLESS_CREDENTIAL_FILE is not set}"

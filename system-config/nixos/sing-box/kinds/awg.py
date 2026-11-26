@@ -36,9 +36,10 @@ def build(env):
     dns = {
         "servers": [
             {
-                "type": "udp",
+                "type": "https",
                 "tag": "dns-tunnel",
-                "server": env.get("SING_BOX_AWG_TUNNEL_DNS", "1.1.1.1"),
+                "server": "1.1.1.1",
+                "tls": {"server_name": "cloudflare-dns.com"},
                 "detour": "proxy",
             },
             {"type": "local", "tag": "dns-local"},
