@@ -6,7 +6,6 @@ let
     "awg-exit-node"
     "btrbk-home"
     "btrbk-system"
-    "sing-box-credits-fetch"
     "sing-box-main-awg-prepare"
   ];
 in
@@ -36,7 +35,13 @@ in
     printing.enable = lib.mkForce false;
   };
 
-  systemd.services = lib.genAttrs disabledUnits (_: {
-    enable = lib.mkForce false;
-  });
+  environment.etc."sing-box/box-credential".text =
+    "vless://00000000-0000-4000-8000-000000000001@192.0.2.1:443?type=tcp\n";
+  systemd.services =
+    lib.genAttrs disabledUnits (_: {
+      enable = lib.mkForce false;
+    })
+    // {
+      sing-box-credits-fetch.environment.SING_BOX_VLESS_CREDENTIAL_FILE = lib.mkForce "/etc/sing-box/box-credential";
+    };
 }

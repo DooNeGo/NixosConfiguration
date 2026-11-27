@@ -30,18 +30,30 @@ case "$src" in
     port=$(python3 -c 'import sys, urllib.parse; u = urllib.parse.urlsplit(sys.argv[1]); print(u.port or (443 if u.scheme == "https" else 80))' "$src")
     # fetch() -- the --noproxy '*' on EVERY request is the loop guard.
     fetch() { curl -sfL --noproxy '*' -A "$UA" --max-time 30 "$@"; }
-    body=$(fetch "$src" || {
+    download() {
+      local ip response
+      if response=$(fetch "$src"); then
+        printf '%s\n' "$response"
+        return 0
+      fi
       # DoH fallback: resolve A via 1.1.1.1 (talked to by IP; no DNS needed).
       ip=$(curl -sfL --noproxy '*' -H 'accept: application/dns-json' --max-time 15 \
             "https://1.1.1.1/dns-query?name=${host}&type=A" \
           | sed -n 's/.*"data":"\([0-9.]*\)".*/\1/p' | head -1)
       if [ -z "$ip" ]; then
         echo "vless-fetch: DoH resolve failed" >&2
-        exit 1
+        return 1
       fi
       echo "vless-fetch: DNS failed, using DoH fallback" >&2
       fetch --resolve "${host}:${port}:${ip}" "$src"
-    })
+    }
+    attempts=1
+    if [ ! -s "$KEY_FILE" ]; then attempts=3; fi
+    until body=$(download); do
+      (( attempts > 1 )) || exit 1
+      attempts=$((attempts - 1))
+      sleep 5
+    done
     link=$(extract "$body")
     ;;
   *)
@@ -64,12 +76,19 @@ if cmp -s "${KEY_FILE}.tmp" "$KEY_FILE"; then
   rm "${KEY_FILE}.tmp"
 else
   if [ -n "${SING_BOX_VLESS_SERVICE:-}" ]; then
-    : > "${KEY_FILE}.restart-pending"
+    # A later timer may deliver the first key after bootstrap gave up.
+    if [ ! -s "$KEY_FILE" ]; then
+      echo restart > "${KEY_FILE}.restart-pending"
+    else
+      touch "${KEY_FILE}.restart-pending"
+    fi
   fi
   mv "${KEY_FILE}.tmp" "$KEY_FILE"
   echo "vless-fetch: ${KEY_FILE} updated (${#link} bytes)"
 fi
 if [ -e "${KEY_FILE}.restart-pending" ] && [ -n "${SING_BOX_VLESS_SERVICE:-}" ]; then
-  systemctl try-restart --no-block "$SING_BOX_VLESS_SERVICE"
+  action=try-restart
+  if [ "$(cat "${KEY_FILE}.restart-pending")" = restart ]; then action=restart; fi
+  systemctl "$action" --no-block "$SING_BOX_VLESS_SERVICE"
   rm "${KEY_FILE}.restart-pending"
 fi

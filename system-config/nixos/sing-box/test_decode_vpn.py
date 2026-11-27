@@ -312,6 +312,48 @@ class DecodeXrayTest(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("bash"), "bash is needed")
 class ResolveCredentialTest(unittest.TestCase):
+    def test_initial_subscription_retries_until_online(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            credential = tmp / "credential"
+            key = tmp / "key"
+            credential.write_text("https://sub.example.test/list\n")
+            link = f"vless://{UUID}@host.test:443?type=tcp\n"
+            (tmp / "curl").write_text("#!/bin/sh\n[ -f online ] && cat subscription\n")
+            (tmp / "sleep").write_text('#!/bin/sh\necho "$1" >> delays\n[ ! -f subscription ] || touch online\n')
+            for command in ("curl", "sleep"):
+                (tmp / command).chmod(0o755)
+            env = {
+                **os.environ,
+                "PATH": f"{tmp}:{os.environ['PATH']}",
+                "SING_BOX_VLESS_CREDENTIAL_FILE": str(credential),
+                "SING_BOX_VLESS_KEY_FILE": str(key),
+                "SING_BOX_DECODE_VPN": str(DECODER),
+                "SING_BOX_VLESS_PARSER": str(HERE / "kinds" / "vless.py"),
+            }
+
+            def fetch():
+                return subprocess.run(
+                    ["bash", str(RESOLVE)],
+                    cwd=tmp,
+                    env=env,
+                    capture_output=True,
+                    check=False,
+                )
+
+            self.assertEqual(fetch().returncode, 1)
+            self.assertFalse(key.exists())
+            delays = tmp / "delays"
+            self.assertEqual(delays.read_text().splitlines(), ["5", "5"])
+            (tmp / "subscription").write_text(link)
+            self.assertEqual(fetch().returncode, 0)
+            self.assertEqual(key.read_text(), link)
+            self.assertEqual(delays.read_text().splitlines(), ["5", "5", "5"])
+            (tmp / "online").unlink()
+            self.assertEqual(fetch().returncode, 1)
+            self.assertEqual(key.read_text(), link)
+            self.assertEqual(delays.read_text().splitlines(), ["5", "5", "5"])
+
     def test_subscription_and_changed_key(self):
         link = f"vless://{UUID}@host.test:443?type=tcp"
         with tempfile.TemporaryDirectory() as directory:
@@ -326,7 +368,7 @@ case "$*" in
 esac
 """)
             ctl = tmp / "systemctl"
-            ctl.write_text('#!/bin/sh\nprintf "restart\\n" >> "$RESTARTS"\n')
+            ctl.write_text('#!/bin/sh\nprintf "%s\\n" "$1" >> "$RESTARTS"\n')
             curl.chmod(0o755)
             ctl.chmod(0o755)
             (tmp / "credential").write_text("https://sub.example.test:8443/list\n")
@@ -347,7 +389,7 @@ esac
                 result = subprocess.run(["bash", str(RESOLVE)], env=env, capture_output=True, text=True, check=False)
                 self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((tmp / "key").read_text(), link + "#new\n")
-            self.assertEqual((tmp / "restarts").read_text().splitlines(), ["restart", "restart"])
+            self.assertEqual((tmp / "restarts").read_text().splitlines(), ["restart", "try-restart"])
             self.assertIn("--resolve sub.example.test:8443:192.0.2.1", (tmp / "calls").read_text())
 
     def test_invalid_update_and_restart_failure_keep_working_key(self):
