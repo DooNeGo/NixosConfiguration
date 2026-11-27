@@ -12,4 +12,6 @@ Done when the report says whether the running system matches the branch, which u
 3. For each unit or service the diff touched (`git diff main --stat` on a branch; after a merge `git log --stat --since=<time of the previous system generation>`, see `ls -l --time-style=long-iso /nix/var/nix/profiles/system-*-link`), `journalctl -u <unit> -b -p warning --no-pager | tail -30` (`openclaw-npm` is in `systemd-journal`). A user unit of `mathew` is read with `journalctl _UID=$(id -u mathew) --since <time> --no-pager`; a hung script, with `ps -eo pid,ppid,etimes,args` over its children.
 4. Home Manager changes: compare `readlink ~/.local/state/nix/profiles/home-manager` with `home-manager build --no-out-link` of the same flake for the user the agent can read.
 
-Report failures with the log lines. Name what cannot be verified without the owner: a session start, SDDM return, a mount, a reboot. A permission error is a question to the owner, not a workaround.
+If the Codex sandbox blocks a build or a read-only systemd check, retry that command with `sandbox_permissions: require_escalated` through Auto-review. Report access that Linux still denies, such as another user's systemd bus.
+
+Report failures with the log lines. Name what cannot be verified without the owner: a session start, SDDM return, a mount, a reboot.
