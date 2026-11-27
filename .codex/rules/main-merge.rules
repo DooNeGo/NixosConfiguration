@@ -1,0 +1,5 @@
+prefix_rule(
+    pattern = ["bash", ".codex/hooks/merge-main.sh", ["--ff-only", "--no-ff"]],
+    decision = "prompt",
+    justification = "Merging into main requires explicit owner authorization and command review.",
+)
