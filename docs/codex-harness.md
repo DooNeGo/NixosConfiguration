@@ -27,7 +27,7 @@ bash .codex/hooks/merge-main.sh --no-ff <branch> <expected-main> <reviewed-tip>
 
 The owner names a local branch. The agent supplies the two commit IDs from preflight and review. The project rule sends both forms to Auto-review. After that approval, the script checks the branch and commit count again, then passes the reviewed commit to Git. If the branch moved, review the changes and resubmit the command. Git can only merge the reviewed commit even if the branch moves after the script's check.
 
-The shell hook blocks direct `git merge` calls on `main`. Run `bash .codex/hooks/test-merge-main.sh` to test the guarded merge in a disposable repository. Start a new Codex session from the trusted repository with interactive approvals and Auto-review enabled to load the command rule.
+The shell hook blocks direct `git merge` calls on `main`. Run direct merges on feature branches as standalone shell calls. Run `bash .codex/hooks/test-merge-main.sh` to test the guarded merge in a disposable repository. Start a new Codex session from the trusted repository with interactive approvals and Auto-review enabled to load the command rule.
 
 ## NixOS MCP
 
