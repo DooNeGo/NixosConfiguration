@@ -10,6 +10,15 @@ cwd=${cwd:-$PWD}
 
 is_main() { [ "$1" = main ] || [ "$1" = refs/heads/main ]; }
 
+is_literal_git_command() {
+  local plain=$'[^;&|()\'"\\\\`$\n]'
+  local escaped=$'\\\\[^\n]'
+  local single_quoted="'[^']*'"
+  local double_quoted='"([^"\\`$]|\\.)*"'
+  local word="($plain|$escaped|$single_quoted|$double_quoted)"
+  [[ $1 != *$'\n'* && $1 =~ ^[[:blank:]]*git[[:blank:]]+$word+$ ]]
+}
+
 reason=""
 while IFS= read -r segment; do
   read -ra t <<< "$segment"
@@ -65,7 +74,16 @@ while IFS= read -r segment; do
       reason="git push"
       ;;
     clean) reason="git clean" ;;
-    merge) on_main && reason="git merge on main" ;;
+    merge)
+      if on_main; then
+        reason="git merge on main"
+      elif [ "$segment" != "$cmd" ]; then
+        # A separator in a literal argument cannot start a second command.
+        is_literal_git_command "$cmd" && exit 0
+        printf '%s\n' 'Run git merge as a standalone command.' >&2
+        exit 2
+      fi
+      ;;
     rebase)
       if on_main; then
         reason="git rebase on main"
