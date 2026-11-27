@@ -133,5 +133,9 @@ while IFS= read -r segment; do
   [ -z "$reason" ] || break
 done < <(printf '%s\n' "$cmd" | sed -E 's/(&&|\|\||;|\||\()/\n/g')
 [ -n "$reason" ] || exit 0
+if [ "$reason" = "git merge on main" ]; then
+  printf '%s requires the reviewed merge command documented in docs/codex-harness.md.\n' "$reason" >&2
+  exit 2
+fi
 printf '%s requires the owner to authorize and run it in their terminal.\n' "$reason" >&2
 exit 2

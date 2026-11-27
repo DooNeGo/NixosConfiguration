@@ -8,7 +8,11 @@ Ignore `openclaw-local/` and other nix-openclaw workspace files (a separate agen
 
 ## Git workflow
 
-Work on a branch, except for a simple, quick change (adding a package, changing one setting), which goes straight to `main`. On a branch, commit a finished group without asking; on `main`, only when asked. Change `main` (merge into it, rebase or reset it, `branch -f`), push and delete an unmerged branch only on the owner's explicit command ("applied the config" is not one), and rebase only the branch the owner names. To look at an older commit use `git switch --detach <hash>`; to compare with a clean tree use `git worktree add --detach <dir> HEAD`, not `git stash` (it fails on `git add -N` entries and hides your work). The Codex Git hook blocks protected operations, including push, updates to `main`, and commands that discard work (`reset --hard`, `clean`, `checkout .`, `restore .`). After reviewing and authorizing a protected operation, the owner runs it from their terminal. Force pushes are prohibited. See `docs/codex-harness.md`.
+Work on a branch, except for a simple, quick change (adding a package, changing one setting), which goes straight to `main`. On a branch, commit a finished group without asking. On `main`, commit only when asked.
+
+Change `main`, push, or delete an unmerged branch only on the owner's explicit command. Before merging, ask in chat if the owner has yet to authorize merging the branch in context. An explicit "сливай" suffices when the branch is clear. "Prepare for merge" and "I applied the config" leave the merge pending. Submit an authorized merge to Codex Auto-review. The owner runs other protected operations in their terminal. Force pushes are prohibited. See `docs/codex-harness.md`.
+
+Rebase only the branch the owner names. To look at an older commit use `git switch --detach <hash>`. To compare with a clean tree use `git worktree add --detach <dir> HEAD`. Avoid `git stash` because it fails on `git add -N` entries and hides your work.
 
 ## Where things go
 
